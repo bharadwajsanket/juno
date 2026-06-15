@@ -1,0 +1,6 @@
+{
+  global:
+    Java_bharadwajsanket_aether_music_recognition_VibraSignature_*;
+  local:
+    *;
+};
