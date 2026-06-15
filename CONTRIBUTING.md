@@ -293,7 +293,7 @@ We provide issue templates for:
 ### Code Organization
 
 ```
-app/src/main/kotlin/com/music/echo/
+app/src/main/kotlin/bharadwajsanket/aether/music/
 ├── ui/                    # UI components and screens
 │   ├── components/        # Reusable UI components
 │   ├── screens/          # Screen-specific UI

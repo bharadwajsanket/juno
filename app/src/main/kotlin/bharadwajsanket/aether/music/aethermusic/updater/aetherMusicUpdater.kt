@@ -107,9 +107,9 @@ import androidx.compose.ui.text.style.TextDecoration
 
 data class ChangelogSection(val title: String, val items: List<String>)
 
-sealed class EchoUpdateStatus {
-    object Idle : EchoUpdateStatus()
-    object Checking : EchoUpdateStatus()
+sealed class AetherUpdateStatus {
+    object Idle : AetherUpdateStatus()
+    object Checking : AetherUpdateStatus()
     data class Available(
         val version: String,
         val changelog: List<ChangelogSection>,
@@ -118,10 +118,10 @@ sealed class EchoUpdateStatus {
         val description: String?,
         val imageUrl: String?,
         val apkUrl: String?
-    ) : EchoUpdateStatus()
+    ) : AetherUpdateStatus()
 
-    data class NoUpdate(val version: String) : EchoUpdateStatus()
-    data class Error(val message: String) : EchoUpdateStatus()
+    data class NoUpdate(val version: String) : AetherUpdateStatus()
+    data class Error(val message: String) : AetherUpdateStatus()
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -129,7 +129,7 @@ sealed class EchoUpdateStatus {
 fun UpdateScreen(navController: NavHostController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var status by remember { mutableStateOf<EchoUpdateStatus>(EchoUpdateStatus.NoUpdate(BuildConfig.VERSION_NAME)) }
+    var status by remember { mutableStateOf<AetherUpdateStatus>(AetherUpdateStatus.NoUpdate(BuildConfig.VERSION_NAME)) }
     var isDownloading by remember { mutableStateOf(false) }
     var downloadProgress by remember { mutableStateOf(0f) }
     var isDownloadComplete by remember { mutableStateOf(false) }
@@ -190,7 +190,7 @@ fun UpdateScreen(navController: NavHostController) {
     }
 
     fun triggerUpdateCheck() {
-        status = EchoUpdateStatus.Checking
+        status = AetherUpdateStatus.Checking
         scope.launch {
             
             delay(1000L)
@@ -200,7 +200,7 @@ fun UpdateScreen(navController: NavHostController) {
                     saveLastCheckedTime(context, LocalDateTime.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy, h:mm a")))
                     saveUpdateAvailableState(context, isAvailable)
                     status = if (isAvailable) {
-                        EchoUpdateStatus.Available(
+                        AetherUpdateStatus.Available(
                             version = tag,
                             changelog = changelog,
                             size = size,
@@ -210,11 +210,11 @@ fun UpdateScreen(navController: NavHostController) {
                             apkUrl = apkUrl
                         )
                     } else {
-                        EchoUpdateStatus.NoUpdate(tag)
+                        AetherUpdateStatus.NoUpdate(tag)
                     }
                 },
                 onError = {
-                    status = EchoUpdateStatus.Error(context.getString(R.string.cant_check_updates))
+                    status = AetherUpdateStatus.Error(context.getString(R.string.cant_check_updates))
                 }
             )
         }
@@ -232,7 +232,7 @@ fun UpdateScreen(navController: NavHostController) {
         topBar = {
             LargeTopAppBar(
                 title = {
-                    val titleText = if (status is EchoUpdateStatus.Available) {
+                    val titleText = if (status is AetherUpdateStatus.Available) {
                         buildAnnotatedString {
                             append(stringResource(R.string.new_update) + " ")
                             withStyle(
@@ -241,7 +241,7 @@ fun UpdateScreen(navController: NavHostController) {
                                     fontWeight = FontWeight.Bold
                                 )
                             ) {
-                                append((status as EchoUpdateStatus.Available).version)
+                                append((status as AetherUpdateStatus.Available).version)
                             }
                         }
                     } else {
@@ -281,16 +281,16 @@ fun UpdateScreen(navController: NavHostController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     when (val currentStatus = status) {
-                        is EchoUpdateStatus.Idle, is EchoUpdateStatus.Checking, is EchoUpdateStatus.NoUpdate, is EchoUpdateStatus.Error -> {
+                        is AetherUpdateStatus.Idle, is AetherUpdateStatus.Checking, is AetherUpdateStatus.NoUpdate, is AetherUpdateStatus.Error -> {
                             AnimatedActionButton(
                                 text = stringResource(R.string.check_for_update),
                                 onClick = { triggerUpdateCheck() },
-                                enabled = currentStatus !is EchoUpdateStatus.Checking && !isDownloading,
+                                enabled = currentStatus !is AetherUpdateStatus.Checking && !isDownloading,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
 
-                        is EchoUpdateStatus.Available -> {
+                        is AetherUpdateStatus.Available -> {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -368,7 +368,7 @@ fun UpdateScreen(navController: NavHostController) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 item {
-                    val contentModifier = if (status is EchoUpdateStatus.Available) {
+                    val contentModifier = if (status is AetherUpdateStatus.Available) {
                         Modifier.fillMaxWidth()
                     } else {
                         Modifier.fillParentMaxSize()
@@ -379,13 +379,13 @@ fun UpdateScreen(navController: NavHostController) {
                         contentAlignment = Alignment.Center
                     ) {
                         when (val currentStatus = status) {
-                            is EchoUpdateStatus.Checking -> {
+                            is AetherUpdateStatus.Checking -> {
                                 androidx.compose.material3.ContainedLoadingIndicator(
                                     modifier = Modifier.size(64.dp)
                                 )
                             }
 
-                            is EchoUpdateStatus.NoUpdate -> {
+                            is AetherUpdateStatus.NoUpdate -> {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
@@ -413,7 +413,7 @@ fun UpdateScreen(navController: NavHostController) {
                                 }
                             }
 
-                            is EchoUpdateStatus.Error -> {
+                            is AetherUpdateStatus.Error -> {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
@@ -434,7 +434,7 @@ fun UpdateScreen(navController: NavHostController) {
                                 }
                             }
 
-                            is EchoUpdateStatus.Available -> {
+                            is AetherUpdateStatus.Available -> {
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalAlignment = Alignment.Start
