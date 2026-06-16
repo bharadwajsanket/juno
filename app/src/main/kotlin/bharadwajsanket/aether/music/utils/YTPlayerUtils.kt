@@ -800,6 +800,16 @@ object YTPlayerUtils {
     ): PlayerResponse.StreamingData.Format? {
         Timber.tag(logTag).d("Finding format with audioQuality: $audioQuality, network metered: ${connectivityManager.isActiveNetworkMetered}")
 
+        if (bharadwajsanket.aether.music.constants.DataSaverConfig.isSuperDataSaverEnabled) {
+            val format = playerResponse.streamingData?.adaptiveFormats
+                ?.filter { it.isAudio && it.isOriginal }
+                ?.minByOrNull { it.bitrate }
+            if (format != null) {
+                Timber.tag(logTag).d("Selected LOWEST format (Super Data Saver): ${format.mimeType}, bitrate: ${format.bitrate}")
+                return format
+            }
+        }
+
         val format = playerResponse.streamingData?.adaptiveFormats
             ?.filter { it.isAudio && it.isOriginal }
             ?.maxByOrNull {

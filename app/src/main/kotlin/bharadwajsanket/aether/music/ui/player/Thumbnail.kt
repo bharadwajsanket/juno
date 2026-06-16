@@ -289,15 +289,13 @@ fun Thumbnail(
     val thumbnailLazyGridState = rememberLazyGridState()
     
     
-    val mediaItemsData by remember(
+    val mediaItemsData = remember(
         playerConnection.player.currentMediaItemIndex,
         playerConnection.player.shuffleModeEnabled,
         swipeThumbnail,
         mediaMetadata
     ) {
-        derivedStateOf {
-            getMediaItems(playerConnection.player, swipeThumbnail)
-        }
+        getMediaItems(playerConnection.player, swipeThumbnail)
     }
     
     val mediaItems = mediaItemsData.items
@@ -315,17 +313,22 @@ fun Thumbnail(
     }
 
     
-    val currentItem by remember { derivedStateOf { thumbnailLazyGridState.firstVisibleItemIndex } }
-    val itemScrollOffset by remember { derivedStateOf { thumbnailLazyGridState.firstVisibleItemScrollOffset } }
+    LaunchedEffect(swipeThumbnail, currentMediaIndex, canSkipNext, canSkipPrevious) {
+        if (!swipeThumbnail) return@LaunchedEffect
+        androidx.compose.runtime.snapshotFlow {
+            Triple(
+                thumbnailLazyGridState.isScrollInProgress,
+                thumbnailLazyGridState.firstVisibleItemIndex,
+                thumbnailLazyGridState.firstVisibleItemScrollOffset
+            )
+        }.collect { (isScrollInProgress, currentItem, itemScrollOffset) ->
+            if (!isScrollInProgress || itemScrollOffset != 0 || currentMediaIndex < 0) return@collect
 
-    
-    LaunchedEffect(itemScrollOffset) {
-        if (!thumbnailLazyGridState.isScrollInProgress || !swipeThumbnail || itemScrollOffset != 0 || currentMediaIndex < 0) return@LaunchedEffect
-
-        if (currentItem > currentMediaIndex && canSkipNext) {
-            playerConnection.player.seekToNext()
-        } else if (currentItem < currentMediaIndex && canSkipPrevious) {
-            playerConnection.player.seekToPreviousMediaItem()
+            if (currentItem > currentMediaIndex && canSkipNext) {
+                playerConnection.player.seekToNext()
+            } else if (currentItem < currentMediaIndex && canSkipPrevious) {
+                playerConnection.player.seekToPreviousMediaItem()
+            }
         }
     }
 
@@ -343,7 +346,7 @@ fun Thumbnail(
 
     LaunchedEffect(playerConnection.player.currentMediaItemIndex) {
         val index = mediaItemsData.currentIndex
-        if (index >= 0 && index != currentItem) {
+        if (index >= 0 && index != thumbnailLazyGridState.firstVisibleItemIndex) {
             thumbnailLazyGridState.scrollToItem(index)
         }
     }

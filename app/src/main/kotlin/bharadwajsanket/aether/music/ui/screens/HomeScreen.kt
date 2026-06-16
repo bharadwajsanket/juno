@@ -89,6 +89,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavController
@@ -202,7 +203,7 @@ fun CommunityPlaylistCard(
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     }
 
-    val dbPlaylist by database.playlistByBrowseId(item.playlist.id).collectAsState(initial = null)
+    val dbPlaylist by remember(item.playlist.id) { database.playlistByBrowseId(item.playlist.id) }.collectAsState(initial = null)
     val isBookmarked = dbPlaylist?.playlist?.bookmarkedAt != null
 
     Card(
@@ -441,7 +442,7 @@ fun DailyDiscoverCard(
     modifier: Modifier = Modifier
 ) {
     val database = LocalDatabase.current
-    val playCount by database.getLifetimePlayCount(dailyDiscover.recommendation.id).collectAsState(initial = 0)
+    val playCount by remember(dailyDiscover.recommendation.id) { database.getLifetimePlayCount(dailyDiscover.recommendation.id) }.collectAsState(initial = 0)
     val menuState = LocalMenuState.current
     val haptic = LocalHapticFeedback.current
 
@@ -558,6 +559,155 @@ fun DailyDiscoverCard(
 }
 
 
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun HeroCarousel(
+    carouselItems: List<Song>,
+    navController: NavController,
+    modifier: Modifier = Modifier
+) {
+    if (carouselItems.isEmpty()) return
+
+    val playerConnection = LocalPlayerConnection.current ?: return
+    val menuState = LocalMenuState.current
+    val haptic = LocalHapticFeedback.current
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+
+    val pagerState = rememberPagerState(pageCount = { carouselItems.size })
+    val context = LocalContext.current
+    val hapticManager = remember { bharadwajsanket.aether.music.utils.HapticManager.getInstance(context) }
+
+    // Optional slow auto-scroll
+    LaunchedEffect(pagerState, carouselItems) {
+        while (true) {
+            kotlinx.coroutines.delay(5000L)
+            if (!pagerState.isScrollInProgress) {
+                val nextPage = (pagerState.currentPage + 1) % carouselItems.size
+                pagerState.animateScrollToPage(nextPage)
+            }
+        }
+    }
+
+    // Haptic feedback on card change
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }.collect {
+            hapticManager.performTick()
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(260.dp)
+    ) {
+        // Dynamic blur background from currently selected artwork card
+        val currentSong = carouselItems.getOrNull(pagerState.currentPage)
+        bharadwajsanket.aether.music.ui.component.OnlineBlur(
+            thumbnailUrl = currentSong?.thumbnailUrl,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        HorizontalPager(
+            state = pagerState,
+            contentPadding = PaddingValues(horizontal = 48.dp),
+            pageSpacing = 16.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center)
+        ) { page ->
+            val song = carouselItems[page]
+            val pageOffset = kotlin.math.abs((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
+            
+            // scale and alpha animation based on swipe progress
+            val scale = 0.88f + (1f - 0.88f) * (1f - pageOffset.coerceIn(0f, 1f))
+            val alpha = 0.6f + (1f - 0.6f) * (1f - pageOffset.coerceIn(0f, 1f))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .graphicsLayer {
+                        this.scaleX = scale
+                        this.scaleY = scale
+                        this.alpha = alpha
+                    }
+                    .clip(RoundedCornerShape(24.dp))
+                    .combinedClickable(
+                        onClick = {
+                            if (song.id == mediaMetadata?.id) {
+                                playerConnection.togglePlayPause()
+                            } else {
+                                playerConnection.playQueue(
+                                    YouTubeQueue.radio(song.toMediaMetadata()),
+                                )
+                            }
+                        },
+                        onLongClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            menuState.show {
+                                SongMenu(
+                                    originalSong = song,
+                                    navController = navController,
+                                    onDismiss = menuState::dismiss,
+                                )
+                            }
+                        }
+                    )
+            ) {
+                // Parallax effect on the image
+                val rawOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
+                AsyncImage(
+                    model = song.thumbnailUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            this.scaleX = 1.25f
+                            this.scaleY = 1.25f
+                            this.translationX = rawOffset * 64.dp.toPx()
+                        }
+                )
+
+                // Premium overlay gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
+                            )
+                        )
+                )
+
+                // Info overlay
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = song.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = song.artists.joinToString(", ") { it.name },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+}
+
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HomeScreen(
@@ -583,6 +733,7 @@ fun HomeScreen(
     val explorePage by viewModel.explorePage.collectAsState()
     val dailyDiscover by viewModel.dailyDiscover.collectAsState()
     val communityPlaylists by viewModel.communityPlaylists.collectAsState()
+    val carouselItems by viewModel.carouselItems.collectAsState()
 
     val allLocalItems by viewModel.allLocalItems.collectAsState()
     val allYtItems by viewModel.allYtItems.collectAsState()
@@ -949,6 +1100,27 @@ fun HomeScreen(
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues()
             ) {
                 item {
+                    Text(
+                        text = "AETHER",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 12.dp)
+                    )
+                }
+
+                if (carouselItems.isNotEmpty()) {
+                    item {
+                        HeroCarousel(
+                            carouselItems = carouselItems,
+                            navController = navController,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                    }
+                }
+
+                item {
                     ChipsRow(
                         chips = homePage?.chips?.map { it to it.title } ?: emptyList(),
                         currentValue = selectedChip,
@@ -1063,7 +1235,7 @@ fun HomeScreen(
                                                                 }
                                                             } else if (itemIndex < pageItems.size) {
                                                                 val item = pageItems[itemIndex]
-                                                                val isPinned by database.speedDialDao.isPinned(item.id).collectAsState(initial = false)
+                                                                val isPinned by remember(item.id) { database.speedDialDao.isPinned(item.id) }.collectAsState(initial = false)
 
                                                                 Box(
                                                                     modifier = Modifier
@@ -1175,8 +1347,7 @@ fun HomeScreen(
                                             .animateItem()
                                     ) { index ->
                                         val originalSong = distinctQuickPicks[index]
-                                        val song by database.song(originalSong.id)
-                                            .collectAsState(initial = originalSong)
+                                        val song by remember(originalSong.id) { database.song(originalSong.id) }.collectAsState(initial = originalSong)
                                         val isActive = song!!.id == mediaMetadata?.id
 
                                         Box(
@@ -1500,8 +1671,7 @@ fun HomeScreen(
                                             items = forgottenFavorites.distinctBy { it.id },
                                             key = { _, it -> it.id }
                                         ) { index, originalSong ->
-                                            val song by database.song(originalSong.id)
-                                                .collectAsState(initial = originalSong)
+                                            val song by remember(originalSong.id) { database.song(originalSong.id) }.collectAsState(initial = originalSong)
 
                                             SongListItem(
                                                 song = song!!,

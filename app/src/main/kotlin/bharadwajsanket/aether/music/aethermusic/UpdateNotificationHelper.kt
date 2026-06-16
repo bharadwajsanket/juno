@@ -14,6 +14,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import bharadwajsanket.aether.music.R
 
+import bharadwajsanket.aether.music.MainActivity
+
 object UpdateNotificationHelper {
     private const val CHANNEL_ID = "updates"
     private const val NOTIFICATION_ID = 1001
@@ -30,13 +32,10 @@ object UpdateNotificationHelper {
             nm.createNotificationChannel(channel)
         }
 
-        
-        val apkUrl = if (versionName.contains("nightly", ignoreCase = true)) {
-            "https://nightly.link/bharadwajsanket/Aether-Music/workflows/nightly.yml/main/aethermusic-gms-nightly.zip"
-        } else {
-            "https://github.com/bharadwajsanket/Aether-Music/releases/download/$versionName/aethermusic.apk"
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra("open_update_screen", true)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
-        val intent = Intent(Intent.ACTION_VIEW, apkUrl.toUri())
 
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         val pending = PendingIntent.getActivity(context, NOTIFICATION_ID, intent, flags)

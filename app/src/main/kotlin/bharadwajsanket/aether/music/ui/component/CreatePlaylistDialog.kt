@@ -52,11 +52,18 @@ fun CreatePlaylistDialog(
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
     val isSignedIn = innerTubeCookie.isNotEmpty()
 
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        bharadwajsanket.aether.music.utils.HapticManager.getInstance(context).performTick()
+    }
+
     TextFieldDialog(
         icon = { Icon(painter = painterResource(R.drawable.add), contentDescription = null) },
         title = { Text(text = stringResource(R.string.create_playlist)) },
         initialTextFieldValue = TextFieldValue(initialTextFieldValue ?: ""),
-        onDismiss = onDismiss,
+        onDismiss = {
+            bharadwajsanket.aether.music.utils.HapticManager.getInstance(context).performTick()
+            onDismiss()
+        },
         onDone = { playlistName ->
             coroutineScope.launch(Dispatchers.IO) {
                 val browseId = if (syncedPlaylist && isSignedIn) {
@@ -79,6 +86,7 @@ fun CreatePlaylistDialog(
 
 
                 withContext(Dispatchers.Main) {
+                    bharadwajsanket.aether.music.utils.HapticManager.getInstance(context).performHaptic(bharadwajsanket.aether.music.utils.HapticType.MEDIUM)
                     onPlaylistCreated?.invoke(playlistEntity.id)
                 }
             }

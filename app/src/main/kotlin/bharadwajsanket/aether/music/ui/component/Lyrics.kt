@@ -910,12 +910,12 @@ fun Lyrics(
                 }
             } else {
                 val lyricsOffset = currentSong?.song?.lyricsOffset?.toLong() ?: 0L
-                val effectivePlaybackPosition = currentPlaybackPosition + lyricsOffset
 
                 itemsIndexed(
                     items = lines,
                     key = { index, item -> "$index-${item.time}" } 
                 ) { index, item ->
+                    val effectivePlaybackPosition = currentPlaybackPosition + lyricsOffset
                     val isSelected = selectedIndices.contains(index)
                     if (lyricsAnimationStyle == LyricsAnimationStyle.aether_1 && item.words?.isNotEmpty() == true) {
                         val currentLineTime = if (displayedCurrentLineIndex >= 0 && displayedCurrentLineIndex < lines.size) {

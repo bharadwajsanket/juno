@@ -22,6 +22,7 @@ import com.music.innertube.YouTube
 import com.music.innertube.models.IpVersion
 import com.music.innertube.models.YouTubeLocale
 import com.music.kugou.KuGou
+import bharadwajsanket.aether.music.aethermusic.BluetoothCodecDetector
 import bharadwajsanket.aether.music.constants.*
 import bharadwajsanket.aether.music.di.ApplicationScope
 import bharadwajsanket.aether.music.extensions.toEnum
@@ -56,6 +57,8 @@ class App : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+
+        BluetoothCodecDetector.initialize(this)
 
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         if (!prefs.getBoolean("cleared_db_v5", false)) {
@@ -126,6 +129,7 @@ class App : Application(), SingletonImageLoader.Factory {
 
         YouTube.useLoginForBrowse = settings[UseLoginForBrowse] ?: true
         YouTube.ipVersion = settings[IpVersionKey]?.toEnum(defaultValue = IpVersion.AUTO) ?: IpVersion.AUTO
+        DataSaverConfig.isSuperDataSaverEnabled = settings[SuperDataSaverKey] ?: false
 
         val channel = NotificationChannel(
             "updates",
@@ -139,6 +143,15 @@ class App : Application(), SingletonImageLoader.Factory {
     }
 
     private fun observeSettingsChanges() {
+        applicationScope.launch(Dispatchers.IO) {
+            dataStore.data
+                .map { it[SuperDataSaverKey] ?: false }
+                .distinctUntilChanged()
+                .collect { enabled ->
+                    DataSaverConfig.isSuperDataSaverEnabled = enabled
+                }
+        }
+
         applicationScope.launch(Dispatchers.IO) {
             dataStore.data
                 .map { it[VisitorDataKey] }

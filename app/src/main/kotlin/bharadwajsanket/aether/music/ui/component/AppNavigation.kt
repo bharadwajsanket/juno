@@ -30,6 +30,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
 @Immutable
+data class NavigationItemsList(
+    val items: List<Screens>
+)
+
+@Immutable
 private data class NavItemState(
     val isSelected: Boolean,
     val iconRes: Int
@@ -45,7 +50,7 @@ private fun isRouteSelected(currentRoute: String?, screenRoute: String, navigati
 
 @Composable
 fun AppNavigationRail(
-    navigationItems: List<Screens>,
+    navigationItems: NavigationItemsList,
     currentRoute: String?,
     onItemClick: (Screens, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -62,9 +67,9 @@ fun AppNavigationRail(
     ) {
         Spacer(modifier = Modifier.weight(1f))
         
-        navigationItems.forEach { screen ->
+        navigationItems.items.forEach { screen ->
             val isSelected = remember(currentRoute, screen.route) {
-                isRouteSelected(currentRoute, screen.route, navigationItems)
+                isRouteSelected(currentRoute, screen.route, navigationItems.items)
             }
             val iconRes = remember(isSelected, screen) {
                 if (isSelected) screen.iconIdActive else screen.iconIdInactive
@@ -74,6 +79,7 @@ fun AppNavigationRail(
             val interactionSource = remember { MutableInteractionSource() }
             
             
+            val context = androidx.compose.ui.platform.LocalContext.current
             if (isSearchItem) {
                 LaunchedEffect(interactionSource) {
                     var isLongClick = false
@@ -88,6 +94,7 @@ fun AppNavigationRail(
                             }
                             is PressInteraction.Release -> {
                                 if (!isLongClick) {
+                                    bharadwajsanket.aether.music.utils.HapticManager.getInstance(context).performTick()
                                     onItemClick(screen, isSelected)
                                 }
                             }
@@ -102,6 +109,7 @@ fun AppNavigationRail(
             NavigationRailItem(
                 selected = isSelected,
                 onClick = { 
+                    bharadwajsanket.aether.music.utils.HapticManager.getInstance(context).performTick()
                     if (!isSearchItem) {
                         onItemClick(screen, isSelected)
                     }
@@ -123,7 +131,7 @@ fun AppNavigationRail(
 
 @Composable
 fun AppNavigationBar(
-    navigationItems: List<Screens>,
+    navigationItems: NavigationItemsList,
     currentRoute: String?,
     onItemClick: (Screens, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -141,9 +149,9 @@ fun AppNavigationBar(
         containerColor = containerColor,
         contentColor = contentColor
     ) {
-        navigationItems.forEach { screen ->
+        navigationItems.items.forEach { screen ->
             val isSelected = remember(currentRoute, screen.route) {
-                isRouteSelected(currentRoute, screen.route, navigationItems)
+                isRouteSelected(currentRoute, screen.route, navigationItems.items)
             }
             val iconRes = remember(isSelected, screen) {
                 if (isSelected) screen.iconIdActive else screen.iconIdInactive
@@ -153,6 +161,7 @@ fun AppNavigationBar(
             val interactionSource = remember { MutableInteractionSource() }
             
             
+            val context = androidx.compose.ui.platform.LocalContext.current
             if (isSearchItem) {
                 LaunchedEffect(interactionSource) {
                     var isLongClick = false
@@ -167,6 +176,7 @@ fun AppNavigationBar(
                             }
                             is PressInteraction.Release -> {
                                 if (!isLongClick) {
+                                    bharadwajsanket.aether.music.utils.HapticManager.getInstance(context).performTick()
                                     onItemClick(screen, isSelected)
                                 }
                             }
@@ -181,6 +191,7 @@ fun AppNavigationBar(
             NavigationBarItem(
                 selected = isSelected,
                 onClick = { 
+                    bharadwajsanket.aether.music.utils.HapticManager.getInstance(context).performTick()
                     if (!isSearchItem) {
                         onItemClick(screen, isSelected)
                     }

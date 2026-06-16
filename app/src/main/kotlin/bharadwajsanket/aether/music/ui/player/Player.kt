@@ -153,6 +153,9 @@ import bharadwajsanket.aether.music.LocalDatabase
 import bharadwajsanket.aether.music.LocalDownloadUtil
 import bharadwajsanket.aether.music.LocalListenTogetherManager
 import bharadwajsanket.aether.music.LocalPlayerConnection
+import bharadwajsanket.aether.music.playback.PlayerConnection
+import bharadwajsanket.aether.music.playback.CastConnectionHandler
+import bharadwajsanket.aether.music.db.entities.FormatEntity
 import bharadwajsanket.aether.music.R
 import bharadwajsanket.aether.music.constants.AudioQuality
 import bharadwajsanket.aether.music.constants.AudioQualityKey
@@ -868,17 +871,20 @@ fun BottomSheetPlayer(
                         ) { thumbnailUrl ->
                             if (thumbnailUrl != null) {
                                 Box(modifier = Modifier.alpha(backgroundAlpha)) {
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
+                                    val request = remember(thumbnailUrl) {
+                                        ImageRequest.Builder(context)
                                             .data(thumbnailUrl)
-                                            .size(100, 100)
+                                            .size(20, 20)
                                             .allowHardware(false)
-                                            .build(),
+                                            .build()
+                                    }
+                                    AsyncImage(
+                                        model = request,
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .blur(if (useDarkTheme) 150.dp else 100.dp)
+                                            .blur(if (useDarkTheme) 15.dp else 10.dp)
                                     )
                                     Box(
                                         modifier = Modifier
@@ -1092,17 +1098,20 @@ fun BottomSheetPlayer(
                                         .alpha(backgroundAlpha)
                                 ) {
                                     
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
+                                    val blurRequest = remember(thumbnailUrl) {
+                                        ImageRequest.Builder(context)
                                             .data(thumbnailUrl)
-                                            .size(128, 128) 
+                                            .size(20, 20)
                                             .allowHardware(false)
-                                            .build(),
+                                            .build()
+                                    }
+                                    AsyncImage(
+                                        model = blurRequest,
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .blur(150.dp)
+                                            .blur(15.dp)
                                     )
 
                                     
@@ -1229,36 +1238,35 @@ fun BottomSheetPlayer(
                                     }
                                     val colorFilter = ColorFilter.colorMatrix(matrix)
 
-                                    
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
+                                    val rotationRequest = remember(thumbnailUrl) {
+                                        ImageRequest.Builder(context)
                                             .data(thumbnailUrl)
-                                            .size(128, 128) 
+                                            .size(20, 20)
                                             .allowHardware(false)
-                                            .build(),
+                                            .build()
+                                    }
+
+                                    AsyncImage(
+                                        model = rotationRequest,
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         colorFilter = colorFilter,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .blur(100.dp)
+                                            .blur(10.dp)
                                             .graphicsLayer { rotationZ = anchorRotation }
                                     )
 
                                     
                                     AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(thumbnailUrl)
-                                            .size(128, 128) 
-                                            .allowHardware(false)
-                                            .build(),
+                                        model = rotationRequest,
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         colorFilter = colorFilter,
                                         alignment = Alignment.TopStart,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .blur(120.dp)
+                                            .blur(12.dp)
                                             .graphicsLayer { 
                                                 rotationZ = fastRotation
                                                 alpha = 0.6f
@@ -1267,18 +1275,14 @@ fun BottomSheetPlayer(
 
                                     
                                     AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(thumbnailUrl)
-                                            .size(128, 128) 
-                                            .allowHardware(false)
-                                            .build(),
+                                        model = rotationRequest,
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         colorFilter = colorFilter,
                                         alignment = Alignment.BottomEnd,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .blur(120.dp)
+                                            .blur(12.dp)
                                             .graphicsLayer { 
                                                 rotationZ = slowRotation
                                                 alpha = 0.5f
@@ -1824,348 +1828,35 @@ fun BottomSheetPlayer(
 
             Spacer(Modifier.height(if (useNewPlayerDesign) 24.dp else 20.dp))
 
-            when (sliderStyle) {
-                SliderStyle.DEFAULT -> {
-                    Slider(
-                        value = (sliderPosition ?: effectivePosition).toFloat(),
-                        valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
-                        onValueChange = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition = it.toLong()
-                                val percent = if (duration > 0) it / duration.toFloat() else 0f
-                                if (kotlin.math.abs(percent - lastSeekPercent.floatValue) >= 0.02f) {
-                                    hapticManager.performMicroTick()
-                                    lastSeekPercent.floatValue = percent
-                                }
-                                if (percent <= 0.005f) {
-                                    if (!seekHasTriggeredStart.value) {
-                                        hapticManager.performBoundaryFeedback()
-                                        seekHasTriggeredStart.value = true
-                                    }
-                                } else {
-                                    seekHasTriggeredStart.value = false
-                                }
-                                if (percent >= 0.995f) {
-                                    if (!seekHasTriggeredEnd.value) {
-                                        hapticManager.performBoundaryFeedback()
-                                        seekHasTriggeredEnd.value = true
-                                    }
-                                } else {
-                                    seekHasTriggeredEnd.value = false
-                                }
-                            }
-                        },
-                        onValueChangeFinished = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
-                                    position = it
-                                }
-                                sliderPosition = null
-                            }
-                        },
-                        enabled = !isListenTogetherGuest,
-                        colors = PlayerSliderColors.getSliderColors(
-                            activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
-                            playerBackground = playerBackground,
-                            useDarkTheme = useDarkTheme
-                        ),
-                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
-                    )
-                }
-
-                SliderStyle.WAVY -> {
-                    if (squigglySlider) {
-                        SquigglySlider(
-                            value = (sliderPosition ?: effectivePosition).toFloat(),
-                            valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
-                            onValueChange = {
-                                sliderPosition = it.toLong()
-                                val percent = if (duration > 0) it / duration.toFloat() else 0f
-                                if (kotlin.math.abs(percent - lastSeekPercent.floatValue) >= 0.02f) {
-                                    hapticManager.performMicroTick()
-                                    lastSeekPercent.floatValue = percent
-                                }
-                                if (percent <= 0.005f) {
-                                    if (!seekHasTriggeredStart.value) {
-                                        hapticManager.performBoundaryFeedback()
-                                        seekHasTriggeredStart.value = true
-                                    }
-                                } else {
-                                    seekHasTriggeredStart.value = false
-                                }
-                                if (percent >= 0.995f) {
-                                    if (!seekHasTriggeredEnd.value) {
-                                        hapticManager.performBoundaryFeedback()
-                                        seekHasTriggeredEnd.value = true
-                                    }
-                                } else {
-                                    seekHasTriggeredEnd.value = false
-                                }
-                            },
-                            onValueChangeFinished = {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
-                                    position = it
-                                }
-                                sliderPosition = null
-                            },
-                            modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
-                            colors = PlayerSliderColors.getSliderColors(
-                                activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
-                                playerBackground = playerBackground,
-                                useDarkTheme = useDarkTheme
-                            ),
-                            isPlaying = effectiveIsPlaying,
-                        )
-                    } else {
-                        WavySlider(
-                            value = (sliderPosition ?: effectivePosition).toFloat(),
-                            valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
-                            onValueChange = {
-                                sliderPosition = it.toLong()
-                                val percent = if (duration > 0) it / duration.toFloat() else 0f
-                                if (kotlin.math.abs(percent - lastSeekPercent.floatValue) >= 0.02f) {
-                                    hapticManager.performMicroTick()
-                                    lastSeekPercent.floatValue = percent
-                                }
-                                if (percent <= 0.005f) {
-                                    if (!seekHasTriggeredStart.value) {
-                                        hapticManager.performBoundaryFeedback()
-                                        seekHasTriggeredStart.value = true
-                                    }
-                                } else {
-                                    seekHasTriggeredStart.value = false
-                                }
-                                if (percent >= 0.995f) {
-                                    if (!seekHasTriggeredEnd.value) {
-                                        hapticManager.performBoundaryFeedback()
-                                        seekHasTriggeredEnd.value = true
-                                    }
-                                } else {
-                                    seekHasTriggeredEnd.value = false
-                                }
-                            },
-                            onValueChangeFinished = {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
-                                    position = it
-                                }
-                                sliderPosition = null
-                            },
-                            colors = PlayerSliderColors.getSliderColors(
-                                activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
-                                playerBackground = playerBackground,
-                                useDarkTheme = useDarkTheme
-                            ),
-                            modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
-                            isPlaying = effectiveIsPlaying
-                        )
+            PlaybackProgressBlock(
+                effectivePositionProvider = { effectivePosition },
+                duration = duration,
+                sliderStyle = sliderStyle,
+                squigglySlider = squigglySlider,
+                effectiveIsPlaying = effectiveIsPlaying,
+                isListenTogetherGuest = isListenTogetherGuest,
+                textButtonColor = textButtonColor,
+                playerBackground = playerBackground,
+                useDarkTheme = useDarkTheme,
+                useNewPlayerDesign = useNewPlayerDesign,
+                hapticManager = hapticManager,
+                playerConnection = playerConnection,
+                isCasting = isCasting,
+                castHandler = castHandler,
+                TextBackgroundColor = TextBackgroundColor,
+                sleepTimerEnabled = sleepTimerEnabled,
+                sleepTimerTimeLeft = sleepTimerTimeLeft,
+                showCodecOnPlayer = showCodecOnPlayer,
+                currentAudioFormat = currentAudioFormat,
+                currentFormatEntity = currentFormatEntity,
+                onSleepTimerClick = { showSleepTimerDialog = true },
+                onSeekFinished = {
+                    if (isCasting) {
+                        lastManualSeekTime = System.currentTimeMillis()
                     }
+                    position = it
                 }
-
-                SliderStyle.SLIM -> {
-                    val trackInteractionSource = remember { MutableInteractionSource() }
-                    val isTrackDragged by trackInteractionSource.collectIsDraggedAsState()
-                    val isTrackPressed by trackInteractionSource.collectIsPressedAsState()
-                    val isTrackActive = (isTrackDragged || isTrackPressed) && !useNewPlayerDesign
-
-                    val trackHeight by animateDpAsState(
-                        targetValue = if (isTrackActive) 16.dp else 10.dp,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        ),
-                        label = "trackHeight"
-                    )
-
-                    Slider(
-                        value = (sliderPosition ?: effectivePosition).toFloat(),
-                        valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
-                        onValueChange = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition = it.toLong()
-                                val percent = if (duration > 0) it / duration.toFloat() else 0f
-                                if (kotlin.math.abs(percent - lastSeekPercent.floatValue) >= 0.02f) {
-                                    hapticManager.performMicroTick()
-                                    lastSeekPercent.floatValue = percent
-                                }
-                                if (percent <= 0.005f) {
-                                    if (!seekHasTriggeredStart.value) {
-                                        hapticManager.performBoundaryFeedback()
-                                        seekHasTriggeredStart.value = true
-                                    }
-                                } else {
-                                    seekHasTriggeredStart.value = false
-                                }
-                                if (percent >= 0.995f) {
-                                    if (!seekHasTriggeredEnd.value) {
-                                        hapticManager.performBoundaryFeedback()
-                                        seekHasTriggeredEnd.value = true
-                                    }
-                                } else {
-                                    seekHasTriggeredEnd.value = false
-                                }
-                            }
-                        },
-                        onValueChangeFinished = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
-                                    position = it
-                                }
-                                sliderPosition = null
-                            }
-                        },
-                        enabled = !isListenTogetherGuest,
-                        interactionSource = trackInteractionSource,
-                        thumb = { Spacer(modifier = Modifier.size(0.dp)) },
-                        track = { sliderState ->
-                            PlayerSliderTrack(
-                                sliderState = sliderState,
-                                trackHeight = trackHeight,
-                                colors = PlayerSliderColors.getSliderColors(
-                                    activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
-                                    playerBackground = playerBackground,
-                                    useDarkTheme = useDarkTheme
-                                )
-                            )
-                        },
-                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding)
-                    )
-                }
-            }
-            Spacer(Modifier.height(4.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = PlayerHorizontalPadding + 4.dp),
-            ) {
-                Text(
-                    text = makeTimeString(sliderPosition ?: effectivePosition),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextBackgroundColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    if (!useNewPlayerDesign && sleepTimerEnabled) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(TextBackgroundColor.copy(alpha = 0.08f))
-                                .border(
-                                    width = 0.5.dp,
-                                    color = TextBackgroundColor.copy(alpha = 0.12f),
-                                    shape = RoundedCornerShape(4.dp)
-                                )
-                                .clickable {
-                                    showSleepTimerDialog = true
-                                }
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            AnimatedContent(
-                                targetState = sleepTimerEnabled,
-                                transitionSpec = {
-                                    fadeIn(animationSpec = tween(300)) togetherWith
-                                            fadeOut(animationSpec = tween(300))
-                                },
-                                label = "QualityTimerSwitcher"
-                            ) { isTimerActive ->
-                                if (isTimerActive) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.sleep_timer),
-                                            contentDescription = null,
-                                            tint = TextBackgroundColor.copy(alpha = 0.8f),
-                                            modifier = Modifier.size(12.dp)
-                                        )
-                                        Text(
-                                            text = makeTimeString(sleepTimerTimeLeft.coerceAtLeast(0)),
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                letterSpacing = 1.5.sp
-                                            ),
-                                            color = TextBackgroundColor.copy(alpha = 0.8f),
-                                            maxLines = 1,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (showCodecOnPlayer) {
-                        val formatText = remember(currentAudioFormat, currentFormatEntity) {
-                            val localAudioFormat = currentAudioFormat
-                            val localFormatEntity = currentFormatEntity
-                            val codecStr = localAudioFormat?.sampleMimeType?.substringAfter("audio/")?.uppercase() ?: localFormatEntity?.codecs?.uppercase() ?: ""
-                            var bitrateStr = ""
-                            if (localFormatEntity?.bitrate != null && localFormatEntity.bitrate > 0) {
-                                bitrateStr = "${localFormatEntity.bitrate / 1000} kbps"
-                            } else if (localAudioFormat?.bitrate != null && localAudioFormat.bitrate > 0) {
-                                bitrateStr = "${localAudioFormat.bitrate / 1000} kbps"
-                            }
-                            val isLossless = codecStr.contains("FLAC") || codecStr.contains("ALAC") || codecStr.contains("WAV")
-                            val losslessStr = if (isLossless) "Lossless" else ""
-                            listOf(codecStr, bitrateStr, losslessStr).filter { it.isNotEmpty() }.joinToString(" • ")
-                        }
-                        if (formatText.isNotEmpty()) {
-                            Text(
-                                text = formatText,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 1.sp,
-                                    fontSize = 10.sp
-                                ),
-                                color = TextBackgroundColor.copy(alpha = 0.7f),
-                            )
-                        }
-                    }
-                }
-
-                Text(
-                    text = if (duration != C.TIME_UNSET) makeTimeString(duration) else "",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextBackgroundColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            )
 
             Spacer(Modifier.height(if (useNewPlayerDesign) 24.dp else 12.dp))
 
@@ -3056,3 +2747,374 @@ private fun BackgroundVideoView(
         modifier = modifier.alpha(alpha)
     )
 }
+
+@Composable
+private fun PlaybackProgressBlock(
+    effectivePositionProvider: () -> Long,
+    duration: Long,
+    sliderStyle: SliderStyle,
+    squigglySlider: Boolean,
+    effectiveIsPlaying: Boolean,
+    isListenTogetherGuest: Boolean,
+    textButtonColor: Color,
+    playerBackground: PlayerBackgroundStyle,
+    useDarkTheme: Boolean,
+    useNewPlayerDesign: Boolean,
+    hapticManager: HapticManager,
+    playerConnection: PlayerConnection,
+    isCasting: Boolean,
+    castHandler: CastConnectionHandler?,
+    TextBackgroundColor: Color,
+    sleepTimerEnabled: Boolean,
+    sleepTimerTimeLeft: Long,
+    showCodecOnPlayer: Boolean,
+    currentAudioFormat: androidx.media3.common.Format?,
+    currentFormatEntity: FormatEntity?,
+    onSleepTimerClick: () -> Unit,
+    onSeekFinished: (Long) -> Unit
+) {
+    var sliderPosition by remember { mutableStateOf<Long?>(null) }
+    val lastSeekPercent = remember { mutableFloatStateOf(-1f) }
+    val seekHasTriggeredStart = remember { mutableStateOf(false) }
+    val seekHasTriggeredEnd = remember { mutableStateOf(false) }
+    val effectivePosition = effectivePositionProvider()
+
+    when (sliderStyle) {
+        SliderStyle.DEFAULT -> {
+            Slider(
+                value = (sliderPosition ?: effectivePosition).toFloat(),
+                valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
+                onValueChange = {
+                    if (!isListenTogetherGuest) {
+                        sliderPosition = it.toLong()
+                        val percent = if (duration > 0) it / duration.toFloat() else 0f
+                        if (kotlin.math.abs(percent - lastSeekPercent.floatValue) >= 0.02f) {
+                            hapticManager.performMicroTick()
+                            lastSeekPercent.floatValue = percent
+                        }
+                        if (percent <= 0.005f) {
+                            if (!seekHasTriggeredStart.value) {
+                                hapticManager.performBoundaryFeedback()
+                                seekHasTriggeredStart.value = true
+                            }
+                        } else {
+                            seekHasTriggeredStart.value = false
+                        }
+                        if (percent >= 0.995f) {
+                            if (!seekHasTriggeredEnd.value) {
+                                hapticManager.performBoundaryFeedback()
+                                seekHasTriggeredEnd.value = true
+                            }
+                        } else {
+                            seekHasTriggeredEnd.value = false
+                        }
+                    }
+                },
+                onValueChangeFinished = {
+                    if (!isListenTogetherGuest) {
+                        sliderPosition?.let {
+                            if (isCasting) {
+                                castHandler?.seekTo(it)
+                            } else {
+                                playerConnection.player.seekTo(it)
+                            }
+                            onSeekFinished(it)
+                        }
+                        sliderPosition = null
+                    }
+                },
+                enabled = !isListenTogetherGuest,
+                colors = PlayerSliderColors.getSliderColors(
+                    activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
+                    playerBackground = playerBackground,
+                    useDarkTheme = useDarkTheme
+                ),
+                modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
+            )
+        }
+
+        SliderStyle.WAVY -> {
+            if (squigglySlider) {
+                SquigglySlider(
+                    value = (sliderPosition ?: effectivePosition).toFloat(),
+                    valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
+                    onValueChange = {
+                        sliderPosition = it.toLong()
+                        val percent = if (duration > 0) it / duration.toFloat() else 0f
+                        if (kotlin.math.abs(percent - lastSeekPercent.floatValue) >= 0.02f) {
+                            hapticManager.performMicroTick()
+                            lastSeekPercent.floatValue = percent
+                        }
+                        if (percent <= 0.005f) {
+                            if (!seekHasTriggeredStart.value) {
+                                hapticManager.performBoundaryFeedback()
+                                seekHasTriggeredStart.value = true
+                            }
+                        } else {
+                            seekHasTriggeredStart.value = false
+                        }
+                        if (percent >= 0.995f) {
+                            if (!seekHasTriggeredEnd.value) {
+                                hapticManager.performBoundaryFeedback()
+                                seekHasTriggeredEnd.value = true
+                            }
+                        } else {
+                            seekHasTriggeredEnd.value = false
+                        }
+                    },
+                    onValueChangeFinished = {
+                        sliderPosition?.let {
+                            if (isCasting) {
+                                castHandler?.seekTo(it)
+                            } else {
+                                playerConnection.player.seekTo(it)
+                            }
+                            onSeekFinished(it)
+                        }
+                        sliderPosition = null
+                    },
+                    modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
+                    colors = PlayerSliderColors.getSliderColors(
+                        activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
+                        playerBackground = playerBackground,
+                        useDarkTheme = useDarkTheme
+                    ),
+                    isPlaying = effectiveIsPlaying,
+                )
+            } else {
+                WavySlider(
+                    value = (sliderPosition ?: effectivePosition).toFloat(),
+                    valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
+                    onValueChange = {
+                        sliderPosition = it.toLong()
+                        val percent = if (duration > 0) it / duration.toFloat() else 0f
+                        if (kotlin.math.abs(percent - lastSeekPercent.floatValue) >= 0.02f) {
+                            hapticManager.performMicroTick()
+                            lastSeekPercent.floatValue = percent
+                        }
+                        if (percent <= 0.005f) {
+                            if (!seekHasTriggeredStart.value) {
+                                hapticManager.performBoundaryFeedback()
+                                seekHasTriggeredStart.value = true
+                            }
+                        } else {
+                            seekHasTriggeredStart.value = false
+                        }
+                        if (percent >= 0.995f) {
+                            if (!seekHasTriggeredEnd.value) {
+                                hapticManager.performBoundaryFeedback()
+                                seekHasTriggeredEnd.value = true
+                            }
+                        } else {
+                            seekHasTriggeredEnd.value = false
+                        }
+                    },
+                    onValueChangeFinished = {
+                        sliderPosition?.let {
+                            if (isCasting) {
+                                castHandler?.seekTo(it)
+                            } else {
+                                playerConnection.player.seekTo(it)
+                            }
+                            onSeekFinished(it)
+                        }
+                        sliderPosition = null
+                    },
+                    colors = PlayerSliderColors.getSliderColors(
+                        activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
+                        playerBackground = playerBackground,
+                        useDarkTheme = useDarkTheme
+                    ),
+                    modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
+                    isPlaying = effectiveIsPlaying
+                )
+            }
+        }
+
+        SliderStyle.SLIM -> {
+            val trackInteractionSource = remember { MutableInteractionSource() }
+            val isTrackDragged by trackInteractionSource.collectIsDraggedAsState()
+            val isTrackPressed by trackInteractionSource.collectIsPressedAsState()
+            val isTrackActive = (isTrackDragged || isTrackPressed) && !useNewPlayerDesign
+
+            val trackHeight by animateDpAsState(
+                targetValue = if (isTrackActive) 16.dp else 10.dp,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
+                ),
+                label = "trackHeight"
+            )
+
+            Slider(
+                value = (sliderPosition ?: effectivePosition).toFloat(),
+                valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
+                onValueChange = {
+                    if (!isListenTogetherGuest) {
+                        sliderPosition = it.toLong()
+                        val percent = if (duration > 0) it / duration.toFloat() else 0f
+                        if (kotlin.math.abs(percent - lastSeekPercent.floatValue) >= 0.02f) {
+                            hapticManager.performMicroTick()
+                            lastSeekPercent.floatValue = percent
+                        }
+                        if (percent <= 0.005f) {
+                            if (!seekHasTriggeredStart.value) {
+                                hapticManager.performBoundaryFeedback()
+                                seekHasTriggeredStart.value = true
+                            }
+                        } else {
+                            seekHasTriggeredStart.value = false
+                        }
+                        if (percent >= 0.995f) {
+                            if (!seekHasTriggeredEnd.value) {
+                                hapticManager.performBoundaryFeedback()
+                                seekHasTriggeredEnd.value = true
+                            }
+                        } else {
+                            seekHasTriggeredEnd.value = false
+                        }
+                    }
+                },
+                onValueChangeFinished = {
+                    if (!isListenTogetherGuest) {
+                        sliderPosition?.let {
+                            if (isCasting) {
+                                castHandler?.seekTo(it)
+                            } else {
+                                playerConnection.player.seekTo(it)
+                            }
+                            onSeekFinished(it)
+                        }
+                        sliderPosition = null
+                    }
+                },
+                enabled = !isListenTogetherGuest,
+                interactionSource = trackInteractionSource,
+                thumb = { Spacer(modifier = Modifier.size(0.dp)) },
+                track = { sliderState ->
+                    PlayerSliderTrack(
+                        sliderState = sliderState,
+                        trackHeight = trackHeight,
+                        colors = PlayerSliderColors.getSliderColors(
+                            activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
+                            playerBackground = playerBackground,
+                            useDarkTheme = useDarkTheme
+                        )
+                    )
+                },
+                modifier = Modifier.padding(horizontal = PlayerHorizontalPadding)
+            )
+        }
+    }
+    Spacer(Modifier.height(4.dp))
+
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = PlayerHorizontalPadding + 4.dp),
+    ) {
+        Text(
+            text = makeTimeString(sliderPosition ?: effectivePosition),
+            style = MaterialTheme.typography.labelMedium,
+            color = TextBackgroundColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            modifier = Modifier.weight(1f)
+        ) {
+            if (!useNewPlayerDesign && sleepTimerEnabled) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(TextBackgroundColor.copy(alpha = 0.08f))
+                        .border(
+                            width = 0.5.dp,
+                            color = TextBackgroundColor.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        .clickable {
+                            onSleepTimerClick()
+                        }
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    AnimatedContent(
+                        targetState = sleepTimerEnabled,
+                        transitionSpec = {
+                            fadeIn(animationSpec = tween(300)) togetherWith
+                                    fadeOut(animationSpec = tween(300))
+                        },
+                        label = "QualityTimerSwitcher"
+                    ) { isTimerActive ->
+                        if (isTimerActive) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.sleep_timer),
+                                    contentDescription = null,
+                                    tint = TextBackgroundColor.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Text(
+                                    text = makeTimeString(sleepTimerTimeLeft.coerceAtLeast(0)),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.5.sp
+                                    ),
+                                    color = TextBackgroundColor.copy(alpha = 0.8f),
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (showCodecOnPlayer) {
+                val formatText = remember(currentAudioFormat, currentFormatEntity) {
+                    val localAudioFormat = currentAudioFormat
+                    val localFormatEntity = currentFormatEntity
+                    val codecStr = localAudioFormat?.sampleMimeType?.substringAfter("audio/")?.uppercase() ?: localFormatEntity?.codecs?.uppercase() ?: ""
+                    var bitrateStr = ""
+                    if (localFormatEntity?.bitrate != null && localFormatEntity.bitrate > 0) {
+                        bitrateStr = "${localFormatEntity.bitrate / 1000} kbps"
+                    } else if (localAudioFormat?.bitrate != null && localAudioFormat.bitrate > 0) {
+                        bitrateStr = "${localAudioFormat.bitrate / 1000} kbps"
+                    }
+                    val isLossless = codecStr.contains("FLAC") || codecStr.contains("ALAC") || codecStr.contains("WAV")
+                    val losslessStr = if (isLossless) "Lossless" else ""
+                    listOf(codecStr, bitrateStr, losslessStr).filter { it.isNotEmpty() }.joinToString(" • ")
+                }
+                if (formatText.isNotEmpty()) {
+                    Text(
+                        text = formatText,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            fontSize = 10.sp
+                        ),
+                        color = TextBackgroundColor.copy(alpha = 0.7f),
+                    )
+                }
+            }
+        }
+
+        Text(
+            text = if (duration != C.TIME_UNSET) makeTimeString(duration) else "",
+            style = MaterialTheme.typography.labelMedium,
+            color = TextBackgroundColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+

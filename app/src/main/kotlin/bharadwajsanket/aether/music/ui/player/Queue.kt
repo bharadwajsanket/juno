@@ -403,13 +403,12 @@ fun Queue(
                         )
                     }
 
-                    val shuffleModeEnabledInside by playerConnection.shuffleModeEnabled.collectAsState()
                     PlayerQueueButton(
                         icon = R.drawable.shuffle,
                         onClick = {
-                            playerConnection.player.shuffleModeEnabled = !shuffleModeEnabledInside
+                            playerConnection.player.shuffleModeEnabled = !shuffleModeEnabled
                         },
-                        isActive = shuffleModeEnabledInside,
+                        isActive = shuffleModeEnabled,
                         enabled = !isListenTogetherGuest,
                         shape = middleShape,
                         modifier = Modifier.size(buttonSize),

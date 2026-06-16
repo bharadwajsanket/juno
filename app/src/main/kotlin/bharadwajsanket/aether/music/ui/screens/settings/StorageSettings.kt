@@ -60,12 +60,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okio.ByteString.Companion.encodeUtf8
 import kotlin.math.roundToInt
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import bharadwajsanket.aether.music.constants.ExportDirectoryUriKey
+import bharadwajsanket.aether.music.constants.SuperDataSaverKey
+import bharadwajsanket.aether.music.ui.component.AetherSwitch as Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.foundation.layout.size
 
 @OptIn(ExperimentalCoilApi::class, ExperimentalMaterial3Api::class, DelicateCoilApi::class)
 @Composable
@@ -83,6 +88,10 @@ fun StorageSettings(
     val coroutineScope = rememberCoroutineScope()
     val songCacheString = stringResource(R.string.song_cache).lowercase()
     val imageCacheString = stringResource(R.string.image_cache).lowercase()
+    val (superDataSaver, onSuperDataSaverChange) = rememberPreference(
+        key = SuperDataSaverKey,
+        defaultValue = false
+    )
     val (maxImageCacheSize, onMaxImageCacheSizeChange) = rememberPreference(
         key = MaxImageCacheSizeKey,
         defaultValue = 512
@@ -169,19 +178,28 @@ fun StorageSettings(
     LaunchedEffect(imageDiskCache) {
         while (isActive) {
             delay(500)
-            imageCacheSize = imageDiskCache.size
+            val size = withContext(Dispatchers.IO) {
+                imageDiskCache.size
+            }
+            imageCacheSize = size
         }
     }
     LaunchedEffect(playerCache) {
         while (isActive) {
             delay(500)
-            playerCacheSize = tryOrNull { playerCache.cacheSpace } ?: 0
+            val size = withContext(Dispatchers.IO) {
+                tryOrNull { playerCache.cacheSpace } ?: 0
+            }
+            playerCacheSize = size
         }
     }
     LaunchedEffect(downloadCache) {
         while (isActive) {
             delay(500)
-            downloadCacheSize = tryOrNull { downloadCache.cacheSpace } ?: 0
+            val size = withContext(Dispatchers.IO) {
+                tryOrNull { downloadCache.cacheSpace } ?: 0
+            }
+            downloadCacheSize = size
         }
     }
 
@@ -310,6 +328,33 @@ fun StorageSettings(
                 )
             )
         )
+        Material3SettingsGroup(
+            title = stringResource(R.string.super_data_saver),
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.offline),
+                    title = { Text(stringResource(R.string.super_data_saver)) },
+                    description = { Text(stringResource(R.string.super_data_saver_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = superDataSaver,
+                            onCheckedChange = onSuperDataSaverChange,
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (superDataSaver) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { onSuperDataSaverChange(!superDataSaver) }
+                )
+            )
+        )
+
         Material3SettingsGroup(
             title = stringResource(R.string.storage),
             items = listOf(

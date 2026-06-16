@@ -159,6 +159,19 @@ class HomeViewModel @Inject constructor(
             filled.take(targetSize)
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    val carouselItems: StateFlow<List<Song>> =
+        combine(
+            keepListening,
+            quickPicks,
+            database.events()
+        ) { keepList, quick, events ->
+            val list = mutableListOf<Song>()
+            keepList?.filterIsInstance<Song>()?.let { list.addAll(it) }
+            events.map { it.song }.let { list.addAll(it) }
+            quick?.let { list.addAll(it) }
+            list.distinctBy { it.id }.take(10)
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
     suspend fun getRandomItem(): YTItem? {
         try {
             isRandomizing.value = true
@@ -516,10 +529,18 @@ class HomeViewModel @Inject constructor(
         val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
         val hideYoutubeShorts = context.dataStore.get(HideYoutubeShortsKey, false)
 
+        val isDataSaver = bharadwajsanket.aether.music.constants.DataSaverConfig.isSuperDataSaverEnabled
+
         coroutineScope {
-            launch(Dispatchers.IO) { getDailyDiscover() }
-            launch(Dispatchers.IO) { getCommunityPlaylists() }
-            launch(Dispatchers.IO) { loadSimilarRecommendations() }
+            if (!isDataSaver) {
+                launch(Dispatchers.IO) { getDailyDiscover() }
+                launch(Dispatchers.IO) { getCommunityPlaylists() }
+                launch(Dispatchers.IO) { loadSimilarRecommendations() }
+            } else {
+                dailyDiscover.value = null
+                communityPlaylists.value = null
+                similarRecommendations.value = null
+            }
             launch(Dispatchers.IO) {
                 YouTube.home().onSuccess { page ->
                     homePage.value = page.copy(

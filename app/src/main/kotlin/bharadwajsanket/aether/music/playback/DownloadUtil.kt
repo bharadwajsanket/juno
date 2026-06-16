@@ -210,6 +210,7 @@ constructor(
                             when (download.state) {
                                 Download.STATE_COMPLETED -> {
                                     database.updateDownloadedInfo(download.request.id, true, LocalDateTime.now())
+                                    bharadwajsanket.aether.music.utils.HapticManager.getInstance(context).performHaptic(bharadwajsanket.aether.music.utils.HapticType.HEAVY)
                                 }
                                 Download.STATE_FAILED,
                                 Download.STATE_STOPPED,

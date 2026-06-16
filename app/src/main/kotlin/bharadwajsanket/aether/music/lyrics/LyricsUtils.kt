@@ -562,7 +562,7 @@ object LyricsUtils {
         position: Long,
     ): Int {
         for (index in lines.indices) {
-            if (lines[index].time >= position + 300L) {
+            if (lines[index].time > position) {
                 return index - 1
             }
         }

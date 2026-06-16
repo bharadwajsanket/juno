@@ -755,4 +755,6 @@ val PreloadLyricsEnabledKey = booleanPreferencesKey("preload_lyrics_enabled")
 
 val EnableHapticsKey = booleanPreferencesKey("enableHaptics")
 
+val SuperDataSaverKey = booleanPreferencesKey("super_data_saver")
+
 const val ENABLE_LISTEN_TOGETHER = false

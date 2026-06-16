@@ -2666,7 +2666,7 @@ class MusicService :
                 enableAudioTrackPlaybackParams: Boolean,
             ) = DefaultAudioSink
                 .Builder(this@MusicService)
-                .setEnableFloatOutput(enableFloatOutput)
+                .setEnableFloatOutput(false)
                 .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
                 .setAudioProcessorChain(
                     DefaultAudioSink.DefaultAudioProcessorChain(
@@ -3152,6 +3152,7 @@ class MusicService :
     private var preloadJob: kotlinx.coroutines.Job? = null
 
     private fun preloadUpcomingItems() {
+        if (bharadwajsanket.aether.music.constants.DataSaverConfig.isSuperDataSaverEnabled) return
         val preloadEnabled = kotlinx.coroutines.runBlocking { dataStore.get(bharadwajsanket.aether.music.constants.PreloadNextSongEnabledKey, true) }
         if (!preloadEnabled) return
 

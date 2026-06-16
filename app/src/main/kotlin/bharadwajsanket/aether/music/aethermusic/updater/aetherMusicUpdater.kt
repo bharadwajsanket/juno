@@ -332,13 +332,19 @@ fun UpdateScreen(navController: NavHostController) {
                                                 ContextCompat.startActivity(context, installIntent, null)
                                             }
                                         } else {
-                                            val urlToDownload = currentStatus.apkUrl ?: "https://github.com/bharadwajsanket/Aether-Music/releases/download/${currentStatus.version}/aethermusic.apk"
-                                            val downloadRequest = OneTimeWorkRequestBuilder<UpdateDownloadWorker>()
-                                                .setInputData(workDataOf("apk_url" to urlToDownload, "version" to currentStatus.version, "file_size" to currentStatus.size))
-                                                .addTag("update_download")
-                                                .build()
-                                            WorkManager.getInstance(context).enqueueUniqueWork("update_download", ExistingWorkPolicy.REPLACE, downloadRequest)
-                                            isDownloading = true
+                                            val urlToDownload = currentStatus.apkUrl
+                                            if (urlToDownload.isNullOrBlank()) {
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar(context.getString(R.string.cant_check_updates))
+                                                }
+                                            } else {
+                                                val downloadRequest = OneTimeWorkRequestBuilder<UpdateDownloadWorker>()
+                                                    .setInputData(workDataOf("apk_url" to urlToDownload, "version" to currentStatus.version, "file_size" to currentStatus.size))
+                                                    .addTag("update_download")
+                                                    .build()
+                                                WorkManager.getInstance(context).enqueueUniqueWork("update_download", ExistingWorkPolicy.REPLACE, downloadRequest)
+                                                isDownloading = true
+                                            }
                                         }
                                     },
                                     modifier = Modifier.weight(1f),
@@ -654,9 +660,7 @@ suspend fun checkForUpdate(
             
             val currentVersion = BuildConfig.VERSION_NAME
             val targetTagName = targetRelease.getString("tag_name")
-            val currentClean = currentVersion.removePrefix("b").removePrefix("v").trim()
-            val targetClean = targetTagName.removePrefix("b").removePrefix("v").trim()
-            val shouldShow = currentClean != targetClean
+            val shouldShow = isNewerVersion(targetTagName, currentVersion)
 
             if (shouldShow) {
                 val tagWithPrefix = targetRelease.getString("tag_name")

@@ -1,5 +1,3 @@
-
-
 package bharadwajsanket.aether.music.ui.component
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -25,6 +23,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
@@ -211,19 +210,10 @@ fun AnimatedWordV2(
                 color = expressiveAccent.copy(alpha = if (isBackground) 0.75f else 1f),
                 modifier = if (isWordActive) {
                     Modifier
-                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                         .drawWithContent {
-                            drawContent()
-                            val edgeWidth = 8.dp.toPx()
-                            val center = (size.width + edgeWidth * 2) * progress - edgeWidth
-                            drawRect(
-                                brush = Brush.horizontalGradient(
-                                    colors = listOf(Color.Black, Color.Transparent),
-                                    startX = center - edgeWidth,
-                                    endX = center + edgeWidth,
-                                ),
-                                blendMode = BlendMode.DstIn,
-                            )
+                            clipRect(right = size.width * progress) {
+                                this@drawWithContent.drawContent()
+                            }
                         }
                 } else Modifier
             )

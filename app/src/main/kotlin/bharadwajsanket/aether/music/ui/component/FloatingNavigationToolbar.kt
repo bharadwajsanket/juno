@@ -40,7 +40,7 @@ import bharadwajsanket.aether.music.utils.HapticManager
 
 @Composable
 fun FloatingNavigationToolbar(
-    items: List<Screens>,
+    items: NavigationItemsList,
     pureBlack: Boolean,
     modifier: Modifier = Modifier,
     isSelected: (Screens) -> Boolean,
@@ -72,7 +72,7 @@ fun FloatingNavigationToolbar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                items.forEach { screen ->
+                items.items.forEach { screen ->
                     val selected = isSelected(screen)
                     FloatingNavigationToolbarItem(
                         screen = screen,

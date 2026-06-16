@@ -424,7 +424,8 @@ fun SongListItem(
             Icon.Library()
         }
         if (showDownloadIcon) {
-            val download by LocalDownloadUtil.current.getDownload(song.id)
+            val downloadUtil = LocalDownloadUtil.current
+            val download by remember(downloadUtil, song.id) { downloadUtil.getDownload(song.id) }
                 .collectAsState(initial = null)
             Icon.Download(download?.state)
         }
@@ -500,7 +501,8 @@ fun SongGridItem(
             Icon.Library()
         }
         if (showDownloadIcon) {
-            val download by LocalDownloadUtil.current.getDownload(song.id).collectAsState(initial = null)
+            val downloadUtil = LocalDownloadUtil.current
+            val download by remember(downloadUtil, song.id) { downloadUtil.getDownload(song.id) }.collectAsState(initial = null)
             Icon.Download(download?.state)
         }
     },
@@ -572,13 +574,18 @@ fun ArtistListItem(
     subtitle = pluralStringResource(R.plurals.n_song, artist.songCount, artist.songCount),
     badges = badges,
     thumbnailContent = {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(artist.artist.thumbnailUrl?.resize(544, 544))
+        val context = LocalContext.current
+        val thumbnailUrl = artist.artist.thumbnailUrl
+        val imageRequest = remember(thumbnailUrl) {
+            ImageRequest.Builder(context)
+                .data(thumbnailUrl?.resize(544, 544))
                 .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
                 .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
                 .networkCachePolicy(coil3.request.CachePolicy.ENABLED)
-                .build(),
+                .build()
+        }
+        AsyncImage(
+            model = imageRequest,
             contentDescription = null,
             modifier = Modifier
                 .size(ListThumbnailSize)
@@ -604,13 +611,18 @@ fun ArtistGridItem(
     subtitle = pluralStringResource(R.plurals.n_song, artist.songCount, artist.songCount),
     badges = badges,
     thumbnailContent = {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(artist.artist.thumbnailUrl?.resize(544, 544))
+        val context = LocalContext.current
+        val thumbnailUrl = artist.artist.thumbnailUrl
+        val imageRequest = remember(thumbnailUrl) {
+            ImageRequest.Builder(context)
+                .data(thumbnailUrl?.resize(544, 544))
                 .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
                 .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
                 .networkCachePolicy(coil3.request.CachePolicy.ENABLED)
-                .build(),
+                .build()
+        }
+        AsyncImage(
+            model = imageRequest,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -637,7 +649,8 @@ fun AlbumListItem(
             }
         }
 
-        val allDownloads by downloadUtil.downloads.collectAsState()
+        val allDownloadsFlow = remember(downloadUtil) { downloadUtil.downloads }
+        val allDownloads by allDownloadsFlow.collectAsState()
 
         val downloadState by remember(songs, allDownloads) {
             androidx.compose.runtime.mutableIntStateOf(
@@ -700,7 +713,8 @@ fun AlbumGridItem(
             }
         }
 
-        val allDownloads by downloadUtil.downloads.collectAsState()
+        val allDownloadsFlow = remember(downloadUtil) { downloadUtil.downloads }
+        val allDownloads by allDownloadsFlow.collectAsState()
 
         val downloadState by remember(songs, allDownloads) {
             androidx.compose.runtime.mutableIntStateOf(
@@ -793,7 +807,8 @@ fun PlaylistListItem(
             }
         }
 
-        val allDownloads by downloadUtil.downloads.collectAsState()
+        val allDownloadsFlow = remember(downloadUtil) { downloadUtil.downloads }
+        val allDownloads by allDownloadsFlow.collectAsState()
 
         val downloadState by remember(songs, allDownloads) {
             androidx.compose.runtime.mutableIntStateOf(
@@ -876,7 +891,8 @@ fun PlaylistGridItem(
             }
         }
 
-        val allDownloads by downloadUtil.downloads.collectAsState()
+        val allDownloadsFlow = remember(downloadUtil) { downloadUtil.downloads }
+        val allDownloads by allDownloadsFlow.collectAsState()
 
         val downloadState by remember(songs, allDownloads) {
             mutableIntStateOf(
@@ -1046,7 +1062,8 @@ fun YouTubeListItem(
         if (item.explicit) Icon.Explicit()
         
         if (item is SongItem) {
-            val download by LocalDownloadUtil.current.getDownload(item.id).collectAsState(null)
+            val downloadUtil = LocalDownloadUtil.current
+            val download by remember(downloadUtil, item.id) { downloadUtil.getDownload(item.id) }.collectAsState(null)
             Icon.Download(download?.state)
         }
     },
@@ -1119,7 +1136,8 @@ fun YouTubeGridItem(
         if (item.explicit) Icon.Explicit()
         
         if (item is SongItem) {
-            val download by LocalDownloadUtil.current.getDownload(item.id).collectAsState(null)
+            val downloadUtil = LocalDownloadUtil.current
+            val download by remember(downloadUtil, item.id) { downloadUtil.getDownload(item.id) }.collectAsState(null)
             Icon.Download(download?.state)
         }
     },
@@ -1308,13 +1326,17 @@ fun ItemThumbnail(
             .clip(shape)
     ) {
         if (albumIndex == null) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
+            val context = LocalContext.current
+            val imageRequest = remember(thumbnailUrl) {
+                ImageRequest.Builder(context)
                     .data(thumbnailUrl?.resize(544, 544))
                     .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
                     .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
                     .networkCachePolicy(coil3.request.CachePolicy.ENABLED)
-                    .build(),
+                    .build()
+            }
+            AsyncImage(
+                model = imageRequest,
                 contentDescription = null,
                 contentScale = if (cropAlbumArt) ContentScale.Crop else ContentScale.Fit,
                 modifier = Modifier
@@ -1388,13 +1410,17 @@ fun LocalThumbnail(
             .aspectRatio(thumbnailRatio)
             .clip(shape)
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
+        val context = LocalContext.current
+        val imageRequest = remember(thumbnailUrl) {
+            ImageRequest.Builder(context)
                 .data(thumbnailUrl)
                 .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
                 .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
                 .networkCachePolicy(coil3.request.CachePolicy.ENABLED)
-                .build(),
+                .build()
+        }
+        AsyncImage(
+            model = imageRequest,
             contentDescription = null,
             contentScale = if (cropAlbumArt) ContentScale.Crop else ContentScale.Fit,
             modifier = Modifier.fillMaxSize()
@@ -1498,22 +1524,28 @@ fun PlaylistThumbnail(
         ) {
             placeHolder()
         }
-        1 -> AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(thumbnails[0].resize(544, 544))
-                .apply {  }
-                .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
-                .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
-                .networkCachePolicy(coil3.request.CachePolicy.ENABLED)
-                .build(),
-            contentDescription = null,
-            contentScale = if (cropAlbumArt) ContentScale.Crop else ContentScale.Fit,
-            placeholder = painterResource(R.drawable.ic_launcher_nobg),
-            error = painterResource(R.drawable.ic_launcher_nobg),
-            modifier = Modifier
-                .size(size)
-                .clip(shape)
-        )
+        1 -> {
+            val context = LocalContext.current
+            val thumbnailUrl = thumbnails[0]
+            val imageRequest = remember(thumbnailUrl) {
+                ImageRequest.Builder(context)
+                    .data(thumbnailUrl.resize(544, 544))
+                    .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
+                    .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
+                    .networkCachePolicy(coil3.request.CachePolicy.ENABLED)
+                    .build()
+            }
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = null,
+                contentScale = if (cropAlbumArt) ContentScale.Crop else ContentScale.Fit,
+                placeholder = painterResource(R.drawable.ic_launcher_nobg),
+                error = painterResource(R.drawable.ic_launcher_nobg),
+                modifier = Modifier
+                    .size(size)
+                    .clip(shape)
+            )
+        }
         else -> Box(
             modifier = Modifier
                 .size(size)
@@ -1525,14 +1557,18 @@ fun PlaylistThumbnail(
                 Alignment.BottomStart,
                 Alignment.BottomEnd
             ).fastForEachIndexed { index, alignment ->
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(thumbnails.getOrNull(index)?.resize(544, 544))
-                        .apply {  }
+                val context = LocalContext.current
+                val thumbnailUrl = thumbnails.getOrNull(index)
+                val imageRequest = remember(thumbnailUrl) {
+                    ImageRequest.Builder(context)
+                        .data(thumbnailUrl?.resize(544, 544))
                         .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
                         .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
                         .networkCachePolicy(coil3.request.CachePolicy.ENABLED)
-                        .build(),
+                        .build()
+                }
+                AsyncImage(
+                    model = imageRequest,
                     contentDescription = null,
                     contentScale = if (cropAlbumArt) ContentScale.Crop else ContentScale.Fit,
                     placeholder = painterResource(R.drawable.ic_launcher_nobg),

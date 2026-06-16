@@ -40,7 +40,7 @@ import bharadwajsanket.aether.music.R
 import bharadwajsanket.aether.music.db.entities.SongEntity
 import kotlinx.coroutines.FlowPreview
 
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun ShowOffsetDialog(songProvider: () -> SongEntity?) {
     val database = LocalDatabase.current
@@ -183,7 +183,34 @@ fun ShowOffsetDialog(songProvider: () -> SongEntity?) {
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+        ) {
+            val presets = listOf(-500, -250, 0, 250, 500)
+            presets.forEach { preset ->
+                val label = if (preset > 0) "+${preset}ms" else "${preset}ms"
+                androidx.compose.material3.FilterChip(
+                    selected = lyricsOffset == preset,
+                    onClick = {
+                        lyricsOffset = preset
+                        textFieldValue = preset.toString()
+                    },
+                    label = {
+                        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+                    },
+                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         Row(
             verticalAlignment = Alignment.CenterVertically,

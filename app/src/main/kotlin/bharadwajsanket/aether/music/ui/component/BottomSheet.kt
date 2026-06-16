@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -325,7 +326,14 @@ fun rememberBottomSheetState(
         Animatable(0.dp, Dp.VectorConverter)
     }
 
-    return remember(dismissedBound, expandedBound, collapsedBound, coroutineScope) {
+    val dragChannel = remember { kotlinx.coroutines.channels.Channel<Float>(kotlinx.coroutines.channels.Channel.UNLIMITED) }
+    LaunchedEffect(dragChannel, density) {
+        for (delta in dragChannel) {
+            animatable.snapTo(animatable.value - with(density) { delta.toDp() })
+        }
+    }
+
+    return remember(dismissedBound, expandedBound, collapsedBound, coroutineScope, dragChannel) {
         val initialValue = when (previousAnchor) {
             expandedAnchor -> expandedBound
             collapsedAnchor -> collapsedBound
@@ -340,9 +348,7 @@ fun rememberBottomSheetState(
 
         BottomSheetState(
             draggableState = DraggableState { delta ->
-                coroutineScope.launch {
-                    animatable.snapTo(animatable.value - with(density) { delta.toDp() })
-                }
+                dragChannel.trySend(delta)
             },
             onAnchorChanged = { previousAnchor = it },
             coroutineScope = coroutineScope,

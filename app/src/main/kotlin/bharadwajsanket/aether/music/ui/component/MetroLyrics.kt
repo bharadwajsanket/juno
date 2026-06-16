@@ -494,6 +494,11 @@ private fun WordLevelCanvasLyrics(
         
         val useSafeRendering = remember(mainText) { mainText.containsComplexScript() }
         
+        val lineCount = layoutResult.lineCount
+        val lineCurrentPushes = remember(lineCount) { FloatArray(lineCount) }
+        val lineTotalPushes = remember(lineCount) { FloatArray(lineCount) }
+        val wordWobbles = remember(words.size) { FloatArray(words.size) }
+
         Canvas(modifier = Modifier
             .fillMaxWidth()
             .height(with(density) { layoutResult.size.height.toDp() })
@@ -503,6 +508,10 @@ private fun WordLevelCanvasLyrics(
             if (!isActiveLine) {
                 drawText(layoutResult, color = lineColor)
             } else {
+                lineCurrentPushes.fill(0f)
+                lineTotalPushes.fill(0f)
+                wordWobbles.fill(0f)
+
                 if (useSafeRendering) {
                     
                     
@@ -524,18 +533,14 @@ private fun WordLevelCanvasLyrics(
                         Triple(sungFactor, word, isWordSung)
                     }
 
-                    val wordWobblesCS = FloatArray(words.size)
                     words.forEachIndexed { wordIdx, word ->
                         val startMs = (word.startTime * 1000).toLong()
                         val timeSinceStart = (smoothPosition - startMs).toFloat()
-                        wordWobblesCS[wordIdx] = if (timeSinceStart in 0f..750f) {
+                        wordWobbles[wordIdx] = if (timeSinceStart in 0f..750f) {
                             if (timeSinceStart < 125f) timeSinceStart / 125f
                             else (1f - (timeSinceStart - 125f) / 625f).coerceAtLeast(0f)
                         } else 0f
                     }
-
-                    val lineCurrentPushesCS = FloatArray(layoutResult.lineCount)
-                    val lineTotalPushesCS   = FloatArray(layoutResult.lineCount)
 
                     
                     for (i in mainText.indices) {
@@ -543,7 +548,7 @@ private fun WordLevelCanvasLyrics(
                         val wordIdx = wordIdxMap[i]
                         val originalWordIdx = if (wordIdx != -1) effectiveToOriginalIdx[wordIdx] else -1
                         val (sungFactor, wordItem, isWordSung) = if (wordIdx != -1) wordFactors[wordIdx] else Triple(0f, null, false)
-                        val wobble = if (originalWordIdx != -1) wordWobblesCS[originalWordIdx] else 0f
+                        val wobble = if (originalWordIdx != -1) wordWobbles[originalWordIdx] else 0f
                         var crescendoDeltaX = 0f
                         val groupWord = if (wordIdx != -1) hyphenGroupData[wordIdx] else null
                         if (groupWord != null) {
@@ -563,7 +568,7 @@ private fun WordLevelCanvasLyrics(
                         } else 0f
                         val nudgeScale = if (wordItem != null && !isWordSung && sungFactor > 0f) 0.038f * sin(charLp * PI.toFloat()) * exp(-3f * charLp) else 0f
                         val charScaleX = 1f + (wobble * 0.025f) + crescendoDeltaX + (nudgeScale * 0.3f)
-                        lineTotalPushesCS[lineIdx] += layoutResult.getBoundingBox(i).width * (charScaleX - 1f)
+                        lineTotalPushes[lineIdx] += layoutResult.getBoundingBox(i).width * (charScaleX - 1f)
                     }
 
                     
@@ -574,13 +579,13 @@ private fun WordLevelCanvasLyrics(
                         val originalWordIdx = if (wordIdx != -1) effectiveToOriginalIdx[wordIdx] else -1
 
                         val alignShift = when (alignment) {
-                            TextAlign.Center -> -lineTotalPushesCS[lineIdx] / 2f
-                            TextAlign.Right  -> -lineTotalPushesCS[lineIdx]
+                            TextAlign.Center -> -lineTotalPushes[lineIdx] / 2f
+                            TextAlign.Right  -> -lineTotalPushes[lineIdx]
                             else             -> 0f
                         }
 
                         val (sungFactor, wordItem, isWordSung) = if (wordIdx != -1) wordFactors[wordIdx] else Triple(0f, null, false)
-                        val wobble  = if (originalWordIdx != -1) wordWobblesCS[originalWordIdx] else 0f
+                        val wobble  = if (originalWordIdx != -1) wordWobbles[originalWordIdx] else 0f
                         val wobbleX = wobble * 0.025f
                         val wobbleY = wobble * 0.015f
 
@@ -632,7 +637,7 @@ private fun WordLevelCanvasLyrics(
                                     waveOffset = sin(wallTime * 0.006f + i * 0.4f) * 3.24f * waveFade
                                 }
                             }
-                            translate(left = alignShift + lineCurrentPushesCS[lineIdx] + charBounds.left, top = charBounds.top + waveOffset)
+                            translate(left = alignShift + lineCurrentPushes[lineIdx] + charBounds.left, top = charBounds.top + waveOffset)
                             if (wordIdx != -1) {
                                 scale(charScaleX, charScaleY, pivot = Offset(charBounds.width / 2f, charBounds.height))
                             }
@@ -665,7 +670,7 @@ private fun WordLevelCanvasLyrics(
                                 }
                             }
                         }
-                        lineCurrentPushesCS[lineIdx] += charBounds.width * (charScaleX - 1f)
+                        lineCurrentPushes[lineIdx] += charBounds.width * (charScaleX - 1f)
                     }
                     return@Canvas
                 }
@@ -683,7 +688,6 @@ private fun WordLevelCanvasLyrics(
                     Triple(sungFactor, word, isWordSung)
                 }
 
-                val wordWobbles = FloatArray(words.size)
                 words.forEachIndexed { wordIdx, word ->
                     val startMs = (word.startTime * 1000).toLong()
                     val timeSinceStart = (smoothPosition - startMs).toFloat()
@@ -693,9 +697,6 @@ private fun WordLevelCanvasLyrics(
                     } else 0f
                     wordWobbles[wordIdx] = wobble
                 }
-
-                val lineCurrentPushes = FloatArray(layoutResult.lineCount)
-                val lineTotalPushes = FloatArray(layoutResult.lineCount)
                 
                 for (i in mainText.indices) {
                     val lineIdx = layoutResult.getLineForOffset(i)

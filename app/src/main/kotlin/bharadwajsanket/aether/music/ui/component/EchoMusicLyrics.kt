@@ -217,15 +217,7 @@ fun aethermusicLyricsLine(
                 val lineRelTime = (effectivePlaybackPosition - entry.time).coerceAtLeast(0L)
                 val wordDuration = (endRelative - startRelative).coerceAtLeast(1L)
                 
-                val progress by animateFloatAsState(
-                    targetValue = when {
-                        lineRelTime >= endRelative -> 1f
-                        lineRelTime < startRelative -> 0f
-                        else -> (lineRelTime - startRelative).toFloat() / wordDuration
-                    },
-                    animationSpec = tween(durationMillis = 150, easing = androidx.compose.animation.core.LinearEasing),
-                    label = "wordProgress"
-                )
+                val progress = if (lineRelTime >= startRelative) 1f else 0f
 
                 val finalFontWeight = if (isActive) FontWeight.ExtraBold else FontWeight.Bold
 

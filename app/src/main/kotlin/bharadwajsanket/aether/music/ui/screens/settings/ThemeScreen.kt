@@ -56,6 +56,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -354,13 +355,15 @@ fun PaletteItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val isSystemDark = isSystemInDarkTheme()
+    val itemPrimaryColor = if (palette.seedColor == Color.Transparent) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        palette.seedColor
+    }
     
-    val colorScheme = rememberDynamicColorScheme(
-        seedColor = palette.seedColor,
-        isDark = isSystemDark,
-        style = PaletteStyle.TonalSpot
-    )
+    val itemOnPrimaryColor = remember(palette.seedColor) {
+        if (palette.seedColor.luminance() > 0.5f) Color.Black else Color.White
+    }
     
     val cornerRadius by animateDpAsState(
         targetValue = if (isSelected) 56.dp * 0.3f else 28.dp,
@@ -405,7 +408,7 @@ fun PaletteItem(
                 shape = RoundedCornerShape(cornerRadius)
                 clip = true
             }
-            .background(colorScheme.primary, cardShape)
+            .background(itemPrimaryColor, cardShape)
             .then(
                 if (borderWidth > 0.dp) {
                     Modifier.border(
@@ -450,7 +453,7 @@ fun PaletteItem(
                 Icon(
                     painter = painterResource(R.drawable.check),
                     contentDescription = null,
-                    tint = if (palette.seedColor == Color.Transparent) MaterialTheme.colorScheme.onSurfaceVariant else colorScheme.onPrimary,
+                    tint = if (palette.seedColor == Color.Transparent) MaterialTheme.colorScheme.onSurfaceVariant else itemOnPrimaryColor,
                     modifier = Modifier.size(24.dp)
                 )
             }

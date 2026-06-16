@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -186,13 +187,14 @@ fun LibraryMixScreen(
     val artist = viewModel.artists.collectAsState()
     val playlist = viewModel.playlists.collectAsState()
 
-    var allItems = albums.value + artist.value + playlist.value
-    val collator = Collator.getInstance(Locale.getDefault())
-    collator.strength = Collator.PRIMARY
-    allItems =
-        when (sortType) {
+    val allItems = remember(albums.value, artist.value, playlist.value, sortType, sortDescending) {
+        val rawList = albums.value + artist.value + playlist.value
+        val collator = Collator.getInstance(Locale.getDefault()).apply {
+            strength = Collator.PRIMARY
+        }
+        val sorted = when (sortType) {
             MixSortType.CREATE_DATE ->
-                allItems.sortedBy { item ->
+                rawList.sortedBy { item ->
                     when (item) {
                         is Album -> item.album.bookmarkedAt
                         is Artist -> item.artist.bookmarkedAt
@@ -202,7 +204,7 @@ fun LibraryMixScreen(
                 }
 
             MixSortType.NAME ->
-                allItems.sortedWith(
+                rawList.sortedWith(
                     compareBy(collator) { item ->
                         when (item) {
                             is Album -> item.album.title
@@ -214,7 +216,7 @@ fun LibraryMixScreen(
                 )
 
             MixSortType.LAST_UPDATED ->
-                allItems.sortedBy { item ->
+                rawList.sortedBy { item ->
                     when (item) {
                         is Album -> item.album.lastUpdateTime
                         is Artist -> item.artist.lastUpdateTime
@@ -222,7 +224,9 @@ fun LibraryMixScreen(
                         else -> LocalDateTime.now()
                     }
                 }
-        }.reversed(sortDescending)
+        }
+        sorted.reversed(sortDescending)
+    }
 
     val coroutineScope = rememberCoroutineScope()
 

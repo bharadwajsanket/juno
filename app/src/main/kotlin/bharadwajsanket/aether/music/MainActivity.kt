@@ -516,6 +516,16 @@ class MainActivity : ComponentActivity() {
                 val bottomInsetDp = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
 
                 val navController = rememberNavController()
+                androidx.compose.runtime.DisposableEffect(navController) {
+                    val hapticManager = bharadwajsanket.aether.music.utils.HapticManager.getInstance(applicationContext)
+                    val listener = androidx.navigation.NavController.OnDestinationChangedListener { _, _, _ ->
+                        hapticManager.performTick()
+                    }
+                    navController.addOnDestinationChangedListener(listener)
+                    onDispose {
+                        navController.removeOnDestinationChangedListener(listener)
+                    }
+                }
                 val homeViewModel: HomeViewModel = hiltViewModel()
                 val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -523,11 +533,13 @@ class MainActivity : ComponentActivity() {
 
                 val (listenTogetherInTopBar) = rememberPreference(ListenTogetherInTopBarKey, defaultValue = true)
                 val navigationItems = remember { 
-                    listOf(
-                        Screens.Home,
-                        Screens.Search,
-                        Screens.Library,
-                        Screens.Settings
+                    bharadwajsanket.aether.music.ui.component.NavigationItemsList(
+                        listOf(
+                            Screens.Home,
+                            Screens.Search,
+                            Screens.Library,
+                            Screens.Settings
+                        )
                     )
                 }
                 val (useNewMiniPlayerDesign) = rememberPreference(UseNewMiniPlayerDesignKey, defaultValue = true)
@@ -580,7 +592,7 @@ class MainActivity : ComponentActivity() {
                     derivedStateOf { currentRoute?.startsWith("search/") == true }
                 }
                 val navigationItemRoutes = remember(navigationItems) {
-                    navigationItems.map { it.route }.toSet()
+                    navigationItems.items.map { it.route }.toSet()
                 }
 
                 val shouldShowNavigationBar = remember(currentRoute, navigationItemRoutes) {
@@ -599,18 +611,16 @@ class MainActivity : ComponentActivity() {
                     0.dp
                 }
 
-                val navigationBarHeight by animateDpAsState(
-                    targetValue = if (shouldShowNavigationBar && !showRail) NavigationBarHeight else 0.dp,
-                    animationSpec = NavigationBarAnimationSpec,
-                    label = "navBarHeight",
-                )
+                val collapsedBound = remember(bottomInset, showRail, shouldShowNavigationBar, navPadding, useNewMiniPlayerDesign, maxHeight) {
+                    bottomInset +
+                        (if (!showRail && shouldShowNavigationBar) navPadding else 0.dp) +
+                        (if (useNewMiniPlayerDesign) MiniPlayerBottomSpacing else 0.dp) +
+                        MiniPlayerHeight
+                }
 
                 val playerBottomSheetState = rememberBottomSheetState(
                     dismissedBound = 0.dp,
-                    collapsedBound = bottomInset +
-                        (if (!showRail && shouldShowNavigationBar) navPadding else 0.dp) +
-                        (if (useNewMiniPlayerDesign) MiniPlayerBottomSpacing else 0.dp) +
-                        MiniPlayerHeight,
+                    collapsedBound = collapsedBound,
                     expandedBound = maxHeight,
                 )
 
@@ -682,13 +692,13 @@ class MainActivity : ComponentActivity() {
                                 TextRange(searchQuery.length)
                             )
                         )
-                    } else if (navigationItems.fastAny { it.route == navBackStackEntry?.destination?.route }) {
+                    } else if (navigationItems.items.fastAny { it.route == navBackStackEntry?.destination?.route }) {
                         onQueryChange(TextFieldValue())
                     }
 
                     
-                    if (navigationItems.fastAny { it.route == navBackStackEntry?.destination?.route }) {
-                        if (navigationItems.fastAny { it.route == previousTab }) {
+                    if (navigationItems.items.fastAny { it.route == navBackStackEntry?.destination?.route }) {
+                        if (navigationItems.items.fastAny { it.route == previousTab }) {
                             topAppBarScrollBehavior.state.resetHeightOffset()
                         }
                     }
@@ -936,6 +946,11 @@ class MainActivity : ComponentActivity() {
                             }
 
                             if (!showRail && currentRoute != "update" && currentRoute != "listen_together/chat") {
+                                val navigationBarHeight by animateDpAsState(
+                                    targetValue = if (shouldShowNavigationBar && !showRail) NavigationBarHeight else 0.dp,
+                                    animationSpec = NavigationBarAnimationSpec,
+                                    label = "navBarHeight",
+                                )
                                 Box {
                                     BottomSheetPlayer(
                                         state = playerBottomSheetState,
@@ -1086,10 +1101,10 @@ class MainActivity : ComponentActivity() {
                                     }.route,
                                     
                                     enterTransition = {
-                                        val currentRouteIndex = navigationItems.indexOfFirst {
+                                        val currentRouteIndex = navigationItems.items.indexOfFirst {
                                             it.route == targetState.destination.route
                                         }
-                                        val previousRouteIndex = navigationItems.indexOfFirst {
+                                        val previousRouteIndex = navigationItems.items.indexOfFirst {
                                             it.route == initialState.destination.route
                                         }
 
@@ -1100,10 +1115,10 @@ class MainActivity : ComponentActivity() {
                                     },
                                     
                                     exitTransition = {
-                                        val currentRouteIndex = navigationItems.indexOfFirst {
+                                        val currentRouteIndex = navigationItems.items.indexOfFirst {
                                             it.route == initialState.destination.route
                                         }
-                                        val targetRouteIndex = navigationItems.indexOfFirst {
+                                        val targetRouteIndex = navigationItems.items.indexOfFirst {
                                             it.route == targetState.destination.route
                                         }
 
@@ -1114,10 +1129,10 @@ class MainActivity : ComponentActivity() {
                                     },
                                     
                                     popEnterTransition = {
-                                        val currentRouteIndex = navigationItems.indexOfFirst {
+                                        val currentRouteIndex = navigationItems.items.indexOfFirst {
                                             it.route == targetState.destination.route
                                         }
-                                        val previousRouteIndex = navigationItems.indexOfFirst {
+                                        val previousRouteIndex = navigationItems.items.indexOfFirst {
                                             it.route == initialState.destination.route
                                         }
 
@@ -1128,10 +1143,10 @@ class MainActivity : ComponentActivity() {
                                     },
                                     
                                     popExitTransition = {
-                                        val currentRouteIndex = navigationItems.indexOfFirst {
+                                        val currentRouteIndex = navigationItems.items.indexOfFirst {
                                             it.route == initialState.destination.route
                                         }
-                                        val targetRouteIndex = navigationItems.indexOfFirst {
+                                        val targetRouteIndex = navigationItems.items.indexOfFirst {
                                             it.route == targetState.destination.route
                                         }
 
@@ -1239,6 +1254,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleDeepLinkIntent(intent: Intent, navController: NavHostController) {
+        if (intent.getBooleanExtra("open_update_screen", false)) {
+            intent.removeExtra("open_update_screen")
+            navController.navigate("update")
+            return
+        }
         val uri = intent.data ?: intent.extras?.getString(Intent.EXTRA_TEXT)?.toUri() ?: return
         intent.data = null
         intent.removeExtra(Intent.EXTRA_TEXT)
