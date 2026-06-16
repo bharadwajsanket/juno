@@ -153,7 +153,7 @@ class QobuzApiClient {
 
     private inline fun <reified T> executeAndParseEnvelope(request: Request): T {
         httpClient.newCall(request).execute().use { response ->
-            val body = response.body?.string().orEmpty()
+            val body = response.body.string()
 
             if (!response.isSuccessful) {
                 val parsedMessage = runCatching {

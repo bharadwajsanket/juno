@@ -502,10 +502,7 @@ object YTPlayerUtils {
             }
         }
 
-        
-        if (mainPlayerResponse == null) {
-            throw Exception("Failed to get player response")
-        }
+        // mainPlayerResponse is non-null (obtained via getOrThrow() above)
 
         
         
@@ -637,8 +634,9 @@ object YTPlayerUtils {
                 if (currentClient.useWebPoTokens) {
                     try {
                         Timber.tag(logTag).d("Applying n-transform to stream URL for ${currentClient.clientName}")
-                        val transformed = EjsNTransformSolver.transformNParamInUrl(streamUrl!!)
-                        if (transformed != streamUrl) {
+                        val currentUrl = streamUrl ?: continue
+                        val transformed = EjsNTransformSolver.transformNParamInUrl(currentUrl)
+                        if (transformed != currentUrl) {
                             streamUrl = transformed
                             Timber.tag(logTag).d("N-transform applied successfully")
                         }
@@ -651,8 +649,9 @@ object YTPlayerUtils {
                 
                 if (currentClient.useWebPoTokens && poToken?.streamingDataPoToken != null) {
                     Timber.tag(logTag).d("Appending pot= parameter to stream URL")
-                    val separator = if ("?" in streamUrl!!) "&" else "?"
-                    streamUrl = "${streamUrl}${separator}pot=${poToken.streamingDataPoToken}"
+                    val potUrl = streamUrl ?: continue
+                    val separator = if ("?" in potUrl) "&" else "?"
+                    streamUrl = "${potUrl}${separator}pot=${poToken.streamingDataPoToken}"
                 }
 
                 streamExpiresInSeconds = streamPlayerResponse.streamingData?.expiresInSeconds
@@ -682,7 +681,8 @@ object YTPlayerUtils {
                     break
                 }
 
-                if (validateStatus(streamUrl!!)) {
+                val validationUrl = streamUrl ?: continue
+                if (validateStatus(validationUrl)) {
                     
                     Timber.tag(logTag).d("Stream validated successfully with client: ${currentClient.clientName}")
                     PlaybackLogManager.log(PlaybackLogLevel.INFO, "Stream validated", currentClient.clientName)
@@ -698,7 +698,7 @@ object YTPlayerUtils {
 
                         
                         try {
-                            val nTransformed = CipherDeobfuscator.transformNParamInUrl(streamUrl!!)
+                            val nTransformed = CipherDeobfuscator.transformNParamInUrl(validationUrl)
                             if (nTransformed != streamUrl) {
                                 Timber.tag(logTag).d("CipherDeobfuscator n-transform applied, re-validating...")
                                 if (validateStatus(nTransformed)) {
@@ -764,7 +764,7 @@ object YTPlayerUtils {
 
         Timber.tag(logTag).d("Successfully obtained playback data with format: ${format.mimeType}, bitrate: ${format.bitrate}")
         if (isUploadedTrack) {
-            println("[PLAYBACK_DEBUG] SUCCESS: Got playback data for uploaded track - format=${format.mimeType}, streamUrl=${streamUrl?.take(100)}...")
+            println("[PLAYBACK_DEBUG] SUCCESS: Got playback data for uploaded track - format=${format.mimeType}, streamUrl=${streamUrl.take(100)}...")
         }
         PlaybackData(
             audioConfig,

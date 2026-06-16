@@ -31,7 +31,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewModelScope
 import timber.log.Timber
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -128,7 +127,7 @@ class BackupRestoreViewModel @Inject constructor(
                                 }
                                 
                                 try {
-                                    val dbPath = database.openHelper.writableDatabase.path
+                                    val dbPath = database.openHelper.writableDatabase.path ?: throw Exception("Database path is null")
                                     runBlocking(Dispatchers.IO) { database.checkpoint() }
                                     database.close()
                                     Timber.tag("RESTORE").i("Overwriting DB at path: $dbPath")
