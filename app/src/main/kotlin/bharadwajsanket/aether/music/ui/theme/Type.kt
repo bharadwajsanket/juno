@@ -12,6 +12,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import bharadwajsanket.aether.music.R
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
+import android.os.PowerManager
+import android.content.Context
+import android.content.IntentFilter
+import android.content.BroadcastReceiver
+import android.content.Intent
+import bharadwajsanket.aether.music.constants.ThumbnailCornerRadiusKey
+import bharadwajsanket.aether.music.utils.rememberPreference
+
 // ── Aether Music Design System v1 ──────────────────────────────
 
 /**
@@ -43,8 +58,36 @@ object AetherCorners {
     val sm = RoundedCornerShape(8.dp)
     val md = RoundedCornerShape(12.dp)
     val lg = RoundedCornerShape(16.dp)
-    val xl = RoundedCornerShape(24.dp)
+    val xl: RoundedCornerShape
+        @Composable
+        get() {
+            val radiusFloat by rememberPreference(ThumbnailCornerRadiusKey, defaultValue = 3f)
+            return RoundedCornerShape(radiusFloat.dp)
+        }
     val full = RoundedCornerShape(50)
+}
+
+@Composable
+fun rememberBatterySaverState(): Boolean {
+    val context = LocalContext.current
+    val powerManager = remember { context.getSystemService(Context.POWER_SERVICE) as? PowerManager }
+    var isPowerSave by remember { mutableStateOf(powerManager?.isPowerSaveMode == true) }
+    DisposableEffect(context, powerManager) {
+        if (powerManager == null) return@DisposableEffect onDispose {}
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                isPowerSave = powerManager.isPowerSaveMode
+            }
+        }
+        val filter = IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+        context.registerReceiver(receiver, filter)
+        onDispose {
+            try {
+                context.unregisterReceiver(receiver)
+            } catch (e: Exception) {}
+        }
+    }
+    return isPowerSave
 }
 
 /** Icon sizing tokens — use these for consistent icon dimensions. */

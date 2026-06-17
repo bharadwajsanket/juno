@@ -209,10 +209,54 @@ fun ChangelogScreen(
         }
     }
 
-    fun fetchOldReleases() {
+    fun fetchOldReleases(force: Boolean = false) {
         if (isFetchingOldReleases) return
         isFetchingOldReleases = true
         coroutineScope.launch(Dispatchers.IO) {
+            if (!force) {
+                val cached = loadReleasesFromCache(context)
+                if (cached != null) {
+                    val age = System.currentTimeMillis() - cached.first
+                    if (age < 24 * 60 * 60 * 1000L) {
+                        try {
+                            val array = JSONArray(cached.second)
+                            val list = mutableListOf<ReleaseMetadata>()
+                            val outputFormatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
+                            for (i in 0 until array.length()) {
+                                val obj = array.getJSONObject(i)
+                                val tagName = obj.getString("tag_name")
+                                if (!tagName.startsWith("v", ignoreCase = true)) continue
+                                val name = obj.optString("name", tagName)
+                                val publishedAt = obj.getString("published_at")
+                                val formattedDate = try {
+                                    ZonedDateTime.parse(publishedAt).format(outputFormatter)
+                                } catch (e: Exception) { publishedAt }
+                                val assets = obj.getJSONArray("assets")
+                                var changelogUrl: String? = null
+                                for (j in 0 until assets.length()) {
+                                    val asset = assets.getJSONObject(j)
+                                    if (asset.getString("name") == "changelog.json") {
+                                        changelogUrl = asset.getString("browser_download_url")
+                                        break
+                                    }
+                                }
+                                if (changelogUrl != null) {
+                                    list.add(ReleaseMetadata(tagName, name, formattedDate, null))
+                                }
+                            }
+                            withContext(Dispatchers.Main) {
+                                val currentVersion = ReleaseMetadata(versionTag, versionTag, context.getString(R.string.current), null)
+                                availableReleases = (listOf(currentVersion) + list).distinctBy { it.tagName }
+                                isFetchingOldReleases = false
+                            }
+                            return@launch
+                        } catch (e: Exception) {
+                            Log.e("ChangelogScreen", "Error parsing cached releases", e)
+                        }
+                    }
+                }
+            }
+
             try {
                 val releasesUrl = URL("https://api.github.com/repos/bharadwajsanket/Aether-Music/releases")
                 val connection = releasesUrl.openConnection() as HttpURLConnection
@@ -221,45 +265,84 @@ fun ChangelogScreen(
                 
                 if (connection.responseCode == 200) {
                     val json = connection.inputStream.bufferedReader().use { it.readText() }
+                    saveReleasesToCache(context, json)
                     val array = JSONArray(json)
                     val list = mutableListOf<ReleaseMetadata>()
                     val outputFormatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
 
-                for (i in 0 until array.length()) {
-                    val obj = array.getJSONObject(i)
-                    val tagName = obj.getString("tag_name")
-                    if (!tagName.startsWith("v", ignoreCase = true)) continue
+                    for (i in 0 until array.length()) {
+                        val obj = array.getJSONObject(i)
+                        val tagName = obj.getString("tag_name")
+                        if (!tagName.startsWith("v", ignoreCase = true)) continue
 
-                    val name = obj.optString("name", tagName)
-                    val publishedAt = obj.getString("published_at")
-                    val formattedDate = try {
-                        ZonedDateTime.parse(publishedAt).format(outputFormatter)
-                    } catch (e: Exception) { publishedAt }
+                        val name = obj.optString("name", tagName)
+                        val publishedAt = obj.getString("published_at")
+                        val formattedDate = try {
+                            ZonedDateTime.parse(publishedAt).format(outputFormatter)
+                        } catch (e: Exception) { publishedAt }
 
-                    val assets = obj.getJSONArray("assets")
-                    var changelogUrl: String? = null
-                    for (j in 0 until assets.length()) {
-                        val asset = assets.getJSONObject(j)
-                        if (asset.getString("name") == "changelog.json") {
-                            changelogUrl = asset.getString("browser_download_url")
-                            break
+                        val assets = obj.getJSONArray("assets")
+                        var changelogUrl: String? = null
+                        for (j in 0 until assets.length()) {
+                            val asset = assets.getJSONObject(j)
+                            if (asset.getString("name") == "changelog.json") {
+                                changelogUrl = asset.getString("browser_download_url")
+                                break
+                            }
+                        }
+
+                        if (changelogUrl != null) {
+                            list.add(ReleaseMetadata(tagName, name, formattedDate, null))
                         }
                     }
-
-                    if (changelogUrl != null) {
-                        list.add(ReleaseMetadata(tagName, name, formattedDate, null))
-                    }
-                }
                     withContext(Dispatchers.Main) {
                         val currentVersion = ReleaseMetadata(versionTag, versionTag, context.getString(R.string.current), null)
                         availableReleases = (listOf(currentVersion) + list).distinctBy { it.tagName }
                         isFetchingOldReleases = false
                     }
                 } else {
-                    Log.e("ChangelogScreen", "GitHub API Error ${connection.responseCode}")
-                    withContext(Dispatchers.Main) { isFetchingOldReleases = false }
+                    throw java.io.IOException("HTTP Error ${connection.responseCode}")
                 }
             } catch (e: Exception) {
+                Log.e("ChangelogScreen", "Error fetching releases: ${e.message}")
+                val cached = loadReleasesFromCache(context)
+                if (cached != null) {
+                    try {
+                        val array = JSONArray(cached.second)
+                        val list = mutableListOf<ReleaseMetadata>()
+                        val outputFormatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
+                        for (i in 0 until array.length()) {
+                            val obj = array.getJSONObject(i)
+                            val tagName = obj.getString("tag_name")
+                            if (!tagName.startsWith("v", ignoreCase = true)) continue
+                            val name = obj.optString("name", tagName)
+                            val publishedAt = obj.getString("published_at")
+                            val formattedDate = try {
+                                ZonedDateTime.parse(publishedAt).format(outputFormatter)
+                            } catch (e: Exception) { publishedAt }
+                            val assets = obj.getJSONArray("assets")
+                            var changelogUrl: String? = null
+                            for (j in 0 until assets.length()) {
+                                val asset = assets.getJSONObject(j)
+                                if (asset.getString("name") == "changelog.json") {
+                                    changelogUrl = asset.getString("browser_download_url")
+                                    break
+                                }
+                            }
+                            if (changelogUrl != null) {
+                                list.add(ReleaseMetadata(tagName, name, formattedDate, null))
+                            }
+                        }
+                        withContext(Dispatchers.Main) {
+                            val currentVersion = ReleaseMetadata(versionTag, versionTag, context.getString(R.string.current), null)
+                            availableReleases = (listOf(currentVersion) + list).distinctBy { it.tagName }
+                            isFetchingOldReleases = false
+                        }
+                        return@launch
+                    } catch (parseEx: Exception) {
+                        Log.e("ChangelogScreen", "Failed to parse fallback cache", parseEx)
+                    }
+                }
                 withContext(Dispatchers.Main) { isFetchingOldReleases = false }
             }
         }
@@ -278,7 +361,10 @@ fun ChangelogScreen(
         modifier = Modifier.pullToRefresh(
             state = pullToRefreshState,
             isRefreshing = isRefreshing,
-            onRefresh = { fetchChangelog(currentVersionTag) }
+            onRefresh = { 
+                fetchChangelog(currentVersionTag)
+                fetchOldReleases(force = true)
+            }
         ),
         topBar = {
             TopAppBar(
@@ -537,4 +623,29 @@ private fun loadChangelogFromCache(context: Context, versionTag: String): Cached
             warning = cacheData.optString("warning", null).takeIf { !it.isNullOrBlank() }
         )
     } catch (e: Exception) { null }
+}
+
+private fun saveReleasesToCache(context: Context, json: String) {
+    try {
+        val cacheData = JSONObject().apply {
+            put("timestamp", System.currentTimeMillis())
+            put("response", json)
+        }
+        context.openFileOutput("releases_list_cache.json", Context.MODE_PRIVATE).use {
+            it.write(cacheData.toString().toByteArray())
+        }
+    } catch (e: Exception) {
+        Log.e("ChangelogScreen", "Error saving releases cache", e)
+    }
+}
+
+private fun loadReleasesFromCache(context: Context): Pair<Long, String>? {
+    return try {
+        val cacheFile = File(context.filesDir, "releases_list_cache.json")
+        if (!cacheFile.exists()) return null
+        val cacheData = JSONObject(context.openFileInput("releases_list_cache.json").use { it.bufferedReader().readText() })
+        Pair(cacheData.getLong("timestamp"), cacheData.getString("response"))
+    } catch (e: Exception) {
+        null
+    }
 }

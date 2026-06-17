@@ -50,7 +50,6 @@ import bharadwajsanket.aether.music.ui.screens.settings.AccountSettingsScreen
 import bharadwajsanket.aether.music.ui.screens.settings.StorageSettings
 import bharadwajsanket.aether.music.ui.screens.settings.ThemeScreen
 import bharadwajsanket.aether.music.ui.screens.settings.AiSettings
-import bharadwajsanket.aether.music.ui.screens.settings.integrations.IntegrationScreen
 import bharadwajsanket.aether.music.ui.screens.settings.integrations.ListenTogetherSettings
 import bharadwajsanket.aether.music.ui.screens.recognition.RecognitionScreen
 import bharadwajsanket.aether.music.ui.screens.recognition.RecognitionHistoryScreen
@@ -383,10 +382,6 @@ fun NavGraphBuilder.navigationBuilder(
 
     composable("settings/backup_restore") {
         BackupAndRestore(navController, scrollBehavior)
-    }
-
-    composable("settings/integrations") {
-        IntegrationScreen(navController, scrollBehavior)
     }
 
     composable("settings/spotify_import") {

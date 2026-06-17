@@ -260,16 +260,6 @@ class MainActivity : ComponentActivity() {
                     listenTogetherManager.setPlayerConnection(playerConnection)
                 } catch (e: Exception) {
                     Timber.tag("MainActivity").e(e, "Failed to create PlayerConnection")
-                    
-                    lifecycleScope.launch {
-                        delay(500)
-                        try {
-                            playerConnection = PlayerConnection(this@MainActivity, service, database, lifecycleScope)
-                            listenTogetherManager.setPlayerConnection(playerConnection)
-                        } catch (e2: Exception) {
-                            Timber.tag("MainActivity").e(e2, "Failed to create PlayerConnection on retry")
-                        }
-                    }
                 }
             }
         }

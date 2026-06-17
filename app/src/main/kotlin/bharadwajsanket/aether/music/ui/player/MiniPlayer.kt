@@ -924,50 +924,29 @@ private fun MiniPlayerColorExtractor(
     miniPlayerBackground: PlayerBackgroundStyle,
     onGradientColorsChange: (List<Color>) -> Unit
 ) {
-    val context = LocalContext.current
+    val playerConnection = LocalPlayerConnection.current ?: return
     val fallbackColor = MaterialTheme.colorScheme.surfaceContainer.toArgb()
+    val activePalette by playerConnection.activePalette.collectAsState()
 
-    LaunchedEffect(mediaMetadata?.id, miniPlayerBackground) {
-        if (miniPlayerBackground == PlayerBackgroundStyle.GRADIENT || miniPlayerBackground == PlayerBackgroundStyle.GLOW_ANIMATED) {
-            val currentMetadata = mediaMetadata
-            if (currentMetadata?.thumbnailUrl != null) {
-                withContext(Dispatchers.IO) {
-                    val request = ImageRequest.Builder(context)
-                        .data(currentMetadata.thumbnailUrl)
-                        .size(100, 100)
-                        .allowHardware(false)
-                        .build()
-
-                    val result = runCatching { context.imageLoader.execute(request) }.getOrNull()
-                    if (result != null) {
-                        val bitmap = result.image?.toBitmap()
-                        if (bitmap != null) {
-                            val palette = withContext(Dispatchers.Default) {
-                                Palette.from(bitmap)
-                                    .maximumColorCount(8)
-                                    .resizeBitmapArea(100 * 100)
-                                    .generate()
-                            }
-                            val extractedColors = if (miniPlayerBackground == PlayerBackgroundStyle.GLOW_ANIMATED) {
-                                listOfNotNull(
-                                    palette.getVibrantColor(fallbackColor).let { Color(it) },
-                                    palette.getLightVibrantColor(fallbackColor).let { Color(it) },
-                                    palette.getDarkVibrantColor(fallbackColor).let { Color(it) },
-                                    palette.getMutedColor(fallbackColor).let { Color(it) },
-                                    palette.getLightMutedColor(fallbackColor).let { Color(it) },
-                                    palette.getDarkMutedColor(fallbackColor).let { Color(it) }
-                                ).distinct()
-                            } else {
-                                PlayerColorExtractor.extractGradientColors(
-                                    palette = palette,
-                                    fallbackColor = fallbackColor
-                                )
-                            }
-                            withContext(Dispatchers.Main) { onGradientColorsChange(extractedColors) }
-                        }
-                    }
-                }
+    LaunchedEffect(activePalette, miniPlayerBackground) {
+        val palette = activePalette
+        if (palette != null && (miniPlayerBackground == PlayerBackgroundStyle.GRADIENT || miniPlayerBackground == PlayerBackgroundStyle.GLOW_ANIMATED)) {
+            val extractedColors = if (miniPlayerBackground == PlayerBackgroundStyle.GLOW_ANIMATED) {
+                listOfNotNull(
+                    palette.getVibrantColor(fallbackColor).let { Color(it) },
+                    palette.getLightVibrantColor(fallbackColor).let { Color(it) },
+                    palette.getDarkVibrantColor(fallbackColor).let { Color(it) },
+                    palette.getMutedColor(fallbackColor).let { Color(it) },
+                    palette.getLightMutedColor(fallbackColor).let { Color(it) },
+                    palette.getDarkMutedColor(fallbackColor).let { Color(it) }
+                ).distinct()
+            } else {
+                PlayerColorExtractor.extractGradientColors(
+                    palette = palette,
+                    fallbackColor = fallbackColor
+                )
             }
+            onGradientColorsChange(extractedColors)
         } else {
             onGradientColorsChange(emptyList())
         }

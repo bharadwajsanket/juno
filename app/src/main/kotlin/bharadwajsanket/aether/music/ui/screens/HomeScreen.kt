@@ -112,10 +112,12 @@ import bharadwajsanket.aether.music.constants.GridThumbnailHeight
 import bharadwajsanket.aether.music.constants.InnerTubeCookieKey
 import bharadwajsanket.aether.music.constants.ListItemHeight
 import bharadwajsanket.aether.music.constants.ListThumbnailSize
+import bharadwajsanket.aether.music.constants.LocalProfileNameKey
 import bharadwajsanket.aether.music.constants.RandomizeHomeOrderKey
 import bharadwajsanket.aether.music.constants.ShowSpeedDialKey
 import bharadwajsanket.aether.music.constants.SmallGridThumbnailHeight
 import bharadwajsanket.aether.music.constants.ThumbnailCornerRadius
+import bharadwajsanket.aether.music.ui.theme.AetherCorners
 import bharadwajsanket.aether.music.db.entities.Album
 import bharadwajsanket.aether.music.db.entities.Artist
 import bharadwajsanket.aether.music.db.entities.LocalItem
@@ -459,7 +461,7 @@ fun DailyDiscoverCard(
     Card(
         modifier = modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(AetherCorners.xl)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = {
@@ -479,7 +481,7 @@ fun DailyDiscoverCard(
             containerColor = containerColor,
         ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
-        shape = RoundedCornerShape(24.dp)
+        shape = AetherCorners.xl
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
@@ -598,7 +600,7 @@ fun HeroCarousel(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(260.dp)
+            .height(220.dp)
     ) {
         // Dynamic blur background from currently selected artwork card
         val currentSong = carouselItems.getOrNull(pagerState.currentPage)
@@ -625,13 +627,13 @@ fun HeroCarousel(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(160.dp)
                     .graphicsLayer {
                         this.scaleX = scale
                         this.scaleY = scale
                         this.alpha = alpha
                     }
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(AetherCorners.xl)
                     .combinedClickable(
                         onClick = {
                             if (song.id == mediaMetadata?.id) {
@@ -754,6 +756,21 @@ fun HomeScreen(
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
     val (randomizeHomeOrder) = rememberPreference(RandomizeHomeOrderKey, true)
     val (showSpeedDial) = rememberPreference(ShowSpeedDialKey, true)
+    val (localProfileName) = rememberPreference(LocalProfileNameKey, "Sanket")
+    val greeting = remember(localProfileName) {
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val greetingText = when (hour) {
+            in 5..11 -> "Good Morning"
+            in 12..16 -> "Good Afternoon"
+            in 17..21 -> "Good Evening"
+            else -> "Good Night"
+        }
+        if (localProfileName.isNotBlank()) {
+            "$greetingText, $localProfileName"
+        } else {
+            greetingText
+        }
+    }
 
 
     val isLoggedIn = remember(innerTubeCookie) {
@@ -1030,20 +1047,20 @@ fun HomeScreen(
             }
         } else {
             val defaultOrder = mapOf(
-                HomeSection.QuickPicks to 1000,
-                HomeSection.SpeedDial to 100,
-                HomeSection.FromTheCommunity to 80,
-                HomeSection.DailyDiscover to 70,
-                HomeSection.KeepListening to 60,
-                HomeSection.AccountPlaylists to 50,
-                HomeSection.ForgottenFavorites to 40,
-                HomeSection.MoodAndGenres to 10
+                HomeSection.SpeedDial to 1000,
+                HomeSection.KeepListening to 900,
+                HomeSection.DailyDiscover to 820,
+                HomeSection.FromTheCommunity to 810,
+                HomeSection.AccountPlaylists to 800,
+                HomeSection.ForgottenFavorites to 700,
+                HomeSection.QuickPicks to 600,
+                HomeSection.MoodAndGenres to 100
             )
 
             list.sortedByDescending { section ->
                 when(section) {
-                    is HomeSection.SimilarRecommendation -> 30 - section.index
-                    is HomeSection.HomePageSection -> 20 - section.index
+                    is HomeSection.SimilarRecommendation -> 500 - section.index
+                    is HomeSection.HomePageSection -> 400 - section.index
                     else -> defaultOrder[section] ?: 0
                 }
             }
@@ -1101,7 +1118,7 @@ fun HomeScreen(
             ) {
                 item {
                     Text(
-                        text = "AETHER",
+                        text = greeting,
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -1339,11 +1356,11 @@ fun HomeScreen(
                                     HorizontalCenteredHeroCarousel(
                                         state = rememberCarouselState { distinctQuickPicks.size },
                                         maxItemWidth = 250.dp,
-                                        itemSpacing = 8.dp,
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        itemSpacing = 16.dp,
+                                        contentPadding = PaddingValues(horizontal = 48.dp),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(290.dp)
+                                            .height(220.dp)
                                             .animateItem()
                                     ) { index ->
                                         val originalSong = distinctQuickPicks[index]
@@ -1351,14 +1368,14 @@ fun HomeScreen(
                                         val isActive = song!!.id == mediaMetadata?.id
 
                                         Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .maskClip(MaterialTheme.shapes.extraLarge)
-                                                .maskBorder(
-                                                    BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                                                    MaterialTheme.shapes.extraLarge
-                                                )
-                                                .focusable()
+                                             modifier = Modifier
+                                                 .fillMaxSize()
+                                                 .maskClip(AetherCorners.xl)
+                                                 .maskBorder(
+                                                     BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                                     AetherCorners.xl
+                                                 )
+                                                 .focusable()
                                                 .combinedClickable(
                                                     onClick = {
                                                         if (isActive) {
@@ -1511,18 +1528,17 @@ fun HomeScreen(
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(340.dp)
-                                            .padding(horizontal = 16.dp),
+                                            .height(220.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         val carouselState = rememberCarouselState { discoverList.size }
                                         HorizontalMultiBrowseCarousel(
                                             state = carouselState,
-                                            preferredItemWidth = 320.dp,
+                                            preferredItemWidth = 250.dp,
                                             itemSpacing = 16.dp,
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .height(320.dp)
+                                                .height(220.dp)
                                         ) { i ->
                                             val item = discoverList[i]
                                             DailyDiscoverCard(
@@ -1540,7 +1556,7 @@ fun HomeScreen(
                                                     }
                                                 },
                                                 navController = navController,
-                                                modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge)
+                                                modifier = Modifier.maskClip(AetherCorners.xl)
                                             )
                                         }
                                     }

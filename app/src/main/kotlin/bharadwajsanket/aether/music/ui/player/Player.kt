@@ -487,53 +487,32 @@ fun BottomSheetPlayer(
     val defaultGradientColors = listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surfaceVariant)
     val fallbackColor = MaterialTheme.colorScheme.surface.toArgb()
 
-    LaunchedEffect(mediaMetadata?.id, playerBackground) {
-        if (playerBackground == PlayerBackgroundStyle.GRADIENT || playerBackground == PlayerBackgroundStyle.GLOW_ANIMATED) {
-            val currentMetadata = mediaMetadata
-            if (currentMetadata != null && currentMetadata.thumbnailUrl != null) {
-                val cachedColors = gradientColorsCache[currentMetadata.id]
-                if (cachedColors != null) {
-                    gradientColors = cachedColors
-                    return@LaunchedEffect
-                }
-                withContext(Dispatchers.IO) {
-                    val request = ImageRequest.Builder(context)
-                        .data(currentMetadata.thumbnailUrl)
-                        .size(100, 100)
-                        .allowHardware(false)
-                        .memoryCacheKey("gradient_${currentMetadata.id}")
-                        .build()
+    val activePalette by playerConnection.activePalette.collectAsState()
 
-                    val result = runCatching { context.imageLoader.execute(request) }.getOrNull()
-                    if (result != null) {
-                        val bitmap = result.image?.toBitmap()
-                        if (bitmap != null) {
-                            val palette = withContext(Dispatchers.Default) {
-                                Palette.from(bitmap)
-                                    .maximumColorCount(8)
-                                    .resizeBitmapArea(100 * 100)
-                                    .generate()
-                            }
-                            val extractedColors = if (playerBackground == PlayerBackgroundStyle.GLOW_ANIMATED) {
-                                listOfNotNull(
-                                    palette.getVibrantColor(fallbackColor).let { Color(it) },
-                                    palette.getLightVibrantColor(fallbackColor).let { Color(it) },
-                                    palette.getDarkVibrantColor(fallbackColor).let { Color(it) },
-                                    palette.getMutedColor(fallbackColor).let { Color(it) },
-                                    palette.getLightMutedColor(fallbackColor).let { Color(it) },
-                                    palette.getDarkMutedColor(fallbackColor).let { Color(it) }
-                                ).distinct()
-                            } else {
-                                PlayerColorExtractor.extractGradientColors(
-                                    palette = palette,
-                                    fallbackColor = fallbackColor
-                                )
-                            }
-                            gradientColorsCache[currentMetadata.id] = extractedColors
-                            withContext(Dispatchers.Main) { gradientColors = extractedColors }
-                        }
-                    }
+    LaunchedEffect(activePalette, playerBackground) {
+        val palette = activePalette
+        if (palette != null && (playerBackground == PlayerBackgroundStyle.GRADIENT || playerBackground == PlayerBackgroundStyle.GLOW_ANIMATED)) {
+            val cachedColors = gradientColorsCache[mediaMetadata?.id ?: ""]
+            if (cachedColors != null) {
+                gradientColors = cachedColors
+            } else {
+                val extractedColors = if (playerBackground == PlayerBackgroundStyle.GLOW_ANIMATED) {
+                    listOfNotNull(
+                        palette.getVibrantColor(fallbackColor).let { Color(it) },
+                        palette.getLightVibrantColor(fallbackColor).let { Color(it) },
+                        palette.getDarkVibrantColor(fallbackColor).let { Color(it) },
+                        palette.getMutedColor(fallbackColor).let { Color(it) },
+                        palette.getLightMutedColor(fallbackColor).let { Color(it) },
+                        palette.getDarkMutedColor(fallbackColor).let { Color(it) }
+                    ).distinct()
+                } else {
+                    PlayerColorExtractor.extractGradientColors(
+                        palette = palette,
+                        fallbackColor = fallbackColor
+                    )
                 }
+                gradientColorsCache[mediaMetadata?.id ?: ""] = extractedColors
+                gradientColors = extractedColors
             }
         } else {
             gradientColors = emptyList()
@@ -850,6 +829,7 @@ fun BottomSheetPlayer(
     }
 
     val backgroundAlpha = state.progress.coerceIn(0f, 1f)
+    val isBatterySaver = bharadwajsanket.aether.music.ui.theme.rememberBatterySaverState()
 
     BottomSheet(
         state = state,
@@ -939,15 +919,19 @@ fun BottomSheetPlayer(
                                 val infiniteTransition =
                                     rememberInfiniteTransition(label = "GlowAnimation")
 
-                                val progress by infiniteTransition.animateFloat(
-                                    initialValue = 0f,
-                                    targetValue = 1f,
-                                    animationSpec = infiniteRepeatable(
-                                        animation = tween(20000, easing = LinearEasing),
-                                        repeatMode = RepeatMode.Restart
-                                    ),
-                                    label = "glowProgress"
-                                )
+                                val progress by if (isBatterySaver) {
+                                    remember { mutableStateOf(0f) }
+                                } else {
+                                    infiniteTransition.animateFloat(
+                                        initialValue = 0f,
+                                        targetValue = 1f,
+                                        animationSpec = infiniteRepeatable(
+                                            animation = tween(20000, easing = LinearEasing),
+                                            repeatMode = RepeatMode.Restart
+                                        ),
+                                        label = "glowProgress"
+                                    )
+                                }
 
                                 fun rotatedColorAt(index: Int): Color {
                                     val size = colors.size
@@ -1154,13 +1138,13 @@ fun BottomSheetPlayer(
                                             modifier = Modifier.fillMaxSize()
                                         )
 
-                                        if (enableCanvas && canvasArtwork != null && backgroundAlpha > 0.01f) {
-                                            BackgroundVideoView(
-                                                videoUrl = canvasArtwork?.animated ?: canvasArtwork?.videoUrl ?: "",
-                                                isPlaying = isPlaying,
-                                                modifier = Modifier.fillMaxSize()
-                                            )
-                                        }
+                                         if (enableCanvas && canvasArtwork != null && backgroundAlpha > 0.01f && !isBatterySaver) {
+                                             BackgroundVideoView(
+                                                 videoUrl = canvasArtwork?.animated ?: canvasArtwork?.videoUrl ?: "",
+                                                 isPlaying = isPlaying,
+                                                 modifier = Modifier.fillMaxSize()
+                                             )
+                                         }
                                     }
                                     
                                     
@@ -1183,35 +1167,47 @@ fun BottomSheetPlayer(
                     PlayerBackgroundStyle.LIVE_MESH -> {
                         val infiniteTransition = rememberInfiniteTransition(label = "liveMeshRotation")
                         
-                        val anchorRotation by infiniteTransition.animateFloat(
-                            initialValue = 0f,
-                            targetValue = -360f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(80000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Restart
-                            ),
-                            label = "anchorRotation"
-                        )
+                        val anchorRotation by if (isBatterySaver) {
+                            remember { mutableStateOf(0f) }
+                        } else {
+                            infiniteTransition.animateFloat(
+                                initialValue = 0f,
+                                targetValue = -360f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(80000, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Restart
+                                ),
+                                label = "anchorRotation"
+                            )
+                        }
                         
-                        val fastRotation by infiniteTransition.animateFloat(
-                            initialValue = 0f,
-                            targetValue = 360f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(40000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Restart
-                            ),
-                            label = "fastRotation"
-                        )
+                        val fastRotation by if (isBatterySaver) {
+                            remember { mutableStateOf(0f) }
+                        } else {
+                            infiniteTransition.animateFloat(
+                                initialValue = 0f,
+                                targetValue = 360f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(40000, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Restart
+                                ),
+                                label = "fastRotation"
+                            )
+                        }
                         
-                        val slowRotation by infiniteTransition.animateFloat(
-                            initialValue = 0f,
-                            targetValue = 360f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(60000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Restart
-                            ),
-                            label = "slowRotation"
-                        )
+                        val slowRotation by if (isBatterySaver) {
+                            remember { mutableStateOf(0f) }
+                        } else {
+                            infiniteTransition.animateFloat(
+                                initialValue = 0f,
+                                targetValue = 360f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(60000, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Restart
+                                ),
+                                label = "slowRotation"
+                            )
+                        }
 
                         AnimatedContent(
                             targetState = mediaMetadata?.thumbnailUrl,
@@ -1225,8 +1221,8 @@ fun BottomSheetPlayer(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .alpha(backgroundAlpha)
+                                        .blur(if (isBatterySaver) 10.dp else 12.dp)
                                         .graphicsLayer {
-                                            
                                             scaleX = 1.7f
                                             scaleY = 1.7f
                                         }
@@ -1246,48 +1242,53 @@ fun BottomSheetPlayer(
                                             .build()
                                     }
 
-                                    AsyncImage(
-                                        model = rotationRequest,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        colorFilter = colorFilter,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .blur(10.dp)
-                                            .graphicsLayer { rotationZ = anchorRotation }
-                                    )
+                                    if (isBatterySaver) {
+                                        AsyncImage(
+                                            model = rotationRequest,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            colorFilter = colorFilter,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    } else {
+                                        AsyncImage(
+                                            model = rotationRequest,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            colorFilter = colorFilter,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .graphicsLayer { rotationZ = anchorRotation }
+                                        )
 
-                                    
-                                    AsyncImage(
-                                        model = rotationRequest,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        colorFilter = colorFilter,
-                                        alignment = Alignment.TopStart,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .blur(12.dp)
-                                            .graphicsLayer { 
-                                                rotationZ = fastRotation
-                                                alpha = 0.6f
-                                            }
-                                    )
+                                        AsyncImage(
+                                            model = rotationRequest,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            colorFilter = colorFilter,
+                                            alignment = Alignment.TopStart,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .graphicsLayer { 
+                                                    rotationZ = fastRotation
+                                                    alpha = 0.6f
+                                                }
+                                        )
 
-                                    
-                                    AsyncImage(
-                                        model = rotationRequest,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        colorFilter = colorFilter,
-                                        alignment = Alignment.BottomEnd,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .blur(12.dp)
-                                            .graphicsLayer { 
-                                                rotationZ = slowRotation
-                                                alpha = 0.5f
-                                            }
-                                    )
+                                        AsyncImage(
+                                            model = rotationRequest,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            colorFilter = colorFilter,
+                                            alignment = Alignment.BottomEnd,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .graphicsLayer { 
+                                                    rotationZ = slowRotation
+                                                    alpha = 0.5f
+                                                }
+                                        )
+                                    }
                                     
                                     
                                     Box(

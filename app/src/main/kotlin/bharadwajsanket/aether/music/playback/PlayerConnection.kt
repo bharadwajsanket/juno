@@ -32,6 +32,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+import androidx.palette.graphics.Palette
+import coil3.imageLoader
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.toBitmap
+import kotlinx.coroutines.Dispatchers
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerConnection(
     context: Context,
@@ -117,10 +124,17 @@ class PlayerConnection(
     }.stateIn(
         scope,
         SharingStarted.Lazily,
-        player.playbackState != STATE_ENDED && player.playWhenReady
+        if (service.isPlayerReady.value) {
+            val p = getPlayerSafe()
+            p.playbackState != STATE_ENDED && p.playWhenReady
+        } else {
+            false
+        }
     )
     
-    val mediaMetadata = MutableStateFlow(player.currentMetadata)
+    val mediaMetadata = MutableStateFlow(if (service.isPlayerReady.value) getPlayerSafe().currentMetadata else null)
+    val activePalette = MutableStateFlow<Palette?>(null)
+
     val currentSong =
         mediaMetadata.flatMapLatest {
             database.song(it?.id)
@@ -175,6 +189,41 @@ class PlayerConnection(
             
             if (attachedPlayer == null && service.isPlayerReady.value) {
                  updateAttachedPlayer(player)
+            }
+
+            scope.launch(Dispatchers.IO) {
+                mediaMetadata.collect { metadata ->
+                    if (metadata == null || metadata.thumbnailUrl == null || bharadwajsanket.aether.music.constants.DataSaverConfig.isSuperDataSaverEnabled) {
+                        activePalette.value = null
+                        return@collect
+                    }
+                    try {
+                        val request = ImageRequest.Builder(context)
+                            .data(metadata.thumbnailUrl)
+                            .size(100, 100)
+                            .allowHardware(false)
+                            .memoryCacheKey("palette_${metadata.id}")
+                            .build()
+                        val result = runCatching { context.imageLoader.execute(request) }.getOrNull()
+                        if (result != null) {
+                            val bitmap = result.image?.toBitmap()
+                            if (bitmap != null) {
+                                val palette = Palette.from(bitmap)
+                                    .maximumColorCount(8)
+                                    .resizeBitmapArea(100 * 100)
+                                    .generate()
+                                activePalette.value = palette
+                            } else {
+                                activePalette.value = null
+                            }
+                        } else {
+                            activePalette.value = null
+                        }
+                    } catch (e: Exception) {
+                        Timber.tag(TAG).e(e, "Error extracting palette in PlayerConnection")
+                        activePalette.value = null
+                    }
+                }
             }
 
             Timber.tag(TAG).d("PlayerConnection flow observer registered")

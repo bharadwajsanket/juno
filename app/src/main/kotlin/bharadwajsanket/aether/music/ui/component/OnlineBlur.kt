@@ -16,20 +16,35 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import bharadwajsanket.aether.music.ui.utils.fadingEdge
 
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import bharadwajsanket.aether.music.ui.theme.rememberBatterySaverState
+
 @Composable
 fun OnlineBlur(
     thumbnailUrl: String?,
     modifier: Modifier = Modifier,
 ) {
+    val isBatterySaver = rememberBatterySaverState()
     Box(modifier = modifier) {
         if (thumbnailUrl != null) {
+            val context = LocalContext.current
+            val request = remember(thumbnailUrl, isBatterySaver) {
+                ImageRequest.Builder(context)
+                    .data(thumbnailUrl)
+                    .size(if (isBatterySaver) 32 else 128)
+                    .crossfade(true)
+                    .build()
+            }
             AsyncImage(
-                model = thumbnailUrl,
+                model = request,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(50.dp)
+                    .blur(if (isBatterySaver) 15.dp else 50.dp)
                     .fadingEdge(bottom = 200.dp)
             )
         }

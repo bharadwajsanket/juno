@@ -422,4 +422,8 @@
     <string name="spotify_waiting_for_login">Waiting for Spotify login</string>
     <string name="super_data_saver">Super Data Saver</string>
     <string name="super_data_saver_desc">Saves bandwidth by downscaling artwork, choosing low-bitrate streams, and skipping preloads/recommendations.</string>
+    <string name="offline_profile">Offline Profile</string>
+    <string name="display_name">Display Name</string>
+    <string name="display_name_desc">Set your local display name for personalized greetings</string>
+    <string name="library_feed">Library Feed</string>
 </resources>

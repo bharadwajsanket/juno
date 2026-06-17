@@ -215,7 +215,8 @@ fun UpdateScreen(navController: NavHostController) {
                 },
                 onError = {
                     status = AetherUpdateStatus.Error(context.getString(R.string.cant_check_updates))
-                }
+                },
+                force = true
             )
         }
     }
@@ -647,88 +648,215 @@ fun isNewerVersion(latestVersion: String, currentVersion: String): Boolean {
 }
 
 
+fun saveLatestReleaseToCache(context: Context, jsonResponse: String) {
+    try {
+        val cacheData = JSONObject().apply {
+            put("timestamp", System.currentTimeMillis())
+            put("response", jsonResponse)
+        }
+        context.openFileOutput("latest_release_cache.json", Context.MODE_PRIVATE).use {
+            it.write(cacheData.toString().toByteArray())
+        }
+    } catch (e: Exception) {
+        Log.e("UpdateCheck", "Error saving latest release cache", e)
+    }
+}
+
+fun loadLatestReleaseFromCache(context: Context): Pair<Long, String>? {
+    return try {
+        val cacheFile = File(context.filesDir, "latest_release_cache.json")
+        if (!cacheFile.exists()) return null
+        val cacheData = JSONObject(context.openFileInput("latest_release_cache.json").use { it.bufferedReader().readText() })
+        val timestamp = cacheData.getLong("timestamp")
+        val response = cacheData.getString("response")
+        Pair(timestamp, response)
+    } catch (e: Exception) {
+        null
+    }
+}
+
 suspend fun checkForUpdate(
     context: Context,
     onSuccess: (tag: String, isAvailable: Boolean, changelog: List<ChangelogSection>, size: String, date: String, description: String?, imageUrl: String?, apkUrl: String?) -> Unit,
     onError: () -> Unit,
+    force: Boolean = false,
 ) {
     withContext(Dispatchers.IO) {
-        try {
-            val url = URL("https://api.github.com/repos/bharadwajsanket/Aether-Music/releases/latest")
-            val json = url.openStream().bufferedReader().use { it.readText() }
-            val targetRelease = JSONObject(json)
-            
-            val currentVersion = BuildConfig.VERSION_NAME
-            val targetTagName = targetRelease.getString("tag_name")
-            val shouldShow = isNewerVersion(targetTagName, currentVersion)
-
-            if (shouldShow) {
-                val tagWithPrefix = targetRelease.getString("tag_name")
-                val displayTag = tagWithPrefix
-
-                
-                val changelogList = mutableListOf<ChangelogSection>()
-                var description: String? = null
-                var imageUrl: String? = null
-                try {
-                    val changelogUrl =
-                        URL("https://github.com/bharadwajsanket/Aether-Music/releases/download/$tagWithPrefix/changelog.json")
-                    val changelogJson = changelogUrl.openStream().bufferedReader().use { it.readText() }
-                    val changelogData = JSONObject(changelogJson)
-
-                    description = changelogData.optString("description").takeIf { it.isNotEmpty() }
-                    imageUrl = changelogData.optString("image").takeIf { it.isNotEmpty() }
-
-                    val changelogArray = changelogData.getJSONArray("changelog")
-                    for (j in 0 until changelogArray.length()) {
-                        val sectionObj = changelogArray.getJSONObject(j)
-                        val title = sectionObj.getString("title")
-                        val itemsArray = sectionObj.getJSONArray("items")
-                        val itemsList = mutableListOf<String>()
-                        for (k in 0 until itemsArray.length()) {
-                            itemsList.add(itemsArray.getString(k))
+        if (!force) {
+            val cached = loadLatestReleaseFromCache(context)
+            if (cached != null) {
+                val age = System.currentTimeMillis() - cached.first
+                if (age < 24 * 60 * 60 * 1000L) {
+                    try {
+                        val cachedRelease = JSONObject(cached.second)
+                        val targetTagName = cachedRelease.getString("tag_name")
+                        val currentVersion = BuildConfig.VERSION_NAME
+                        val shouldShow = isNewerVersion(targetTagName, currentVersion)
+                        
+                        if (shouldShow) {
+                            val tagWithPrefix = cachedRelease.getString("tag_name")
+                            val changelogList = mutableListOf<ChangelogSection>()
+                            val body = cachedRelease.optString("body", context.getString(R.string.no_changelog_available))
+                            val fallbackItems = body.split("\n").filter { it.isNotBlank() }
+                            changelogList.add(ChangelogSection(context.getString(R.string.changelog), fallbackItems))
+                            
+                            val publishedAt = cachedRelease.getString("published_at")
+                            val formattedReleaseDate = formatGitHubDate(publishedAt)
+                            val assets = cachedRelease.getJSONArray("assets")
+                            var apkSizeInMB = ""
+                            var apkDownloadUrl = ""
+                            for (j in 0 until assets.length()) {
+                                val asset = assets.getJSONObject(j)
+                                val assetName = asset.getString("name")
+                                if (assetName.endsWith(".apk", ignoreCase = true) && !assetName.lowercase().contains("debug")) {
+                                    val apkSizeInBytes = asset.getLong("size")
+                                    apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
+                                    apkDownloadUrl = asset.getString("browser_download_url")
+                                    break
+                                }
+                            }
+                            if (apkDownloadUrl.isNotEmpty()) {
+                                withContext(Dispatchers.Main) {
+                                    onSuccess(tagWithPrefix, true, changelogList, apkSizeInMB, formattedReleaseDate, null, null, apkDownloadUrl)
+                                }
+                                return@withContext
+                            }
                         }
-                        changelogList.add(ChangelogSection(title, itemsList))
+                        
+                        withContext(Dispatchers.Main) {
+                            onSuccess(currentVersion, false, emptyList(), "", "", null, null, null)
+                        }
+                        return@withContext
+                    } catch (e: Exception) {
+                        Log.e("UpdateCheck", "Error parsing cached update", e)
                     }
-                } catch (e: Exception) {
-                    
-                    val body = targetRelease.optString("body", context.getString(R.string.no_changelog_available))
-                    val fallbackItems = body.split("\n").filter { it.isNotBlank() }
-                    changelogList.add(ChangelogSection(context.getString(R.string.changelog), fallbackItems))
-                }
-
-                val publishedAt = targetRelease.getString("published_at")
-                val formattedReleaseDate = formatGitHubDate(publishedAt)
-                val assets = targetRelease.getJSONArray("assets")
-
-                var apkSizeInMB = ""
-                var apkDownloadUrl = ""
-                for (j in 0 until assets.length()) {
-                    val asset = assets.getJSONObject(j)
-                    val assetName = asset.getString("name")
-                    if (assetName.endsWith(".apk", ignoreCase = true) && !assetName.lowercase().contains("debug")) {
-                        val apkSizeInBytes = asset.getLong("size")
-                        apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
-                        apkDownloadUrl = asset.getString("browser_download_url")
-                        break
-                    }
-                }
-
-                if (apkDownloadUrl.isNotEmpty()) {
-                    withContext(Dispatchers.Main) {
-                        onSuccess(displayTag, true, changelogList, apkSizeInMB, formattedReleaseDate, description, imageUrl, apkDownloadUrl)
-                    }
-                    return@withContext
                 }
             }
+        }
 
-            
-            withContext(Dispatchers.Main) {
-                onSuccess(currentVersion, false, emptyList(), "", "", null, null, null)
+        try {
+            val url = URL("https://api.github.com/repos/bharadwajsanket/Aether-Music/releases/latest")
+            val connection = url.openConnection() as java.net.HttpURLConnection
+            connection.setRequestProperty("User-Agent", "aethermusic-Update-App")
+            connection.setRequestProperty("Accept", "application/vnd.github+json")
+            if (connection.responseCode == 200) {
+                val json = connection.inputStream.bufferedReader().use { it.readText() }
+                saveLatestReleaseToCache(context, json)
+                val targetRelease = JSONObject(json)
+                
+                val currentVersion = BuildConfig.VERSION_NAME
+                val targetTagName = targetRelease.getString("tag_name")
+                val shouldShow = isNewerVersion(targetTagName, currentVersion)
+
+                if (shouldShow) {
+                    val tagWithPrefix = targetRelease.getString("tag_name")
+                    val displayTag = tagWithPrefix
+
+                    val changelogList = mutableListOf<ChangelogSection>()
+                    var description: String? = null
+                    var imageUrl: String? = null
+                    try {
+                        val changelogUrl =
+                            URL("https://github.com/bharadwajsanket/Aether-Music/releases/download/$tagWithPrefix/changelog.json")
+                        val changelogJson = changelogUrl.openStream().bufferedReader().use { it.readText() }
+                        val changelogData = JSONObject(changelogJson)
+
+                        description = changelogData.optString("description").takeIf { it.isNotEmpty() }
+                        imageUrl = changelogData.optString("image").takeIf { it.isNotEmpty() }
+
+                        val changelogArray = changelogData.getJSONArray("changelog")
+                        for (j in 0 until changelogArray.length()) {
+                            val sectionObj = changelogArray.getJSONObject(j)
+                            val title = sectionObj.getString("title")
+                            val itemsArray = sectionObj.getJSONArray("items")
+                            val itemsList = mutableListOf<String>()
+                            for (k in 0 until itemsArray.length()) {
+                                itemsList.add(itemsArray.getString(k))
+                            }
+                            changelogList.add(ChangelogSection(title, itemsList))
+                        }
+                    } catch (e: Exception) {
+                        val body = targetRelease.optString("body", context.getString(R.string.no_changelog_available))
+                        val fallbackItems = body.split("\n").filter { it.isNotBlank() }
+                        changelogList.add(ChangelogSection(context.getString(R.string.changelog), fallbackItems))
+                    }
+
+                    val publishedAt = targetRelease.getString("published_at")
+                    val formattedReleaseDate = formatGitHubDate(publishedAt)
+                    val assets = targetRelease.getJSONArray("assets")
+
+                    var apkSizeInMB = ""
+                    var apkDownloadUrl = ""
+                    for (j in 0 until assets.length()) {
+                        val asset = assets.getJSONObject(j)
+                        val assetName = asset.getString("name")
+                        if (assetName.endsWith(".apk", ignoreCase = true) && !assetName.lowercase().contains("debug")) {
+                            val apkSizeInBytes = asset.getLong("size")
+                            apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
+                            apkDownloadUrl = asset.getString("browser_download_url")
+                            break
+                        }
+                    }
+
+                    if (apkDownloadUrl.isNotEmpty()) {
+                        withContext(Dispatchers.Main) {
+                            onSuccess(displayTag, true, changelogList, apkSizeInMB, formattedReleaseDate, description, imageUrl, apkDownloadUrl)
+                        }
+                        return@withContext
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    onSuccess(currentVersion, false, emptyList(), "", "", null, null, null)
+                }
+            } else {
+                throw java.io.IOException("HTTP Error ${connection.responseCode}")
             }
         } catch (e: Exception) {
             Log.e("UpdateCheck", "Error checking for updates: ${e.message}", e)
-            withContext(Dispatchers.Main) { onError() }
+            val cached = loadLatestReleaseFromCache(context)
+            if (cached != null) {
+                try {
+                    val cachedRelease = JSONObject(cached.second)
+                    val targetTagName = cachedRelease.getString("tag_name")
+                    val currentVersion = BuildConfig.VERSION_NAME
+                    val shouldShow = isNewerVersion(targetTagName, currentVersion)
+                    if (shouldShow) {
+                        val tagWithPrefix = cachedRelease.getString("tag_name")
+                        val changelogList = mutableListOf<ChangelogSection>()
+                        val body = cachedRelease.optString("body", context.getString(R.string.no_changelog_available))
+                        val fallbackItems = body.split("\n").filter { it.isNotBlank() }
+                        changelogList.add(ChangelogSection(context.getString(R.string.changelog), fallbackItems))
+                        val publishedAt = cachedRelease.getString("published_at")
+                        val formattedReleaseDate = formatGitHubDate(publishedAt)
+                        val assets = cachedRelease.getJSONArray("assets")
+                        var apkSizeInMB = ""
+                        var apkDownloadUrl = ""
+                        for (j in 0 until assets.length()) {
+                            val asset = assets.getJSONObject(j)
+                            val assetName = asset.getString("name")
+                            if (assetName.endsWith(".apk", ignoreCase = true) && !assetName.lowercase().contains("debug")) {
+                                val apkSizeInBytes = asset.getLong("size")
+                                apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
+                                apkDownloadUrl = asset.getString("browser_download_url")
+                                break
+                            }
+                        }
+                        if (apkDownloadUrl.isNotEmpty()) {
+                            withContext(Dispatchers.Main) {
+                                onSuccess(tagWithPrefix, true, changelogList, apkSizeInMB, formattedReleaseDate, null, null, apkDownloadUrl)
+                            }
+                            return@withContext
+                        }
+                    }
+                } catch (parseEx: Exception) {
+                    Log.e("UpdateCheck", "Failed to parse fallback cache", parseEx)
+                }
+            }
+            
+            withContext(Dispatchers.Main) {
+                onSuccess(BuildConfig.VERSION_NAME, false, emptyList(), "", "", null, null, null)
+            }
         }
     }
 }

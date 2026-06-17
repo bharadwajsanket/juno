@@ -384,9 +384,7 @@ fun LibraryMixScreen(
                                 icon = R.drawable.snippet_folder,
                                 iconTint = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
                                 onClick = { navController.navigate("local_songs") },
-                                modifier = Modifier
-                                    .fillMaxWidth(0.5f)
-                                    .padding(end = 4.dp)
+                                modifier = itemModifier
                             )
                         }
                     }
@@ -396,7 +394,7 @@ fun LibraryMixScreen(
                         contentType = CONTENT_TYPE_HEADER,
                     ) {
                         androidx.compose.material3.Text(
-                            text = stringResource(R.string.filter_playlists),
+                            text = stringResource(R.string.library_feed),
                             style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
@@ -643,9 +641,7 @@ fun LibraryMixScreen(
                                 icon = R.drawable.snippet_folder,
                                 iconTint = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
                                 onClick = { navController.navigate("local_songs") },
-                                modifier = Modifier
-                                    .fillMaxWidth(0.5f)
-                                    .padding(end = 4.dp)
+                                modifier = itemModifier
                             )
                         }
                     }
@@ -656,7 +652,7 @@ fun LibraryMixScreen(
                         contentType = CONTENT_TYPE_HEADER,
                     ) {
                         androidx.compose.material3.Text(
-                            text = stringResource(R.string.filter_playlists),
+                            text = stringResource(R.string.library_feed),
                             style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)

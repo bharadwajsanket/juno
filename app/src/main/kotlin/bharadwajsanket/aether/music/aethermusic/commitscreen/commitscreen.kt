@@ -66,6 +66,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
+import android.content.Context
 import java.net.URL
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -80,6 +83,31 @@ data class CommitData(
     val date: String,
     val htmlUrl: String
 )
+
+private fun saveCommitsToCache(context: Context, json: String) {
+    try {
+        val cacheData = JSONObject().apply {
+            put("timestamp", System.currentTimeMillis())
+            put("response", json)
+        }
+        context.openFileOutput("commits_cache.json", Context.MODE_PRIVATE).use {
+            it.write(cacheData.toString().toByteArray())
+        }
+    } catch (e: Exception) {
+        Log.e("CommitScreen", "Error saving commits cache", e)
+    }
+}
+
+private fun loadCommitsFromCache(context: Context): Pair<Long, String>? {
+    return try {
+        val cacheFile = File(context.filesDir, "commits_cache.json")
+        if (!cacheFile.exists()) return null
+        val cacheData = JSONObject(context.openFileInput("commits_cache.json").use { it.bufferedReader().readText() })
+        Pair(cacheData.getLong("timestamp"), cacheData.getString("response"))
+    } catch (e: Exception) {
+        null
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -100,52 +128,139 @@ fun CommitScreen(
         else LinearOutSlowInEasing.transform(pullToRefreshState.distanceFraction).coerceIn(0f, 1f)
     }
 
-    fun fetchCommits() {
+    fun fetchCommits(force: Boolean = false) {
         isLoading = true
         hasError = false
         coroutineScope.launch(Dispatchers.IO) {
+            if (!force) {
+                val cached = loadCommitsFromCache(context)
+                if (cached != null) {
+                    val age = System.currentTimeMillis() - cached.first
+                    if (age < 24 * 60 * 60 * 1000L) {
+                        try {
+                            val array = JSONArray(cached.second)
+                            val outputFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
+                            val list = mutableListOf<CommitData>()
+                            for (i in 0 until array.length()) {
+                                val obj = array.getJSONObject(i)
+                                val sha = obj.getString("sha")
+                                val htmlUrl = obj.getString("html_url")
+                                val commitObj = obj.getJSONObject("commit")
+                                val fullMessage = commitObj.getString("message")
+                                val message = fullMessage.lines().firstOrNull { it.isNotBlank() } ?: fullMessage
+                                val authorObj = commitObj.getJSONObject("author")
+                                val authorName = authorObj.optString("name", "Unknown")
+                                val rawDate = authorObj.optString("date", "")
+                                val formattedDate = try {
+                                    ZonedDateTime.parse(rawDate).format(outputFormatter)
+                                } catch (e: Exception) { rawDate }
+                                val authorLogin = if (!obj.isNull("author")) {
+                                    obj.getJSONObject("author").optString("login", null)
+                                } else null
+                                val authorAvatarUrl = if (!obj.isNull("author")) {
+                                    obj.getJSONObject("author").optString("avatar_url", null)
+                                } else null
+                                list.add(CommitData(sha, message, authorName, authorAvatarUrl, authorLogin, formattedDate, htmlUrl))
+                            }
+                            withContext(Dispatchers.Main) {
+                                commits = list
+                                isLoading = false
+                                hasError = false
+                            }
+                            return@launch
+                        } catch (e: Exception) {
+                            Log.e("CommitScreen", "Error parsing cached commits", e)
+                        }
+                    }
+                }
+            }
+
             try {
                 val url = URL("https://api.github.com/repos/bharadwajsanket/Aether-Music/commits?branch=main&per_page=50")
-                val json = url.openStream().bufferedReader().use { it.readText() }
-                val array = JSONArray(json)
-                val outputFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
+                val connection = url.openConnection() as java.net.HttpURLConnection
+                connection.setRequestProperty("User-Agent", "aethermusic-Commit-App")
+                connection.setRequestProperty("Accept", "application/vnd.github+json")
+                if (connection.responseCode == 200) {
+                    val json = connection.inputStream.bufferedReader().use { it.readText() }
+                    saveCommitsToCache(context, json)
+                    val array = JSONArray(json)
+                    val outputFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
 
-                val list = mutableListOf<CommitData>()
-                for (i in 0 until array.length()) {
-                    val obj = array.getJSONObject(i)
-                    val sha = obj.getString("sha")
-                    val htmlUrl = obj.getString("html_url")
+                    val list = mutableListOf<CommitData>()
+                    for (i in 0 until array.length()) {
+                        val obj = array.getJSONObject(i)
+                        val sha = obj.getString("sha")
+                        val htmlUrl = obj.getString("html_url")
 
-                    val commitObj = obj.getJSONObject("commit")
-                    val fullMessage = commitObj.getString("message")
-                    
-                    val message = fullMessage.lines().firstOrNull { it.isNotBlank() } ?: fullMessage
+                        val commitObj = obj.getJSONObject("commit")
+                        val fullMessage = commitObj.getString("message")
+                        
+                        val message = fullMessage.lines().firstOrNull { it.isNotBlank() } ?: fullMessage
 
-                    val authorObj = commitObj.getJSONObject("author")
-                    val authorName = authorObj.optString("name", "Unknown")
-                    val rawDate = authorObj.optString("date", "")
-                    val formattedDate = try {
-                        ZonedDateTime.parse(rawDate).format(outputFormatter)
-                    } catch (e: Exception) { rawDate }
+                        val authorObj = commitObj.getJSONObject("author")
+                        val authorName = authorObj.optString("name", "Unknown")
+                        val rawDate = authorObj.optString("date", "")
+                        val formattedDate = try {
+                            ZonedDateTime.parse(rawDate).format(outputFormatter)
+                        } catch (e: Exception) { rawDate }
 
-                    
-                    val authorLogin = if (!obj.isNull("author")) {
-                        obj.getJSONObject("author").optString("login", null)
-                    } else null
-                    val authorAvatarUrl = if (!obj.isNull("author")) {
-                        obj.getJSONObject("author").optString("avatar_url", null)
-                    } else null
+                        val authorLogin = if (!obj.isNull("author")) {
+                            obj.getJSONObject("author").optString("login", null)
+                        } else null
+                        val authorAvatarUrl = if (!obj.isNull("author")) {
+                            obj.getJSONObject("author").optString("avatar_url", null)
+                        } else null
 
-                    list.add(CommitData(sha, message, authorName, authorAvatarUrl, authorLogin, formattedDate, htmlUrl))
-                }
+                        list.add(CommitData(sha, message, authorName, authorAvatarUrl, authorLogin, formattedDate, htmlUrl))
+                    }
 
-                withContext(Dispatchers.Main) {
-                    commits = list
-                    isLoading = false
-                    hasError = false
+                    withContext(Dispatchers.Main) {
+                        commits = list
+                        isLoading = false
+                        hasError = false
+                    }
+                } else {
+                    throw java.io.IOException("HTTP Error ${connection.responseCode}")
                 }
             } catch (e: Exception) {
                 Log.e("CommitScreen", "Error fetching commits: ${e.message}")
+                val cached = loadCommitsFromCache(context)
+                if (cached != null) {
+                    try {
+                        val array = JSONArray(cached.second)
+                        val outputFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
+                        val list = mutableListOf<CommitData>()
+                        for (i in 0 until array.length()) {
+                            val obj = array.getJSONObject(i)
+                            val sha = obj.getString("sha")
+                            val htmlUrl = obj.getString("html_url")
+                            val commitObj = obj.getJSONObject("commit")
+                            val fullMessage = commitObj.getString("message")
+                            val message = fullMessage.lines().firstOrNull { it.isNotBlank() } ?: fullMessage
+                            val authorObj = commitObj.getJSONObject("author")
+                            val authorName = authorObj.optString("name", "Unknown")
+                            val rawDate = authorObj.optString("date", "")
+                            val formattedDate = try {
+                                ZonedDateTime.parse(rawDate).format(outputFormatter)
+                            } catch (e: Exception) { rawDate }
+                            val authorLogin = if (!obj.isNull("author")) {
+                                obj.getJSONObject("author").optString("login", null)
+                            } else null
+                            val authorAvatarUrl = if (!obj.isNull("author")) {
+                                obj.getJSONObject("author").optString("avatar_url", null)
+                            } else null
+                            list.add(CommitData(sha, message, authorName, authorAvatarUrl, authorLogin, formattedDate, htmlUrl))
+                        }
+                        withContext(Dispatchers.Main) {
+                            commits = list
+                            isLoading = false
+                            hasError = false
+                        }
+                        return@launch
+                    } catch (parseEx: Exception) {
+                        Log.e("CommitScreen", "Failed to parse fallback cache", parseEx)
+                    }
+                }
                 withContext(Dispatchers.Main) {
                     hasError = true
                     isLoading = false
@@ -155,14 +270,14 @@ fun CommitScreen(
     }
 
     LaunchedEffect(Unit) {
-        fetchCommits()
+        fetchCommits(force = false)
     }
 
     Scaffold(
         modifier = Modifier.pullToRefresh(
             state = pullToRefreshState,
             isRefreshing = isLoading,
-            onRefresh = { fetchCommits() }
+            onRefresh = { fetchCommits(force = true) }
         ),
         topBar = {
             TopAppBar(
