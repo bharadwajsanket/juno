@@ -14,6 +14,9 @@ import java.time.ZoneOffset
 import com.music.innertube.models.IpVersion
 
 val IsFirstRunKey = booleanPreferencesKey("isFirstRun")
+// Dedicated flag: set to true once user completes the onboarding dialog (taps Finish).
+// Checked on every launch — if true, onboarding is never shown again.
+val OnboardingCompletedKey = booleanPreferencesKey("onboarding_completed")
 val LocalProfileNameKey = stringPreferencesKey("local_profile_name")
 val SpotifySpDcKey = stringPreferencesKey("spotify_sp_dc")
 val SpotifySpKeyKey = stringPreferencesKey("spotify_sp_key")

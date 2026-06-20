@@ -645,7 +645,8 @@ fun OldPlayerMenu(
                                 )
                             },
                             onClick = {
-                                navController.navigate("equalizer")
+                                playerBottomSheetState.collapseSoft()
+                                navController.navigate("settings/equalizer")
                                 onDismiss()
                             }
                         )

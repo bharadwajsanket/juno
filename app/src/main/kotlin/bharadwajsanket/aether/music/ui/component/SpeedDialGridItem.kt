@@ -41,14 +41,14 @@ fun SpeedDialGridItem(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(1f) 
-            .clip(RoundedCornerShape(ThumbnailCornerRadius))
+            .clip(if (item is ArtistItem) CircleShape else RoundedCornerShape(20.dp))
     ) {
         
         ItemThumbnail(
             thumbnailUrl = item.thumbnail,
             isActive = isActive,
             isPlaying = isPlaying,
-            shape = if (item is ArtistItem) CircleShape else RoundedCornerShape(ThumbnailCornerRadius),
+            shape = if (item is ArtistItem) CircleShape else RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxSize()
         )
 
@@ -59,9 +59,9 @@ fun SpeedDialGridItem(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.4f), 
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.6f),
+                            Color.Black.copy(alpha = 0.15f),
+                            Color.Black.copy(alpha = 0.65f),
                             Color.Black.copy(alpha = 0.9f)
                         )
                     )
@@ -72,14 +72,14 @@ fun SpeedDialGridItem(
         Row(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(8.dp) 
+                .padding(horizontal = 12.dp, vertical = 10.dp) 
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.titleSmall, 
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 color = Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

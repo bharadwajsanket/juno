@@ -2493,7 +2493,13 @@ fun InlineLyricsView(
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val currentLyrics by playerConnection.currentLyrics.collectAsState(initial = null)
-    val lyrics = remember(currentLyrics) { currentLyrics?.lyrics?.trim() }
+    val lyrics = remember(currentLyrics, mediaMetadata) {
+        if (currentLyrics?.id == mediaMetadata?.id) {
+            currentLyrics?.lyrics?.trim()
+        } else {
+            null
+        }
+    }
     val context = LocalContext.current
     val database = LocalDatabase.current
     val coroutineScope = rememberCoroutineScope()
@@ -2501,7 +2507,7 @@ fun InlineLyricsView(
     LaunchedEffect(mediaMetadata?.id, currentLyrics) {
         if (mediaMetadata != null && currentLyrics == null) {
             delay(500)
-            coroutineScope.launch(Dispatchers.IO) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 try {
                     val entryPoint = EntryPointAccessors.fromApplication(
                         context.applicationContext,

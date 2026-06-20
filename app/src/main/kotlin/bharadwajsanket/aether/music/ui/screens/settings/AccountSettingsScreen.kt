@@ -75,7 +75,7 @@ fun AccountSettingsScreen(
     var showTokenEditor by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    val (localProfileName, onLocalProfileNameChange) = rememberPreference(LocalProfileNameKey, "Sanket")
+    val (localProfileName, onLocalProfileNameChange) = rememberPreference(LocalProfileNameKey, "")
     var showProfileNameDialog by remember { mutableStateOf(false) }
 
     Scaffold(

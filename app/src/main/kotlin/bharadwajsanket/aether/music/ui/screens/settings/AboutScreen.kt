@@ -129,27 +129,22 @@ fun AboutScreen(
             item { AboutAppCard() }
 
             item {
-                AboutSectionCard(title = "Developer") {
+                AboutSectionCard(title = "App Information") {
                     AboutActionRow(
                         icon = painterResource(R.drawable.github),
-                        title = "Sanket Bharadwaj",
-                        subtitle = "github.com/bharadwajsanket",
-                        onClick = { uriHandler.openUri("https://github.com/bharadwajsanket") },
+                        title = "GitHub",
+                        subtitle = "View repository source code",
+                        onClick = { uriHandler.openUri("https://github.com/bharadwajsanket/Aether-Music") },
                     )
-                }
-            }
-
-            item {
-                AboutSectionCard(title = "Credits") {
+                    AboutDivider()
                     AboutActionRow(
-                        icon = painterResource(R.drawable.info),
-                        title = "Open Source Credits",
-                        subtitle = "Licenses & derivations",
-                        onClick = { showCreditsDialog = true },
+                        icon = painterResource(R.drawable.update),
+                        title = "Changelog",
+                        subtitle = "See what's new in this release",
+                        onClick = { navController.navigate("settings/changelog") },
                     )
                 }
             }
-
         }
     }
 }
@@ -195,49 +190,17 @@ private fun AboutAppCard() {
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
             Spacer(Modifier.height(4.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
             ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                ) {
-                    Text(
-                        text = BuildConfig.VERSION_NAME,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                    )
-                }
-                if (BuildConfig.DEBUG) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.10f),
-                    ) {
-                        Text(
-                            text = "DEBUG",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        )
-                    }
-                } else {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
-                    ) {
-                        Text(
-                            text = BuildConfig.ARCHITECTURE.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        )
-                    }
-                }
+                Text(
+                    text = stringResource(R.string.version, BuildConfig.VERSION_NAME),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                )
             }
         }
     }

@@ -51,7 +51,7 @@ fun NavigationTitle(
             .clickable(enabled = onClick != null) {
                 onClick?.invoke()
             }
-            .padding(start = AetherSpacing.md, end = AetherSpacing.sm, top = AetherSpacing.lg, bottom = AetherSpacing.xs)
+            .padding(start = AetherSpacing.md, end = AetherSpacing.sm, top = AetherSpacing.md, bottom = 6.dp)
     ) {
         thumbnail?.invoke()
 

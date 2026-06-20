@@ -357,9 +357,9 @@ private fun NewMiniPlayer(
                 gradientColors = gradientColors
             )
 
-            Row(
+             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 6.dp),
             ) {
                 
                 NewMiniPlayerThumbnail(
@@ -369,7 +369,7 @@ private fun NewMiniPlayer(
                     outlineColor = outlineColor,
                 )
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
                 
                 NewMiniPlayerSongInfo(
@@ -398,8 +398,14 @@ private fun NewMiniPlayer(
                         hapticManager.performHaptic(HapticType.LIGHT)
                         playerConnection.player.seekToPreviousMediaItem()
                     }),
+                    modifier = Modifier.size(32.dp)
                 ) {
-                    Icon(painter = painterResource(R.drawable.skip_previous), contentDescription = null, tint = onSurfaceColor)
+                    Icon(
+                        painter = painterResource(R.drawable.skip_previous),
+                        contentDescription = null,
+                        tint = onSurfaceColor,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
 
                 LegacyPlayPauseButton(
@@ -408,7 +414,9 @@ private fun NewMiniPlayer(
                     castHandler = castHandler,
                     playerConnection = playerConnection,
                     listenTogetherManager = listenTogetherManager,
-                    tint = onSurfaceColor
+                    tint = onSurfaceColor,
+                    modifier = Modifier.size(32.dp),
+                    iconModifier = Modifier.size(20.dp)
                 )
 
                 IconButton(
@@ -417,8 +425,14 @@ private fun NewMiniPlayer(
                         hapticManager.performHaptic(HapticType.LIGHT)
                         playerConnection.player.seekToNext()
                     }),
+                    modifier = Modifier.size(32.dp)
                 ) {
-                    Icon(painter = painterResource(R.drawable.skip_next), contentDescription = null, tint = onSurfaceColor)
+                    Icon(
+                        painter = painterResource(R.drawable.skip_next),
+                        contentDescription = null,
+                        tint = onSurfaceColor,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -438,12 +452,12 @@ private fun NewMiniPlayerThumbnail(
     outlineColor: Color,
 ) {
     val trackColor = outlineColor.copy(alpha = 0.2f)
-    val strokeWidth = 3.dp
+    val strokeWidth = 2.dp
 
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(48.dp)
+            .size(36.dp)
             .drawWithContent {
                 drawContent()
                 
@@ -480,7 +494,7 @@ private fun NewMiniPlayerThumbnail(
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(40.dp)
+                .size(30.dp)
                 .clip(CircleShape)
                 .border(1.dp, outlineColor.copy(alpha = 0.3f), CircleShape)
         ) {
@@ -514,7 +528,7 @@ private fun NewMiniPlayerSongInfo(
             Text(
                 text = metadata.title,
                 color = onSurfaceColor,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.basicMarquee(iterations = 1, initialDelayMillis = 3000, velocity = 30.dp),
@@ -523,7 +537,7 @@ private fun NewMiniPlayerSongInfo(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (metadata.explicit) MIcon.Explicit()
+                if (metadata.explicit) MIcon.Explicit(modifier = Modifier.size(14.dp).padding(end = 2.dp))
                 if (metadata.artists.any { it.name.isNotBlank() }) {
                     Text(
                         text = metadata.artists.joinToString { it.name },
@@ -754,7 +768,9 @@ private fun LegacyPlayPauseButton(
     castHandler: CastConnectionHandler?,
     playerConnection: PlayerConnection,
     listenTogetherManager: ListenTogetherManager?,
-    tint: Color = androidx.compose.material3.LocalContentColor.current
+    tint: Color = androidx.compose.material3.LocalContentColor.current,
+    modifier: Modifier = Modifier,
+    iconModifier: Modifier = Modifier
 ) {
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
@@ -780,6 +796,7 @@ private fun LegacyPlayPauseButton(
                 playerConnection.togglePlayPause()
             }
         },
+        modifier = modifier
     ) {
         Icon(
             painter = painterResource(
@@ -792,6 +809,7 @@ private fun LegacyPlayPauseButton(
             ),
             contentDescription = null,
             tint = tint,
+            modifier = iconModifier
         )
     }
 }

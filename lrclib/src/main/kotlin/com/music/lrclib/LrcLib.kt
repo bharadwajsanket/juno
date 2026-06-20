@@ -153,7 +153,7 @@ object LrcLib {
             }
             else -> {
                 // Try with relaxed duration matching (±5 seconds instead of ±2)
-                tracks.bestMatchingForRelaxed(duration)?.let { track ->
+                tracks.bestMatchingForRelaxed(duration, cleanedTitle, cleanedArtist)?.let { track ->
                     track.syncedLyrics ?: track.plainLyrics
                 }?.let(LrcLib::Lyrics)
             }

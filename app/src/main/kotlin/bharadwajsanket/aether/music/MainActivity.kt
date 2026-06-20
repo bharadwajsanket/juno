@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.add
@@ -146,6 +147,7 @@ import bharadwajsanket.aether.music.constants.DarkModeKey
 import bharadwajsanket.aether.music.constants.DefaultOpenTabKey
 import bharadwajsanket.aether.music.constants.DisableScreenshotKey
 import bharadwajsanket.aether.music.constants.DynamicThemeKey
+import bharadwajsanket.aether.music.constants.OnboardingCompletedKey
 import bharadwajsanket.aether.music.constants.EnableHighRefreshRateKey
 import bharadwajsanket.aether.music.constants.FloatingToolbarBottomPadding
 import bharadwajsanket.aether.music.constants.FloatingToolbarHorizontalPadding
@@ -274,12 +276,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1000)
-            }
-        }
 
         
         
@@ -753,12 +749,39 @@ class MainActivity : ComponentActivity() {
                 val snackbarHostState = remember { SnackbarHostState() }
                 var showSettingDialoge by remember { mutableStateOf(false) }
 
-                val (lastOpenedVersionCode, setLastOpenedVersionCode) = rememberPreference(bharadwajsanket.aether.music.constants.LastOpenedVersionCodeKey, -1)
+                val (_, setLastOpenedVersionCode) = rememberPreference(bharadwajsanket.aether.music.constants.LastOpenedVersionCodeKey, -1)
+                val (_, setOnboardingCompleted) = rememberPreference(OnboardingCompletedKey, false)
                 var showWelcomeDialog by remember { mutableStateOf(false) }
 
-                LaunchedEffect(lastOpenedVersionCode) {
-                    if (lastOpenedVersionCode < BuildConfig.VERSION_CODE) {
-                        showWelcomeDialog = true
+                LaunchedEffect(Unit) {
+                    // Read BOTH flags synchronously from DataStore on the IO thread.
+                    // This is the only safe way to avoid the race where rememberPreference
+                    // starts at defaultValue=false/−1 before DataStore emits the real value,
+                    // which caused the dialog to flash on every launch.
+                    val storedOnboardingCompleted = withContext(Dispatchers.IO) {
+                        applicationContext.dataStore.get(OnboardingCompletedKey, false)
+                    }
+                    val storedVersionCode = withContext(Dispatchers.IO) {
+                        applicationContext.dataStore.get(bharadwajsanket.aether.music.constants.LastOpenedVersionCodeKey, -1)
+                    }
+
+                    when {
+                        storedOnboardingCompleted -> {
+                            // Already completed — never show again. Just update version code.
+                        }
+                        storedVersionCode > 0 -> {
+                            // Existing install (update from pre-3.5.4) — auto-complete onboarding.
+                            setOnboardingCompleted(true)
+                        }
+                        else -> {
+                            // True fresh install (no version code ever stored).
+                            showWelcomeDialog = true
+                        }
+                    }
+
+                    // Always update version code on launch.
+                    if (storedVersionCode < BuildConfig.VERSION_CODE) {
+                        setLastOpenedVersionCode(BuildConfig.VERSION_CODE)
                     }
                 }
 
@@ -821,72 +844,13 @@ class MainActivity : ComponentActivity() {
                                 enter = fadeIn(animationSpec = tween(durationMillis = 300)),
                                 exit = fadeOut(animationSpec = tween(durationMillis = 200))
                             ) {
-                                Row {
-                                    TopAppBar(
-                                        title = {
-                                            Text(
-                                                text = currentTitle,
-                                                style = MaterialTheme.typography.titleLarge.copy(
-                                                    fontWeight = if (currentTitle == "AETHER") FontWeight.ExtraBold else FontWeight.Bold,
-                                                    fontSize = if (currentTitle == "AETHER") 26.sp else 24.sp,
-                                                    letterSpacing = if (currentTitle == "AETHER") 1.5.sp else 0.sp
-                                                ),
-                                            )
-                                        },
-                                        actions = {
-                                            // 1. Listen Together / Community
-                                            if (ENABLE_LISTEN_TOGETHER) {
-                                                IconButton(onClick = { navController.navigate("listen_together_from_topbar") }) {
-                                                    Icon(
-                                                        painter = painterResource(R.drawable.group_outlined),
-                                                        contentDescription = stringResource(R.string.together),
-                                                        modifier = Modifier.size(24.dp)
-                                                    )
-                                                }
-                                            }
-                                            // 2. Sync
-                                            IconButton(onClick = {
-                                                coroutineScope.launch {
-                                                    syncUtils.performFullSync()
-                                                    snackbarHostState.showSnackbar("Library sync started in background")
-                                                }
-                                            }) {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.refresh),
-                                                    contentDescription = "Sync",
-                                                    modifier = Modifier.size(24.dp)
-                                                )
-                                            }
-                                            // 3. Settings / Profile
-                                            IconButton(onClick = { showSettingDialoge = true }) {
-                                                if (accountImageUrl != null) {
-                                                    AsyncImage(
-                                                        model = accountImageUrl,
-                                                        contentDescription = stringResource(R.string.account),
-                                                        modifier = Modifier
-                                                            .size(24.dp)
-                                                            .clip(CircleShape)
-                                                    )
-                                                } else {
-                                                    Icon(
-                                                        painter = painterResource(R.drawable.settings),
-                                                        contentDescription = stringResource(R.string.account),
-                                                        modifier = Modifier.size(24.dp)
-                                                    )
-                                                }
-                                            }
-                                        },
-                                        scrollBehavior = topAppBarScrollBehavior,
-                                        colors = TopAppBarDefaults.topAppBarColors(
-                                            containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
-                                            scrolledContainerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
-                                            titleContentColor = MaterialTheme.colorScheme.onSurface,
-                                            actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                        ),
-                                        windowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Top),
-                                        modifier = Modifier
-                                            .windowInsetsPadding(
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp)
+                                        .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer)
+                                        .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top))
+                                        .windowInsetsPadding(
                                             if (showRail) {
                                                 WindowInsets(left = NavigationBarHeight)
                                                     .add(cutoutInsets.only(WindowInsetsSides.Start))
@@ -894,7 +858,77 @@ class MainActivity : ComponentActivity() {
                                                 cutoutInsets.only(WindowInsetsSides.Start + WindowInsetsSides.End)
                                             }
                                         )
+                                        .padding(horizontal = 16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = currentTitle,
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = if (currentTitle == "AETHER") FontWeight.ExtraBold else FontWeight.Bold,
+                                            fontSize = if (currentTitle == "AETHER") 22.sp else 20.sp,
+                                            letterSpacing = if (currentTitle == "AETHER") 1.2.sp else 0.sp
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        // 1. Listen Together / Community
+                                        if (ENABLE_LISTEN_TOGETHER) {
+                                            IconButton(
+                                                onClick = { navController.navigate("listen_together_from_topbar") },
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.group_outlined),
+                                                    contentDescription = stringResource(R.string.together),
+                                                    modifier = Modifier.size(20.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                        // 2. Sync
+                                        IconButton(
+                                            onClick = {
+                                                coroutineScope.launch {
+                                                    syncUtils.performFullSync()
+                                                    snackbarHostState.showSnackbar("Library sync started in background")
+                                                }
+                                            },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.refresh),
+                                                contentDescription = "Sync",
+                                                modifier = Modifier.size(20.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        // 3. Settings / Profile
+                                        IconButton(
+                                            onClick = { showSettingDialoge = true },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            if (accountImageUrl != null) {
+                                                AsyncImage(
+                                                    model = accountImageUrl,
+                                                    contentDescription = stringResource(R.string.account),
+                                                    modifier = Modifier
+                                                        .size(20.dp)
+                                                        .clip(CircleShape)
+                                                )
+                                            } else {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.settings),
+                                                    contentDescription = stringResource(R.string.account),
+                                                    modifier = Modifier.size(20.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -1234,7 +1268,10 @@ class MainActivity : ComponentActivity() {
                         WelcomeDialog(
                             onDismissRequest = {
                                 showWelcomeDialog = false
-                                setLastOpenedVersionCode(BuildConfig.VERSION_CODE)
+                            },
+                            onComplete = {
+                                // Persist the completion flag so onboarding never shows again
+                                setOnboardingCompleted(true)
                             }
                         )
                     }

@@ -97,6 +97,10 @@ class HomeViewModel @Inject constructor(
     val allLocalItems = MutableStateFlow<List<LocalItem>>(emptyList())
     val allYtItems = MutableStateFlow<List<YTItem>>(emptyList())
 
+    // v3.5.0 — Recently Played & Favorites for home screen sections
+    val recentlyPlayedSongs = MutableStateFlow<List<Song>>(emptyList())
+    val favoriteSongs = MutableStateFlow<List<Song>>(emptyList())
+
     val speedDialItems: StateFlow<List<YTItem>> =
         combine(
             database.speedDialDao.getAll(),
@@ -434,6 +438,17 @@ class HomeViewModel @Inject constructor(
         val keepListeningArtists = database.mostPlayedArtists(fromTimeStamp).first()
             .filter { it.artist.isYouTubeArtist && it.artist.thumbnailUrl != null }.shuffled().take(5)
         keepListening.value = (keepListeningSongs + keepListeningAlbums + keepListeningArtists).shuffled()
+
+        // Recently played: top 10 from events log
+        recentlyPlayedSongs.value = database.events().first()
+            .map { it.song }
+            .distinctBy { it.id }
+            .take(10)
+
+        // Favorites: top 10 liked songs
+        favoriteSongs.value = database.likedSongsByCreateDateAsc().first()
+            .distinctBy { it.id }
+            .take(10)
 
         allLocalItems.value = (quickPicks.value.orEmpty() + forgottenFavorites.value.orEmpty() + keepListening.value.orEmpty())
             .filter { it is Song || it is Album }

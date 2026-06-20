@@ -1,50 +1,88 @@
 package bharadwajsanket.aether.music.ui.screens
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Image
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import coil3.compose.AsyncImage
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import bharadwajsanket.aether.music.BuildConfig
+import androidx.core.content.ContextCompat
 import bharadwajsanket.aether.music.R
+import bharadwajsanket.aether.music.constants.LocalProfileNameKey
+import bharadwajsanket.aether.music.constants.OnboardingCompletedKey
+import bharadwajsanket.aether.music.utils.rememberPreference
 
 @Composable
 fun WelcomeDialog(
-    onDismissRequest: () -> Unit
+    onDismissRequest: () -> Unit,
+    onComplete: () -> Unit = {}
 ) {
-    val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
+    var currentStep by remember { mutableStateOf(0) }
+    val (localProfileName, onLocalProfileNameChange) = rememberPreference(LocalProfileNameKey, "")
+    var nameInput by remember { mutableStateOf(localProfileName) }
+
+    val permissionsToRequest = remember {
+        val list = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            list.add(Manifest.permission.POST_NOTIFICATIONS)
+            list.add(Manifest.permission.READ_MEDIA_AUDIO)
+        } else {
+            list.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+        list.toTypedArray()
+    }
+
+    var permissionsGranted by remember {
+        mutableStateOf(
+            permissionsToRequest.all {
+                ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+            }
+        )
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        permissionsGranted = result.values.all { it }
+    }
 
     Dialog(
-        onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        onDismissRequest = {
+            if (currentStep == 1) {
+                onDismissRequest()
+            }
+        },
+        properties = DialogProperties(
+            dismissOnBackPress = (currentStep == 1),
+            dismissOnClickOutside = false,
+            usePlatformDefaultWidth = false
+        )
     ) {
         Card(
             modifier = Modifier
@@ -56,55 +94,160 @@ fun WelcomeDialog(
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(vertical = 20.dp, horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                // Main Header
-                WelcomeAppCard()
-
-                WelcomeSectionCard(title = "Follow Developer") {
-                    WelcomeActionRow(
-                        icon = painterResource(R.drawable.github),
-                        title = "Sanket Bharadwaj",
-                        subtitle = "github.com/bharadwajsanket",
-                        onClick = { uriHandler.openUri("https://github.com/bharadwajsanket") }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Button(
-                    onClick = { uriHandler.openUri("https://github.com/bharadwajsanket") },
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            AnimatedContent(
+                targetState = currentStep,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+                },
+                label = "step_transition"
+            ) { step ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.star),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Star the Repo", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                }
+                    if (step == 0) {
+                        // Step 0: Welcome & Name
+                        Icon(
+                            painter = painterResource(id = R.drawable.favorite),
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
 
-                Button(
-                    onClick = onDismissRequest,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Text("Continue", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(
+                            text = "Welcome to AETHER",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Text(
+                            text = "What should we call you?",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        OutlinedTextField(
+                            value = nameInput,
+                            onValueChange = { nameInput = it },
+                            label = { Text("Name") },
+                            placeholder = { Text("Enter your name") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp),
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Words,
+                                imeAction = ImeAction.Done
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Button(
+                            onClick = {
+                                val trimmedName = nameInput.trim()
+                                onLocalProfileNameChange(trimmedName)
+                                currentStep = 1
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Text("Continue", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    } else {
+                        // Step 1: Permissions
+                        Icon(
+                            painter = painterResource(id = R.drawable.security),
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+
+                        Text(
+                            text = "Permissions",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Text(
+                            text = "AETHER requires the following permissions to function fully:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            PermissionItem(
+                                iconRes = R.drawable.notification,
+                                title = "Notifications",
+                                description = "To control music playback from the notification bar."
+                            )
+                            PermissionItem(
+                                iconRes = R.drawable.storage,
+                                title = "Local Music Library",
+                                description = "To scan and play audio files stored on your device."
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Button(
+                                onClick = {
+                                    launcher.launch(permissionsToRequest)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (permissionsGranted) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
+                                    contentColor = if (permissionsGranted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onPrimary
+                                )
+                            ) {
+                                Text(
+                                    text = if (permissionsGranted) "Permissions Granted" else "Grant Permissions",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    onComplete()
+                                    onDismissRequest()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            ) {
+                                Text("Finish", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -112,172 +255,49 @@ fun WelcomeDialog(
 }
 
 @Composable
-private fun WelcomeAppCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 20.dp, horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-            AsyncImage(
-                model = R.mipmap.ic_launcher,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainer),
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Aether Music",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                ) {
-                    Text(
-                        text = BuildConfig.VERSION_NAME,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun WelcomeSectionCard(
+private fun PermissionItem(
+    iconRes: Int,
     title: String,
-    content: @Composable ColumnScope.() -> Unit,
+    description: String
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 6.dp),
-        )
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        ) {
-            Column(
-                modifier = Modifier.padding(vertical = 4.dp),
-                content = content,
-            )
-        }
-    }
-}
-
-@Composable
-private fun WelcomeActionRow(
-    icon: Painter,
-    title: String,
-    subtitle: String? = null,
-    onClick: () -> Unit,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessHigh),
-        label = "rowScale",
-    )
-    val tint = MaterialTheme.colorScheme.primary
-
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 2.dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .clip(RoundedCornerShape(22.dp))
-            .clickable(
-                interactionSource = interactionSource,
-                indication = ripple(),
-                onClick = onClick,
-            ),
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
         ) {
-            Surface(
-                modifier = Modifier.size(36.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = tint.copy(alpha = 0.10f),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        painter = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = tint,
-                    )
-                }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                subtitle?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
             Icon(
-                painter = painterResource(R.drawable.arrow_forward),
+                painter = painterResource(id = iconRes),
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
-}
-
-@Composable
-private fun WelcomeDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(start = 78.dp, end = 20.dp),
-        thickness = 0.5.dp,
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-    )
 }

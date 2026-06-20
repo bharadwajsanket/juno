@@ -70,16 +70,16 @@ fun <E> ChipsRow(
         modifier =
         modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(top = 4.dp, bottom = 8.dp)
             .horizontalScroll(rememberScrollState())
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(6.dp))
 
         chips.forEach { (value, label) ->
             val isSelected = currentValue == value
 
-            
             val cornerRadius by animateDpAsState(
                 targetValue = if (isSelected) 20.dp else 8.dp,
                 animationSpec = spring(
@@ -90,7 +90,7 @@ fun <E> ChipsRow(
             )
 
             FilterChip(
-                label = { Text(label) },
+                label = { Text(label, modifier = Modifier.padding(horizontal = 8.dp)) },
                 selected = isSelected,
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = containerColor,
@@ -116,9 +116,8 @@ fun <E> ChipsRow(
                     )
                 )
             )
-
-            Spacer(Modifier.width(8.dp))
         }
+        Spacer(Modifier.width(6.dp))
     }
 }
 

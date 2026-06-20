@@ -247,7 +247,13 @@ fun Lyrics(
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val lyricsEntity by playerConnection.currentLyrics.collectAsState(initial = null)
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
-    val lyrics = remember(lyricsEntity) { lyricsEntity?.lyrics?.trim() }
+    val lyrics = remember(lyricsEntity, mediaMetadata) {
+        if (lyricsEntity?.id == mediaMetadata?.id) {
+            lyricsEntity?.lyrics?.trim()
+        } else {
+            null
+        }
+    }
 
     val playerBackground by rememberEnumPreference(
         key = PlayerBackgroundStyleKey,

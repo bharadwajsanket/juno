@@ -1823,13 +1823,11 @@ object Icon {
     }
 
     @Composable
-    fun Explicit() {
+    fun Explicit(modifier: Modifier = Modifier.size(18.dp).padding(end = 2.dp)) {
         Icon(
             painter = painterResource(R.drawable.explicit),
             contentDescription = null,
-            modifier = Modifier
-                .size(18.dp)
-                .padding(end = 2.dp)
+            modifier = modifier
         )
     }
 }

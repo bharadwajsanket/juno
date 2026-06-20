@@ -1889,7 +1889,10 @@ class MusicService :
                 if (focusGranted) {
                     openAudioEffectSession()
                 }
-            } else {
+            } else if (player.playbackState == Player.STATE_IDLE || player.playbackState == Player.STATE_ENDED) {
+                // Only tear down the audio effect session on a true stop/end — NOT on pause.
+                // Releasing the LoudnessEnhancer on pause caused a ~150ms normalization gap
+                // on resume, producing an audible volume spike/burst.
                 closeAudioEffectSession()
             }
         }

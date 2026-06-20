@@ -1,13 +1,7 @@
-
-
 package bharadwajsanket.aether.music.ui.screens.settings
 
 import bharadwajsanket.aether.music.R
-import android.content.ActivityNotFoundException
-import android.content.Intent
 import android.os.Build
-import android.provider.Settings
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -21,24 +15,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.navigation.NavController
-import bharadwajsanket.aether.music.BuildConfig
 import bharadwajsanket.aether.music.LocalPlayerAwareWindowInsets
 import bharadwajsanket.aether.music.ui.component.IconButton
 import bharadwajsanket.aether.music.ui.component.Material3SettingsGroup
 import bharadwajsanket.aether.music.ui.component.Material3SettingsItem
-import bharadwajsanket.aether.music.ui.screens.Screens
 import bharadwajsanket.aether.music.ui.utils.backToMain
-import bharadwajsanket.aether.music.constants.ENABLE_LISTEN_TOGETHER
 import bharadwajsanket.aether.music.ui.theme.AetherSpacing
-import bharadwajsanket.aether.music.aethermusic.updater.getUpdateAvailableState
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,11 +33,6 @@ fun SettingsScreen(
     navController: NavController,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
-    val uriHandler = LocalUriHandler.current
-    val context = LocalContext.current
-    val isAndroid12OrLater = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val isUpdateAvailable = getUpdateAvailableState(context) && bharadwajsanket.aether.music.aethermusic.updater.getAutoUpdateCheckSetting(context)
-
     val scrollState = rememberScrollState()
     Column(
         Modifier
@@ -74,146 +56,49 @@ fun SettingsScreen(
             modifier = Modifier.padding(start = 8.dp, top = 24.dp, bottom = 16.dp)
         )
 
-        
-        // 1. Playback
         Material3SettingsGroup(
-            title = stringResource(R.string.settings_group_playback),
+            title = "Aether Settings",
             items = listOf(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.play),
-                    title = { Text(stringResource(R.string.player_and_audio)) },
-                    description = { Text(stringResource(R.string.settings_player_and_audio_desc)) },
+                    title = { Text("Playback") },
+                    description = { Text("Audio quality, normalization, equalizer, and player behavior") },
                     onClick = { navController.navigate("settings/player") }
-                )
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 2. Player
-        Material3SettingsGroup(
-            title = stringResource(R.string.settings_group_player),
-            items = listOf(
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.download),
+                    title = { Text("Downloads") },
+                    description = { Text("Download quality, auto-download on like, and storage management") },
+                    onClick = { navController.navigate("settings/downloads") }
+                ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.palette),
-                    title = { Text(stringResource(R.string.appearance)) },
-                    description = { Text(stringResource(R.string.settings_appearance_desc)) },
+                    title = { Text("Appearance") },
+                    description = { Text("Dark mode, player themes, and visual settings") },
                     onClick = { navController.navigate("settings/appearance") }
                 ),
                 Material3SettingsItem(
-                    icon = painterResource(R.drawable.translate),
-                    title = { Text(stringResource(R.string.ai_lyrics_translation)) },
-                    description = { Text(stringResource(R.string.settings_ai_lyrics_translation_desc)) },
+                    icon = painterResource(R.drawable.lyrics),
+                    title = { Text("Lyrics") },
+                    description = { Text("Lyrics provider, styling, and text size") },
                     onClick = { navController.navigate("settings/ai") }
-                )
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 3. Library
-        Material3SettingsGroup(
-            title = stringResource(R.string.settings_group_library),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.language),
-                    title = { Text(stringResource(R.string.content)) },
-                    description = { Text(stringResource(R.string.settings_content_desc)) },
-                    onClick = { navController.navigate("settings/content") }
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.storage),
-                    title = { Text(stringResource(R.string.storage)) },
-                    description = { Text(stringResource(R.string.settings_storage_desc)) },
+                    title = { Text("Storage") },
+                    description = { Text("Song cache size, image cache size, and data settings") },
                     onClick = { navController.navigate("settings/storage") }
-                )
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 4. Personalization
-        Material3SettingsGroup(
-            title = stringResource(R.string.settings_group_personalization),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.account),
-                    title = { Text(stringResource(R.string.account)) },
-                    description = { Text(stringResource(R.string.settings_account_desc)) },
-                    onClick = { navController.navigate("settings/account") }
                 ),
                 Material3SettingsItem(
-                    icon = painterResource(R.drawable.graphic_eq),
-                    title = { Text(stringResource(R.string.haptics)) },
-                    description = { Text(stringResource(R.string.settings_haptics_desc)) },
-                    onClick = { navController.navigate("settings/haptics") }
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.security),
-                    title = { Text(stringResource(R.string.privacy)) },
-                    description = { Text(stringResource(R.string.settings_privacy_desc)) },
-                    onClick = { navController.navigate("settings/privacy") }
-                )
-            )
-        )
-
-        if (ENABLE_LISTEN_TOGETHER) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 5. Connectivity
-            Material3SettingsGroup(
-                title = stringResource(R.string.settings_group_connectivity),
-                items = listOf(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.group),
-                        title = { Text(stringResource(R.string.listen_together)) },
-                        description = { Text(stringResource(R.string.settings_listen_together_desc)) },
-                        onClick = { navController.navigate(Screens.ListenTogether.route) }
-                    )
-                )
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 6. Advanced
-        Material3SettingsGroup(
-            title = stringResource(R.string.settings_group_advanced),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.restore),
-                    title = { Text(stringResource(R.string.backup_restore)) },
-                    description = { Text(stringResource(R.string.settings_backup_restore_desc)) },
-                    onClick = { navController.navigate("settings/backup_restore") }
-                )
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 7. About
-        Material3SettingsGroup(
-            title = stringResource(R.string.settings_group_about),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(if (isUpdateAvailable) R.drawable.ic_launcher_nobg else R.drawable.update),
-                    title = { Text(stringResource(R.string.system_update)) },
-                    description = if (isUpdateAvailable) {
-                        {
-                            Text(
-                                text = stringResource(R.string.update_available),
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    } else {
-                        { Text(stringResource(R.string.settings_system_update_desc)) }
-                    },
+                    icon = painterResource(R.drawable.deployed_app_update),
+                    title = { Text("Updates") },
+                    description = { Text("Check for updates and settings") },
                     onClick = { navController.navigate("settings/update") }
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.info),
-                    title = { Text(stringResource(R.string.about)) },
-                    description = { Text(stringResource(R.string.settings_about_desc)) },
+                    title = { Text("About") },
+                    description = { Text("App version, changelog, and legal details") },
                     onClick = { navController.navigate("settings/about") }
                 )
             )

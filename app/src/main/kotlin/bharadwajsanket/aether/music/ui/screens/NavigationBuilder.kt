@@ -48,6 +48,7 @@ import bharadwajsanket.aether.music.ui.screens.settings.RomanizationSettings
 import bharadwajsanket.aether.music.ui.screens.settings.SettingsScreen
 import bharadwajsanket.aether.music.ui.screens.settings.AccountSettingsScreen
 import bharadwajsanket.aether.music.ui.screens.settings.StorageSettings
+import bharadwajsanket.aether.music.ui.screens.settings.DownloadsSettings
 import bharadwajsanket.aether.music.ui.screens.settings.ThemeScreen
 import bharadwajsanket.aether.music.ui.screens.settings.AiSettings
 import bharadwajsanket.aether.music.ui.screens.settings.integrations.ListenTogetherSettings
@@ -350,6 +351,10 @@ fun NavGraphBuilder.navigationBuilder(
         PlayerSettings(navController, scrollBehavior)
     }
 
+    composable("settings/downloads") {
+        DownloadsSettings(navController, scrollBehavior)
+    }
+
     composable(
         route = "settings/storage?autoOpenExportPicker={autoOpenExportPicker}",
         arguments = listOf(
@@ -368,7 +373,12 @@ fun NavGraphBuilder.navigationBuilder(
         )
     }
 
-    composable("settings/equalizer") {
+    dialog(
+        route = "settings/equalizer",
+        dialogProperties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false
+        )
+    ) {
         AxionEqScreen(onBackClick = { navController.navigateUp() })
     }
 

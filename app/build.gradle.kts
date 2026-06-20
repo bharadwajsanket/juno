@@ -33,8 +33,8 @@ android {
         applicationId = "bharadwajsanket.aether.music"
         minSdk = 26
         targetSdk = 36
-        versionCode = 320
-        versionName = "3.2.0"
+        versionCode = 354
+        versionName = "3.5.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -131,6 +131,11 @@ android {
             isDebuggable = true
             signingConfig = signingConfigs.getByName("debug")
             buildConfigField("String", "ARCHITECTURE", "\"debug\"")
+        }
+        create("userTesting") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ""
+            matchingFallbacks += listOf("debug")
         }
     }
 
