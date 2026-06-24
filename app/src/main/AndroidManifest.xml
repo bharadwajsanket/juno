@@ -38,7 +38,7 @@
         </intent>
     </queries>
     <application
-        android:name="bharadwajsanket.aether.music.App"
+        android:name="bharadwaj.juno.music.App"
         android:allowBackup="true"
         android:appCategory="audio"
         android:banner="@mipmap/tv_banner"
@@ -51,7 +51,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="false"
-        android:theme="@style/Theme.aethermusic"
+        android:theme="@style/Theme.junomusic"
         tools:targetApi="tiramisu">
         <uses-library
             android:name="org.apache.http.legacy"
@@ -60,7 +60,7 @@
         <activity
             android:name=".ui.screens.CrashActivity"
             android:exported="false"
-            android:theme="@style/Theme.aethermusic"
+            android:theme="@style/Theme.junomusic"
             android:excludeFromRecents="true"
             android:process=":crash" />
 
@@ -68,7 +68,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.aethermusic"
+            android:theme="@style/Theme.junomusic"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -91,7 +91,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="https" />
-                <data android:host="aether-listen-together.onrender.com" />
+                <data android:host="juno-listen-together.onrender.com" />
                 <data android:pathPrefix="/listen" />
             </intent-filter>
 
@@ -102,11 +102,11 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="aether" />
+                <data android:scheme="juno" />
                 <data android:host="listen" />
             </intent-filter>
 
-            <!-- Aether Music and Aether Music shared links (HTTPS App Links) -->
+            <!-- Juno Music and Juno Music shared links (HTTPS App Links) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -114,7 +114,7 @@
 
                 <data android:scheme="http" />
                 <data android:scheme="https" />
-                <data android:host="share.aethermusic.fun" />
+                <data android:host="share.junomusic.fun" />
                 <data android:pathPrefix="/watch" />
                 <data android:pathPrefix="/playlist" />
                 <data android:pathPrefix="/channel" />
@@ -306,9 +306,9 @@
             android:label="@string/widget_music_player">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="bharadwajsanket.aether.music.widget.PLAY_PAUSE" />
-                <action android:name="bharadwajsanket.aether.music.widget.LIKE" />
-                <action android:name="bharadwajsanket.aether.music.widget.UPDATE_WIDGET" />
+                <action android:name="bharadwaj.juno.music.widget.PLAY_PAUSE" />
+                <action android:name="bharadwaj.juno.music.widget.LIKE" />
+                <action android:name="bharadwaj.juno.music.widget.UPDATE_WIDGET" />
             </intent-filter>
 
             <meta-data
@@ -323,9 +323,9 @@
             android:label="@string/widget_turntable">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="bharadwajsanket.aether.music.widget.TURNTABLE_PLAY_PAUSE" />
-                <action android:name="bharadwajsanket.aether.music.widget.TURNTABLE_LIKE" />
-                <action android:name="bharadwajsanket.aether.music.widget.UPDATE_TURNTABLE_WIDGET" />
+                <action android:name="bharadwaj.juno.music.widget.TURNTABLE_PLAY_PAUSE" />
+                <action android:name="bharadwaj.juno.music.widget.TURNTABLE_LIKE" />
+                <action android:name="bharadwaj.juno.music.widget.UPDATE_TURNTABLE_WIDGET" />
             </intent-filter>
 
             <meta-data
@@ -336,7 +336,7 @@
         <!-- Google Cast Options Provider -->
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-            android:value="bharadwajsanket.aether.music.cast.CastOptionsProvider" />
+            android:value="bharadwaj.juno.music.cast.CastOptionsProvider" />
         <!-- Playlist Widget -->
         <receiver
             android:name=".widget.PlaylistWidgetReceiver"

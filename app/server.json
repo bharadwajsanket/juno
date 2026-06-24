@@ -1,5 +1,5 @@
 {
-  "name": "Aether Music Server",
-  "region": "Global - Aether",
+  "name": "Juno Music Server",
+  "region": "Global - Juno",
   "serverUrl": "wss://aethermusic.hf.space/ws"
 }

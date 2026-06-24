@@ -4,7 +4,7 @@ import android.content.Context
 import com.music.paxsenix.models.LyricsResponse
 import com.music.paxsenix.models.SearchResponse
 import com.music.paxsenix.models.SearchResult
-import bharadwajsanket.aether.music.betterlyrics.TTMLParser
+import bharadwaj.juno.music.betterlyrics.TTMLParser
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
@@ -62,7 +62,7 @@ object Paxsenix {
 
                 defaultRequest {
                     url("https://lyrics.paxsenix.org")
-                    header("User-Agent", "aethermusic/$appVersion")
+                    header("User-Agent", "junomusic/$appVersion")
                 }
 
                 expectSuccess = true

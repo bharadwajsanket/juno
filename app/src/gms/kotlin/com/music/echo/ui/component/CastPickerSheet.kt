@@ -1,4 +1,4 @@
-package bharadwajsanket.aether.music.ui.component
+package bharadwaj.juno.music.ui.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -22,7 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.mediarouter.media.MediaRouter
-import bharadwajsanket.aether.music.R
+import bharadwaj.juno.music.R
 
 @Composable
 fun CastPickerSheet(

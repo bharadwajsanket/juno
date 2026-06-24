@@ -1,4 +1,4 @@
-package bharadwajsanket.aether.music.ui.component
+package bharadwaj.juno.music.ui.component
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable

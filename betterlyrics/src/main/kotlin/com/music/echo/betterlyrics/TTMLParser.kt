@@ -1,4 +1,4 @@
-package bharadwajsanket.aether.music.betterlyrics
+package bharadwaj.juno.music.betterlyrics
 
 import org.w3c.dom.Element
 import org.w3c.dom.Node

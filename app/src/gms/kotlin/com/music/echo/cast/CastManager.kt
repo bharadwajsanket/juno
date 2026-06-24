@@ -1,4 +1,4 @@
-package bharadwajsanket.aether.music.cast
+package bharadwaj.juno.music.cast
 
 import android.content.Context
 import androidx.media3.cast.CastPlayer

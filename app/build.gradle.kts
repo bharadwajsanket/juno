@@ -24,13 +24,13 @@ if (hasGoogleServicesConfig) {
 }
 
 android {
-    namespace = "bharadwajsanket.aether.music"
+    namespace = "bharadwaj.juno.music"
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 
 
     defaultConfig {
-        applicationId = "bharadwajsanket.aether.music"
+        applicationId = "bharadwaj.juno.music"
         minSdk = 26
         targetSdk = 36
         versionCode = 354
@@ -308,7 +308,7 @@ dependencies {
     implementation(project(":shazamkit"))
     implementation(project(":artistvideo"))
     implementation(project(":applecanvas"))
-    implementation(project(":aethermusiccanvas"))
+    implementation(project(":junomusiccanvas"))
     implementation(project(":paxsenixlyrics"))
     implementation(project(":jiosaavn"))
 

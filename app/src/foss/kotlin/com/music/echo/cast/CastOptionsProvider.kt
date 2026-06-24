@@ -1,4 +1,4 @@
-package bharadwajsanket.aether.music.cast
+package bharadwaj.juno.music.cast
 
 /**
  * Stub CastOptionsProvider for F-Droid builds.

@@ -1,4 +1,4 @@
-package bharadwajsanket.aether.music.artistvideo
+package bharadwaj.juno.music.artistvideo
 
 import android.view.TextureView
 import android.view.ViewGroup

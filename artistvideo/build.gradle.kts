@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "bharadwajsanket.aether.music.artistvideo"
+    namespace = "bharadwaj.juno.music.artistvideo"
     compileSdk = 36
 
     defaultConfig {

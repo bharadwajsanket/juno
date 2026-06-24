@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package bharadwajsanket.aether.music.listentogether.proto;
+package bharadwaj.juno.music.listentogether.proto;
 
-option java_package = "bharadwajsanket.aether.music.listentogether.proto";
+option java_package = "bharadwaj.juno.music.listentogether.proto";
 option java_multiple_files = false;
 option java_outer_classname = "Listentogether";
 

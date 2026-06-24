@@ -4,7 +4,7 @@
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_bharadwajsanket_aether_music_recognition_VibraSignature_fromI16(JNIEnv *env, jclass /*clazz*/, jbyteArray rawPcm) {
+Java_bharadwaj_juno_music_recognition_VibraSignature_fromI16(JNIEnv *env, jclass /*clazz*/, jbyteArray rawPcm) {
     if (rawPcm == nullptr) {
         jclass iae = env->FindClass("java/lang/IllegalArgumentException");
         if (iae) env->ThrowNew(iae, "rawPcm must not be null");

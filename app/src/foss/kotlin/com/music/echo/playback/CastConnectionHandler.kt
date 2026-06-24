@@ -1,4 +1,4 @@
-package bharadwajsanket.aether.music.playback
+package bharadwaj.juno.music.playback
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
@@ -44,7 +44,7 @@ class CastConnectionHandler(
     fun initialize(): Boolean = false
     fun disconnect() {}
     fun loadCurrentMedia() {}
-    fun loadMedia(metadata: bharadwajsanket.aether.music.models.MediaMetadata) {}
+    fun loadMedia(metadata: bharadwaj.juno.music.models.MediaMetadata) {}
     fun play() {}
     fun pause() {}
     fun seekTo(position: Long) {}

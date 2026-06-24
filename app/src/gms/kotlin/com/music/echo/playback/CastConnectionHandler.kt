@@ -1,4 +1,4 @@
-package bharadwajsanket.aether.music.playback
+package bharadwaj.juno.music.playback
 
 import android.content.Context
 import android.net.Uri
@@ -18,9 +18,9 @@ import com.google.android.gms.cast.framework.SessionManager
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import com.google.android.gms.common.images.WebImage
-import bharadwajsanket.aether.music.extensions.metadata
-import bharadwajsanket.aether.music.models.MediaMetadata as AppMediaMetadata
-import bharadwajsanket.aether.music.ui.utils.resize
+import bharadwaj.juno.music.extensions.metadata
+import bharadwaj.juno.music.models.MediaMetadata as AppMediaMetadata
+import bharadwaj.juno.music.ui.utils.resize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

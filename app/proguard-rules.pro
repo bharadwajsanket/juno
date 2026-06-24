@@ -6,20 +6,20 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # WEB_REMIX Streaming - WebView JavaScript interfaces
--keepclassmembers class bharadwajsanket.aether.music.utils.sabr.EjsNTransformSolver$SolverWebView {
+-keepclassmembers class bharadwaj.juno.music.utils.sabr.EjsNTransformSolver$SolverWebView {
     @android.webkit.JavascriptInterface public *;
 }
--keepclassmembers class bharadwajsanket.aether.music.utils.cipher.CipherWebView {
+-keepclassmembers class bharadwaj.juno.music.utils.cipher.CipherWebView {
     @android.webkit.JavascriptInterface public *;
 }
--keepclassmembers class bharadwajsanket.aether.music.utils.potoken.PoTokenWebView {
+-keepclassmembers class bharadwaj.juno.music.utils.potoken.PoTokenWebView {
     @android.webkit.JavascriptInterface public *;
 }
 
 # Keep streaming utility classes
--keep class bharadwajsanket.aether.music.utils.cipher.** { *; }
--keep class bharadwajsanket.aether.music.utils.sabr.** { *; }
--keep class bharadwajsanket.aether.music.utils.potoken.** { *; }
+-keep class bharadwaj.juno.music.utils.cipher.** { *; }
+-keep class bharadwaj.juno.music.utils.sabr.** { *; }
+-keep class bharadwaj.juno.music.utils.potoken.** { *; }
 
 # Keep coroutine continuation for WebView callbacks
 -keepclassmembers class * {
@@ -117,11 +117,11 @@
 
 ## Queue Persistence Rules
 # Keep queue-related classes to prevent serialization issues in release builds
--keep class bharadwajsanket.aether.music.models.PersistQueue { *; }
--keep class bharadwajsanket.aether.music.models.PersistPlayerState { *; }
--keep class bharadwajsanket.aether.music.models.QueueData { *; }
--keep class bharadwajsanket.aether.music.models.QueueType { *; }
--keep class bharadwajsanket.aether.music.playback.queues.** { *; }
+-keep class bharadwaj.juno.music.models.PersistQueue { *; }
+-keep class bharadwaj.juno.music.models.PersistPlayerState { *; }
+-keep class bharadwaj.juno.music.models.QueueData { *; }
+-keep class bharadwaj.juno.music.models.QueueType { *; }
+-keep class bharadwaj.juno.music.playback.queues.** { *; }
 
 # Keep serialization methods for queue persistence
 -keepclassmembers class * implements java.io.Serializable {
@@ -135,7 +135,7 @@
 -keep interface com.yalantis.ucrop** { *; }
 
 ## Google Cast Rules
--keep class bharadwajsanket.aether.music.cast.** { *; }
+-keep class bharadwaj.juno.music.cast.** { *; }
 -keep class com.google.android.gms.cast.** { *; }
 -keep class androidx.mediarouter.** { *; }
 
@@ -143,8 +143,8 @@
 -dontwarn com.google.re2j.**
 
 # Vibra fingerprint library
--keep class bharadwajsanket.aether.music.recognition.VibraSignature { *; }
--keepclassmembers class bharadwajsanket.aether.music.recognition.VibraSignature {
+-keep class bharadwaj.juno.music.recognition.VibraSignature { *; }
+-keepclassmembers class bharadwaj.juno.music.recognition.VibraSignature {
     native <methods>;
 }
 
@@ -174,13 +174,13 @@
 }
 
 ## Listen Together Serialization
--keep class bharadwajsanket.aether.music.listentogether.** { *; }
--keepclassmembers class bharadwajsanket.aether.music.listentogether.** {
+-keep class bharadwaj.juno.music.listentogether.** { *; }
+-keepclassmembers class bharadwaj.juno.music.listentogether.** {
     *;
 }
--keepclassmembers class bharadwajsanket.aether.music.listentogether.** {
+-keepclassmembers class bharadwaj.juno.music.listentogether.** {
     *** Companion;
 }
--keepclasseswithmembers class bharadwajsanket.aether.music.listentogether.** {
+-keepclasseswithmembers class bharadwaj.juno.music.listentogether.** {
     kotlinx.serialization.KSerializer serializer(...);
 }

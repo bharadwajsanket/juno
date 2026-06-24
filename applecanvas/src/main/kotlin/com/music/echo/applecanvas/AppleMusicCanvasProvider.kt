@@ -1,6 +1,6 @@
-package bharadwajsanket.aether.music.applecanvas
+package bharadwaj.juno.music.applecanvas
 
-import bharadwajsanket.aether.music.canvas.CanvasArtwork
+import bharadwaj.juno.music.canvas.CanvasArtwork
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp

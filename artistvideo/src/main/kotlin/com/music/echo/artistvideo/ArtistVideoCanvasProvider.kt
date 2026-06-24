@@ -1,4 +1,4 @@
-package bharadwajsanket.aether.music.artistvideo
+package bharadwaj.juno.music.artistvideo
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body

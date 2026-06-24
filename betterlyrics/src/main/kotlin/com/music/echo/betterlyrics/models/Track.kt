@@ -1,4 +1,4 @@
-package bharadwajsanket.aether.music.betterlyrics.models
+package bharadwaj.juno.music.betterlyrics.models
 
 import kotlinx.serialization.Serializable
 

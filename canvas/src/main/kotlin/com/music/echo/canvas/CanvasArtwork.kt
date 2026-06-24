@@ -1,4 +1,4 @@
-package bharadwajsanket.aether.music.canvas
+package bharadwaj.juno.music.canvas
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

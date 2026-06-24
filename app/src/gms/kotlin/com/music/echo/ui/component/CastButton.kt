@@ -1,6 +1,6 @@
 
 
-package bharadwajsanket.aether.music.ui.component
+package bharadwaj.juno.music.ui.component
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -31,10 +31,10 @@ import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.CastMediaControlIntent
 import com.google.android.gms.cast.framework.CastContext
-import bharadwajsanket.aether.music.LocalPlayerConnection
-import bharadwajsanket.aether.music.R
-import bharadwajsanket.aether.music.constants.EnableGoogleCastKey
-import bharadwajsanket.aether.music.utils.rememberPreference
+import bharadwaj.juno.music.LocalPlayerConnection
+import bharadwaj.juno.music.R
+import bharadwaj.juno.music.constants.EnableGoogleCastKey
+import bharadwaj.juno.music.utils.rememberPreference
 import timber.log.Timber
 
 /**
