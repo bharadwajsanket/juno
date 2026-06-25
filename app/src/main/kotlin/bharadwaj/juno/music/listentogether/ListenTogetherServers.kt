@@ -21,14 +21,14 @@ data class ListenTogetherServer(
 )
 
 object ListenTogetherServers {
-    private const val SERVER_JSON_URL = "https://raw.githubusercontent.com/bharadwaj/Juno-Music/refs/heads/main/app/server.json"
+    private const val SERVER_JSON_URL = "https://raw.githubusercontent.com/bharadwajsanket/JUNO-Music/refs/heads/main/app/server.json"
 
     private val _servers = MutableStateFlow(
         listOf(
             ListenTogetherServer(
-                name = "Juno Music Server",
-                url = "wss://aethermusic.hf.space/ws",
-                location = "Global - Juno",
+                name = "JUNO Server",
+                url = "wss://junomusic.hf.space/ws",
+                location = "Global - JUNO",
                 operator = "JUNO"
             )
         )

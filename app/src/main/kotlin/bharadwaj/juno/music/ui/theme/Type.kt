@@ -27,10 +27,10 @@ import android.content.Intent
 import bharadwaj.juno.music.constants.ThumbnailCornerRadiusKey
 import bharadwaj.juno.music.utils.rememberPreference
 
-// ── Juno Music Design System v1 ──────────────────────────────
+// ── JUNO Design System v1 ──────────────────────────────
 
 /**
- * Inter font family — Juno Music's brand typeface.
+ * Inter font family — JUNO's brand typeface.
  * Clean, excellent readability, open source.
  */
 val InterFontFamily = FontFamily(
@@ -42,7 +42,7 @@ val InterFontFamily = FontFamily(
 )
 
 /** Spacing scale — use these instead of magic-number dp values. */
-object JunoSpacing {
+object JUNOSpacing {
     val xxs = 4.dp
     val xs = 8.dp
     val sm = 12.dp
@@ -53,7 +53,7 @@ object JunoSpacing {
 }
 
 /** Corner radius scale — use these instead of inline RoundedCornerShape values. */
-object JunoCorners {
+object JUNOCorners {
     val none = RoundedCornerShape(0.dp)
     val sm = RoundedCornerShape(8.dp)
     val md = RoundedCornerShape(12.dp)
@@ -91,7 +91,7 @@ fun rememberBatterySaverState(): Boolean {
 }
 
 /** Icon sizing tokens — use these for consistent icon dimensions. */
-object JunoIconSize {
+object JUNOIconSize {
     val xs = 14.dp
     val sm = 18.dp
     val md = 24.dp

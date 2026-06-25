@@ -263,7 +263,7 @@ fun AppearanceSettings(
 
     
     val context = activity as Context
-    val sharedPreferences = remember { context.getSharedPreferences("juno_settings", Context.MODE_PRIVATE) }
+    val sharedPreferences = remember { context.getSharedPreferences("junomusic_settings", Context.MODE_PRIVATE) }
     val prefDensityScale = remember(sharedPreferences) {
         sharedPreferences.getFloat("density_scale_factor", 1.0f)
     }

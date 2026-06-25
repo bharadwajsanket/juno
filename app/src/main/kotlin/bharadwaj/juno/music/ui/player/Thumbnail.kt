@@ -105,7 +105,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import bharadwaj.juno.music.applecanvas.AppleMusicCanvasProvider
-import bharadwaj.juno.music.junomusiccanvas.junoCanvasProvider
+import bharadwaj.juno.music.junomusiccanvas.junomusicCanvasProvider
 import java.util.Locale
 
 
@@ -738,7 +738,7 @@ private fun ThumbnailItem(
                                     )?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }?.let { return@firstNotNullOfOrNull it }
                                 }
 
-                                junoCanvasProvider.getBySongArtist(
+                                junomusicCanvasProvider.getBySongArtist(
                                     song = s,
                                     artist = a
                                 )?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }

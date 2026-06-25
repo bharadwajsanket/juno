@@ -106,7 +106,7 @@
                 <data android:host="listen" />
             </intent-filter>
 
-            <!-- Juno Music and Juno Music shared links (HTTPS App Links) -->
+            <!-- JUNO and JUNO shared links (HTTPS App Links) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

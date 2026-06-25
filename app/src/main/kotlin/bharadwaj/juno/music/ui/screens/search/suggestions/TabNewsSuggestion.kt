@@ -212,7 +212,7 @@ fun SuggestionsTabContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         )
                         Text(
-                            text = "Juno Music",
+                            text = "JUNO",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             fontWeight = FontWeight.Bold

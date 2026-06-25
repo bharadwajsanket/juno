@@ -31,7 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import bharadwaj.juno.music.R
-import bharadwaj.juno.music.ui.theme.JunoSpacing
+import bharadwaj.juno.music.ui.theme.JUNOSpacing
 
 @Composable
 fun NavigationTitle(
@@ -44,14 +44,14 @@ fun NavigationTitle(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(JunoSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
             .clickable(enabled = onClick != null) {
                 onClick?.invoke()
             }
-            .padding(start = JunoSpacing.md, end = JunoSpacing.sm, top = JunoSpacing.md, bottom = 6.dp)
+            .padding(start = JUNOSpacing.md, end = JUNOSpacing.sm, top = JUNOSpacing.md, bottom = 6.dp)
     ) {
         thumbnail?.invoke()
 

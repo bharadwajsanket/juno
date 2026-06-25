@@ -9,7 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import bharadwaj.juno.music.applecanvas.AppleMusicCanvasProvider
-import bharadwaj.juno.music.junomusiccanvas.junoCanvasProvider
+import bharadwaj.juno.music.junomusiccanvas.junomusicCanvasProvider
 import bharadwaj.juno.music.canvas.CanvasArtwork
 import bharadwaj.juno.music.canvas.MonochromeAlbumCanvas
 import bharadwaj.juno.music.canvas.MonochromeApiCanvas
@@ -64,7 +64,7 @@ fun rememberAlbumCanvas(
 
             searchTasks.filter { (s, a) -> s.isNotBlank() && a.isNotBlank() }
                 .firstNotNullOfOrNull { (s, a) ->
-                    junoCanvasProvider.getBySongArtist(
+                    junomusicCanvasProvider.getBySongArtist(
                         song = s,
                         artist = a
                     )?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }

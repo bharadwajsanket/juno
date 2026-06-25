@@ -107,9 +107,9 @@ import androidx.compose.ui.text.style.TextDecoration
 
 data class ChangelogSection(val title: String, val items: List<String>)
 
-sealed class JunoUpdateStatus {
-    object Idle : JunoUpdateStatus()
-    object Checking : JunoUpdateStatus()
+sealed class JUNOUpdateStatus {
+    object Idle : JUNOUpdateStatus()
+    object Checking : JUNOUpdateStatus()
     data class Available(
         val version: String,
         val changelog: List<ChangelogSection>,
@@ -118,10 +118,10 @@ sealed class JunoUpdateStatus {
         val description: String?,
         val imageUrl: String?,
         val apkUrl: String?
-    ) : JunoUpdateStatus()
+    ) : JUNOUpdateStatus()
 
-    data class NoUpdate(val version: String) : JunoUpdateStatus()
-    data class Error(val message: String) : JunoUpdateStatus()
+    data class NoUpdate(val version: String) : JUNOUpdateStatus()
+    data class Error(val message: String) : JUNOUpdateStatus()
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -129,7 +129,7 @@ sealed class JunoUpdateStatus {
 fun UpdateScreen(navController: NavHostController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var status by remember { mutableStateOf<JunoUpdateStatus>(JunoUpdateStatus.NoUpdate(BuildConfig.VERSION_NAME)) }
+    var status by remember { mutableStateOf<JUNOUpdateStatus>(JUNOUpdateStatus.NoUpdate(BuildConfig.VERSION_NAME)) }
     var isDownloading by remember { mutableStateOf(false) }
     var downloadProgress by remember { mutableStateOf(0f) }
     var isDownloadComplete by remember { mutableStateOf(false) }
@@ -190,7 +190,7 @@ fun UpdateScreen(navController: NavHostController) {
     }
 
     fun triggerUpdateCheck() {
-        status = JunoUpdateStatus.Checking
+        status = JUNOUpdateStatus.Checking
         scope.launch {
             
             delay(1000L)
@@ -200,7 +200,7 @@ fun UpdateScreen(navController: NavHostController) {
                     saveLastCheckedTime(context, LocalDateTime.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy, h:mm a")))
                     saveUpdateAvailableState(context, isAvailable)
                     status = if (isAvailable) {
-                        JunoUpdateStatus.Available(
+                        JUNOUpdateStatus.Available(
                             version = tag,
                             changelog = changelog,
                             size = size,
@@ -210,11 +210,11 @@ fun UpdateScreen(navController: NavHostController) {
                             apkUrl = apkUrl
                         )
                     } else {
-                        JunoUpdateStatus.NoUpdate(tag)
+                        JUNOUpdateStatus.NoUpdate(tag)
                     }
                 },
                 onError = {
-                    status = JunoUpdateStatus.Error(context.getString(R.string.cant_check_updates))
+                    status = JUNOUpdateStatus.Error(context.getString(R.string.cant_check_updates))
                 },
                 force = true
             )
@@ -233,7 +233,7 @@ fun UpdateScreen(navController: NavHostController) {
         topBar = {
             LargeTopAppBar(
                 title = {
-                    val titleText = if (status is JunoUpdateStatus.Available) {
+                    val titleText = if (status is JUNOUpdateStatus.Available) {
                         buildAnnotatedString {
                             append(stringResource(R.string.new_update) + " ")
                             withStyle(
@@ -242,7 +242,7 @@ fun UpdateScreen(navController: NavHostController) {
                                     fontWeight = FontWeight.Bold
                                 )
                             ) {
-                                append((status as JunoUpdateStatus.Available).version)
+                                append((status as JUNOUpdateStatus.Available).version)
                             }
                         }
                     } else {
@@ -282,16 +282,16 @@ fun UpdateScreen(navController: NavHostController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     when (val currentStatus = status) {
-                        is JunoUpdateStatus.Idle, is JunoUpdateStatus.Checking, is JunoUpdateStatus.NoUpdate, is JunoUpdateStatus.Error -> {
+                        is JUNOUpdateStatus.Idle, is JUNOUpdateStatus.Checking, is JUNOUpdateStatus.NoUpdate, is JUNOUpdateStatus.Error -> {
                             AnimatedActionButton(
                                 text = stringResource(R.string.check_for_update),
                                 onClick = { triggerUpdateCheck() },
-                                enabled = currentStatus !is JunoUpdateStatus.Checking && !isDownloading,
+                                enabled = currentStatus !is JUNOUpdateStatus.Checking && !isDownloading,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
 
-                        is JunoUpdateStatus.Available -> {
+                        is JUNOUpdateStatus.Available -> {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -375,7 +375,7 @@ fun UpdateScreen(navController: NavHostController) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 item {
-                    val contentModifier = if (status is JunoUpdateStatus.Available) {
+                    val contentModifier = if (status is JUNOUpdateStatus.Available) {
                         Modifier.fillMaxWidth()
                     } else {
                         Modifier.fillParentMaxSize()
@@ -386,13 +386,13 @@ fun UpdateScreen(navController: NavHostController) {
                         contentAlignment = Alignment.Center
                     ) {
                         when (val currentStatus = status) {
-                            is JunoUpdateStatus.Checking -> {
+                            is JUNOUpdateStatus.Checking -> {
                                 androidx.compose.material3.ContainedLoadingIndicator(
                                     modifier = Modifier.size(64.dp)
                                 )
                             }
 
-                            is JunoUpdateStatus.NoUpdate -> {
+                            is JUNOUpdateStatus.NoUpdate -> {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
@@ -420,7 +420,7 @@ fun UpdateScreen(navController: NavHostController) {
                                 }
                             }
 
-                            is JunoUpdateStatus.Error -> {
+                            is JUNOUpdateStatus.Error -> {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
@@ -441,7 +441,7 @@ fun UpdateScreen(navController: NavHostController) {
                                 }
                             }
 
-                            is JunoUpdateStatus.Available -> {
+                            is JUNOUpdateStatus.Available -> {
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalAlignment = Alignment.Start
@@ -735,7 +735,7 @@ suspend fun checkForUpdate(
         }
 
         try {
-            val url = URL("https://api.github.com/repos/bharadwaj/Juno-Music/releases/latest")
+            val url = URL("https://api.github.com/repos/bharadwajsanket/JUNO-Music/releases/latest")
             val connection = url.openConnection() as java.net.HttpURLConnection
             connection.setRequestProperty("User-Agent", "junomusic-Update-App")
             connection.setRequestProperty("Accept", "application/vnd.github+json")
@@ -757,7 +757,7 @@ suspend fun checkForUpdate(
                     var imageUrl: String? = null
                     try {
                         val changelogUrl =
-                            URL("https://github.com/bharadwaj/Juno-Music/releases/download/$tagWithPrefix/changelog.json")
+                            URL("https://github.com/bharadwajsanket/JUNO-Music/releases/download/$tagWithPrefix/changelog.json")
                         val changelogJson = changelogUrl.openStream().bufferedReader().use { it.readText() }
                         val changelogData = JSONObject(changelogJson)
 

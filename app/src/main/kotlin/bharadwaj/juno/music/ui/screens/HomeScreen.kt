@@ -111,7 +111,7 @@ import bharadwaj.juno.music.constants.RandomizeHomeOrderKey
 import bharadwaj.juno.music.constants.ShowSpeedDialKey
 import bharadwaj.juno.music.constants.SmallGridThumbnailHeight
 import bharadwaj.juno.music.constants.ThumbnailCornerRadius
-import bharadwaj.juno.music.ui.theme.JunoCorners
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 import bharadwaj.juno.music.db.entities.Album
 import bharadwaj.juno.music.db.entities.Artist
 import bharadwaj.juno.music.db.entities.LocalItem
@@ -457,7 +457,7 @@ fun DailyDiscoverCard(
     Card(
         modifier = modifier
             .fillMaxSize()
-            .clip(JunoCorners.xl)
+            .clip(JUNOCorners.xl)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = {
@@ -477,7 +477,7 @@ fun DailyDiscoverCard(
             containerColor = containerColor,
         ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
-        shape = JunoCorners.xl
+        shape = JUNOCorners.xl
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             AsyncImage(

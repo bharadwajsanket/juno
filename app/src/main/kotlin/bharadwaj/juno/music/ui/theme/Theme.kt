@@ -48,7 +48,7 @@ fun junoMusicTheme(
     }
 
     val colorScheme = remember(baseColorScheme, pureBlack, darkTheme) {
-        baseColorScheme.applyJunoColorScheme(isDark = darkTheme, pureBlack = pureBlack)
+        baseColorScheme.applyJUNOColorScheme(isDark = darkTheme, pureBlack = pureBlack)
     }
 
     MaterialTheme(
@@ -84,7 +84,7 @@ fun Bitmap.extractGradientColors(): List<Color> {
         listOf(Color(0xFF595959), Color(0xFF0D0D0D))
 }
 
-fun ColorScheme.applyJunoColorScheme(isDark: Boolean, pureBlack: Boolean): ColorScheme {
+fun ColorScheme.applyJUNOColorScheme(isDark: Boolean, pureBlack: Boolean): ColorScheme {
     if (!isDark) return this
     val bg = if (pureBlack) Color.Black else Color(0xFF090909)
     val surf = if (pureBlack) Color.Black else Color(0xFF151515)

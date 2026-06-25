@@ -84,7 +84,7 @@ object LocalYouTubeDownloader {
                     YoutubeDL.getInstance()
                         .execute(
                             request,
-                            "echo-download-$videoId-${UUID.randomUUID()}",
+                            "juno-download-$videoId-${UUID.randomUUID()}",
                             null,
                         )
 
@@ -130,7 +130,7 @@ object LocalYouTubeDownloader {
             YoutubeDL.getInstance()
                 .execute(
                     request,
-                    "echo-format-$videoId-${UUID.randomUUID()}",
+                    "juno-format-$videoId-${UUID.randomUUID()}",
                     null,
                 )
         return parseFormats(response.out)

@@ -62,7 +62,7 @@ fun isSpeaker(name: String?): Boolean {
     return lowerName.contains("speaker") || 
            lowerName.contains("soundbar") || 
            lowerName.contains("homepod") || 
-           lowerName.contains("echo") ||
+           lowerName.contains("___juno_protect___") ||
            lowerName.contains("boombox") ||
            lowerName.contains("audio system") ||
            lowerName.contains("sound") ||

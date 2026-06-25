@@ -173,7 +173,7 @@ import bharadwaj.juno.music.utils.YTPlayerUtils
 import bharadwaj.juno.music.utils.dataStore
 import bharadwaj.juno.music.utils.get
 import bharadwaj.juno.music.utils.reportException
-import bharadwaj.juno.music.widget.JunoMusicWidgetManager
+import bharadwaj.juno.music.widget.JunoWidgetManager
 import bharadwaj.juno.music.widget.MusicWidgetReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import bharadwaj.juno.music.utils.isLocalMediaId
@@ -238,7 +238,7 @@ class MusicService :
     lateinit var eqProfileRepository: EQProfileRepository
 
     @Inject
-    lateinit var widgetManager: JunoMusicWidgetManager
+    lateinit var widgetManager: JunoWidgetManager
 
     @Inject
     lateinit var listenTogetherManager: bharadwaj.juno.music.listentogether.ListenTogetherManager

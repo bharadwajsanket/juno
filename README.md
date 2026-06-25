@@ -1,16 +1,16 @@
 <div align="center">
-  <h1>Juno Music</h1>
+  <h1>JUNO</h1>
 
   <p><strong>A premium, atmospheric, and minimal Android music application built for users who value control, personalization, privacy, and performance.</strong></p>
 
   [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://android.com)
   [![Kotlin](https://img.shields.io/badge/Kotlin-2.3.10-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
   [![Jetpack Compose](https://img.shields.io/badge/Compose-1.10.2-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-  [![License](https://img.shields.io/github/license/bharadwaj/Juno-Music?style=for-the-badge&color=28a745)](LICENSE)
-  [![Release](https://img.shields.io/badge/Release-v3.5.4-blue?style=for-the-badge)](https://github.com/bharadwaj/Juno-Music/releases)
+  [![License](https://img.shields.io/github/license/bharadwajsanket/JUNO-Music?style=for-the-badge&color=28a745)](LICENSE)
+  [![Release](https://img.shields.io/badge/Release-v3.5.4-blue?style=for-the-badge)](https://github.com/bharadwajsanket/JUNO-Music/releases)
 
   <p align="center">
-    <img src="assets/banner.png" alt="JUNO Music Banner" width="100%">
+    <img src="assets/banner.png" alt="JUNO Banner" width="100%">
   </p>
 </div>
 
@@ -18,7 +18,7 @@
 
 ## 1. Overview
 
-JUNO Music is a modern Android music player built with Jetpack Compose. It combines local playback, streaming, downloads, synchronized lyrics, customization, and privacy-focused features with a premium visual experience.
+JUNO is a modern Android music player built with Jetpack Compose. It combines local playback, streaming, downloads, synchronized lyrics, customization, and privacy-focused features with a premium visual experience.
 
 Inspired by a blend of Apple Music and Nothing OS aesthetics, it leverages a unified design system of spacing scales, custom haptic feedback rhythms, and OLED-optimized interfaces without compromising on performance or offline capabilities.
 
@@ -26,7 +26,7 @@ Inspired by a blend of Apple Music and Nothing OS aesthetics, it leverages a uni
 
 ⚠️ **Active Development**
 
-JUNO Music is currently undergoing a major rebrand and UI overhaul. Features, UI components, and build configurations may change rapidly.
+JUNO is currently undergoing a major rebrand and UI overhaul. Features, UI components, and build configurations may change rapidly.
 
 ---
 
@@ -62,8 +62,8 @@ JUNO Music is currently undergoing a major rebrand and UI overhaul. Features, UI
 ## 4. Installation
 
 Official releases can be found under the **Releases** tab of the GitHub repository. 
-1. Go to the [Releases](https://github.com/bharadwaj/Juno-Music/releases) page.
-2. Download the latest `JunoMusic-3.5.4-Universal.apk` or GMS variant.
+1. Go to the [Releases](https://github.com/bharadwajsanket/JUNO-Music/releases) page.
+2. Download the latest `JUNO-3.5.4-Universal.apk` or GMS variant.
 3. Install the APK on your Android device (enabling installation from unknown sources if required).
 
 ---
@@ -79,8 +79,8 @@ Official releases can be found under the **Releases** tab of the GitHub reposito
 ### Step-by-Step Build
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/bharadwaj/Juno-Music.git
-   cd Juno-Music
+   git clone https://github.com/bharadwajsanket/JUNO-Music.git
+   cd JUNO-Music
    ```
 2. **Configure Local Properties**
    Create a `local.properties` file in the root directory:
@@ -107,7 +107,7 @@ Official releases can be found under the **Releases** tab of the GitHub reposito
 
 ## 6. Architecture
 
-Juno Music is built following clean architecture guidelines:
+JUNO is built following clean architecture guidelines:
 
 ### Module Structure
 * `app/`: Main application module containing application components, Hilt DI setup, and global view models.
@@ -145,7 +145,7 @@ Room Database / Network Sources
 
 ## 8. Credits
 
-JUNO Music contains work derived from open-source projects and community contributions.
+JUNO contains work derived from open-source projects and community contributions.
 
 Special thanks to:
 * Original project maintainers

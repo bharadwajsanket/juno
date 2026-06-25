@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import bharadwaj.juno.music.ui.theme.JunoCorners
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 
 @Composable
 fun AutoPlaylistButton(
@@ -28,7 +28,7 @@ fun AutoPlaylistButton(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        shape = JunoCorners.md,
+        shape = JUNOCorners.md,
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = modifier.clickable(onClick = onClick)
     ) {

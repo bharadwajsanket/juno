@@ -130,7 +130,7 @@ fun ListenTogetherScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Listen Together is currently being rebuilt and will return in a future Juno release.",
+                    text = "Listen Together is currently being rebuilt and will return in a future JUNO release.",
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

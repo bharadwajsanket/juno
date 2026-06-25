@@ -242,7 +242,7 @@ import bharadwaj.juno.music.extensions.metadata
 import bharadwaj.juno.music.ui.player.CanvasArtworkPlaybackCache
 import bharadwaj.juno.music.ui.player.normalizeCanvasArtistName
 import bharadwaj.juno.music.ui.player.normalizeCanvasSongTitle
-import bharadwaj.juno.music.junomusiccanvas.junoCanvasProvider
+import bharadwaj.juno.music.junomusiccanvas.junomusicCanvasProvider
 import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -565,7 +565,7 @@ fun BottomSheetPlayer(
             val s = normalizeCanvasSongTitle(requestedTitle)
             val a = normalizeCanvasArtistName(requestedArtist)
             
-            val fetched = junoCanvasProvider.getBySongArtist(s, a)
+            val fetched = junomusicCanvasProvider.getBySongArtist(s, a)
                 ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }
                 ?: MonochromeApiCanvas.getBySongArtist(s, a, requestedAlbum)
                 ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }

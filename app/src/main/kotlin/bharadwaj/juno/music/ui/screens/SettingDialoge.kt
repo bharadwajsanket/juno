@@ -203,7 +203,7 @@ fun SettingDialoge(
                         text = "GitHub Repository",
                         style = MaterialTheme.typography.bodySmall,
                         color = onSecondaryColor,
-                        modifier = Modifier.clickable { uriHandler.openUri("https://github.com/bharadwaj") }.padding(4.dp)
+                        modifier = Modifier.clickable { uriHandler.openUri("https://github.com/bharadwajsanket") }.padding(4.dp)
                     )
                 }
             }

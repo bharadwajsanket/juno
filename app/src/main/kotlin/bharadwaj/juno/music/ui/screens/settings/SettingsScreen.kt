@@ -25,7 +25,7 @@ import bharadwaj.juno.music.ui.component.IconButton
 import bharadwaj.juno.music.ui.component.Material3SettingsGroup
 import bharadwaj.juno.music.ui.component.Material3SettingsItem
 import bharadwaj.juno.music.ui.utils.backToMain
-import bharadwaj.juno.music.ui.theme.JunoSpacing
+import bharadwaj.juno.music.ui.theme.JUNOSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +57,7 @@ fun SettingsScreen(
         )
 
         Material3SettingsGroup(
-            title = "Juno Settings",
+            title = "JUNO Settings",
             items = listOf(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.play),
@@ -104,7 +104,7 @@ fun SettingsScreen(
             )
         )
 
-        Spacer(modifier = Modifier.height(JunoSpacing.xxl))
+        Spacer(modifier = Modifier.height(JUNOSpacing.xxl))
     }
 
     TopAppBar(

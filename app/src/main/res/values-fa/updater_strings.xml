@@ -35,7 +35,7 @@
     <string name="mobile_network_warning">دانلود به‌روزرسانی‌ها از طریق شبکه موبایل یا رومینگ ممکن است هزینه‌های اضافی به همراه داشته باشد.</string>
     <string name="update_size">حجم به‌روزرسانی: %1$s مگابایت</string>
     <string name="check_internet_connection">اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.</string>
-    <string name="juno_music_version">نسخه Juno Music %1$s</string>
+    <string name="juno_music_version">نسخه JUNO %1$s</string>
     <string name="last_checked">آخرین بررسی: %1$s</string>
     <string name="install">نصب</string>
     <string name="check_for_update">بررسی برای به‌روزرسانی</string>

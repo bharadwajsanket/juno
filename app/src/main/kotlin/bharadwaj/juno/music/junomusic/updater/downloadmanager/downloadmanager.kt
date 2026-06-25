@@ -45,7 +45,7 @@ class CustomDownloadManager {
                 
                 val downloadDir = File(
                     context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
-                    "echo_updates"
+                    "juno_updates"
                 )
                 if (!downloadDir.exists()) {
                     downloadDir.mkdirs()

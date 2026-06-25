@@ -63,7 +63,7 @@ fun AboutScreen(
             title = { Text(text = "Open Source Credits", fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    text = "This project includes work derived from Juno Music and other open-source projects. See licenses and credits for details.",
+                    text = "This project includes work derived from JUNO and other open-source projects. See licenses and credits for details.",
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
@@ -134,7 +134,7 @@ fun AboutScreen(
                         icon = painterResource(R.drawable.github),
                         title = "GitHub",
                         subtitle = "View repository source code",
-                        onClick = { uriHandler.openUri("https://github.com/bharadwaj/Juno-Music") },
+                        onClick = { uriHandler.openUri("https://github.com/bharadwajsanket/JUNO-Music") },
                     )
                     AboutDivider()
                     AboutActionRow(
@@ -177,7 +177,7 @@ private fun AboutAppCard() {
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Juno Music",
+                text = "JUNO",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
