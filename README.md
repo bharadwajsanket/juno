@@ -9,9 +9,7 @@
   [![License](https://img.shields.io/github/license/bharadwajsanket/JUNO-Music?style=for-the-badge&color=28a745)](LICENSE)
   [![Release](https://img.shields.io/badge/Release-v3.5.4-blue?style=for-the-badge)](https://github.com/bharadwajsanket/JUNO-Music/releases)
 
-  <p align="center">
-    <img src="assets/banner.png" alt="JUNO Banner" width="100%">
-  </p>
+
 </div>
 
 ---
