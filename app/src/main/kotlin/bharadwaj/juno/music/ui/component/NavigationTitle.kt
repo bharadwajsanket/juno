@@ -51,7 +51,7 @@ fun NavigationTitle(
             .clickable(enabled = onClick != null) {
                 onClick?.invoke()
             }
-            .padding(start = JUNOSpacing.md, end = JUNOSpacing.sm, top = JUNOSpacing.md, bottom = 6.dp)
+            .padding(start = JUNOSpacing.md, end = JUNOSpacing.sm, top = JUNOSpacing.lg, bottom = JUNOSpacing.xs)
     ) {
         thumbnail?.invoke()
 

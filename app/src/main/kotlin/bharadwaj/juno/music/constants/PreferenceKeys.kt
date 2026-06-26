@@ -171,20 +171,6 @@ val DiscordAdvancedModeKey = booleanPreferencesKey("discordAdvancedMode")
 val EnableGoogleCastKey = booleanPreferencesKey("enableGoogleCast")
 
 
-val ListenTogetherServerUrlKey = stringPreferencesKey("listenTogetherServerUrl")
-val ListenTogetherUsernameKey = stringPreferencesKey("listenTogetherUsername")
-val EnableListenTogetherKey = booleanPreferencesKey("enableListenTogether")
-val ListenTogetherAutoApprovalKey = booleanPreferencesKey("listenTogetherAutoApproval")
-val ListenTogetherSyncVolumeKey = booleanPreferencesKey("listenTogetherSyncVolume")
-val ListenTogetherSmartResyncKey = booleanPreferencesKey("listenTogetherSmartResync")
-val ListenTogetherBlockedUsersKey = stringPreferencesKey("listenTogetherBlockedUsers")
-val ListenTogetherInTopBarKey = booleanPreferencesKey("listenTogetherInTopBar")
-
-val ListenTogetherSessionTokenKey = stringPreferencesKey("listenTogetherSessionToken")
-val ListenTogetherRoomCodeKey = stringPreferencesKey("listenTogetherRoomCode")
-val ListenTogetherUserIdKey = stringPreferencesKey("listenTogetherUserId")
-val ListenTogetherIsHostKey = booleanPreferencesKey("listenTogetherIsHost")
-val ListenTogetherSessionTimestampKey = longPreferencesKey("listenTogetherSessionTimestamp")
 
 val LastFMSessionKey = stringPreferencesKey("lastfmSession")
 val LastFMUsernameKey = stringPreferencesKey("lastfmUsername")
@@ -758,7 +744,7 @@ val PreloadNextSongLimitKey = intPreferencesKey("preload_next_song_limit")
 val PreloadLyricsEnabledKey = booleanPreferencesKey("preload_lyrics_enabled")
 
 val EnableHapticsKey = booleanPreferencesKey("enableHaptics")
+val HapticIntensityKey = floatPreferencesKey("hapticIntensity")
 
 val SuperDataSaverKey = booleanPreferencesKey("super_data_saver")
 
-const val ENABLE_LISTEN_TOGETHER = false

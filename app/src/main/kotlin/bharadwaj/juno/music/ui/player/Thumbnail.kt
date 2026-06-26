@@ -79,7 +79,6 @@ import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
-import bharadwaj.juno.music.LocalListenTogetherManager
 import bharadwaj.juno.music.LocalPlayerConnection
 import bharadwaj.juno.music.R
 import bharadwaj.juno.music.constants.CropAlbumArtKey
@@ -92,7 +91,6 @@ import bharadwaj.juno.music.constants.SeekExtraSeconds
 import bharadwaj.juno.music.constants.SwipeThumbnailKey
 import bharadwaj.juno.music.constants.ThumbnailCornerRadiusKey
 import bharadwaj.juno.music.constants.ThumbnailCornerRadius
-import bharadwaj.juno.music.listentogether.RoomRole
 import bharadwaj.juno.music.ui.component.CastButton
 import bharadwaj.juno.music.utils.rememberEnumPreference
 import bharadwaj.juno.music.constants.CanvasThumbnailAnimationKey
@@ -257,8 +255,8 @@ fun Thumbnail(
     modifier: Modifier = Modifier,
     isPlayerExpanded: () -> Boolean = { true },
     isLandscape: Boolean = false,
-    isListenTogetherGuest: Boolean = false,
 ) {
+    val isListenTogetherGuest = false
     val playerConnection = LocalPlayerConnection.current ?: return
     val context = LocalContext.current
     val layoutDirection = LocalLayoutDirection.current
@@ -280,7 +278,7 @@ fun Thumbnail(
         key = PlayerBackgroundStyleKey,
         defaultValue = PlayerBackgroundStyle.GRADIENT
     )
-    val thumbnailCornerRadius by rememberPreference(ThumbnailCornerRadiusKey, defaultValue = 3f)
+    val thumbnailCornerRadius by rememberPreference(ThumbnailCornerRadiusKey, defaultValue = 16f)
     
     
     val textBackgroundColor = getTextColor(playerBackground)
@@ -475,7 +473,6 @@ fun Thumbnail(
                                 playerConnection = playerConnection,
                                 context = context,
                                 isLandscape = isLandscape,
-                                isListenTogetherGuest = isListenTogetherGuest,
                                 currentMediaId = mediaMetadata?.id,
                                 currentMediaThumbnail = mediaMetadata?.thumbnailUrl,
                                 playerBackground = playerBackground
@@ -513,9 +510,6 @@ private fun ThumbnailHeader(
     textColor: Color,
     modifier: Modifier = Modifier
 ) {
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val listenTogetherRoleState = listenTogetherManager?.role?.collectAsState(initial = RoomRole.NONE)
-    val isListenTogetherGuest = listenTogetherRoleState?.value == RoomRole.GUEST
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -527,20 +521,11 @@ private fun ThumbnailHeader(
                 .align(Alignment.Center)
                 .padding(horizontal = 48.dp)
         ) {
-            
-            if (listenTogetherRoleState?.value != RoomRole.NONE) {
-                Text(
-                    text = if (listenTogetherRoleState?.value == RoomRole.HOST) "Hosting Listen Together" else "Listening Together",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = textColor
-                )
-            } else {
-                Text(
-                    text = stringResource(R.string.now_playing),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = textColor
-                )
-            }
+            Text(
+                text = stringResource(R.string.now_playing),
+                style = MaterialTheme.typography.titleMedium,
+                color = textColor
+            )
             val playingFrom = albumTitle ?: queueTitle 
             androidx.compose.animation.AnimatedContent(
                 targetState = playingFrom,
@@ -583,12 +568,12 @@ private fun ThumbnailItem(
     playerConnection: bharadwaj.juno.music.playback.PlayerConnection,
     context: android.content.Context,
     isLandscape: Boolean = false,
-    isListenTogetherGuest: Boolean = false,
     currentMediaId: String? = null,
     currentMediaThumbnail: String? = null,
     playerBackground: PlayerBackgroundStyle = PlayerBackgroundStyle.DEFAULT,
     modifier: Modifier = Modifier,
 ) {
+    val isListenTogetherGuest = false
     val rotatingThumbnail by rememberPreference(RotatingThumbnailKey, defaultValue = false)
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val isCurrentItem = item.mediaId == currentMediaId

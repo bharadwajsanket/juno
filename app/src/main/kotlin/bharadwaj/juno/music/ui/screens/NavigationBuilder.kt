@@ -51,7 +51,6 @@ import bharadwaj.juno.music.ui.screens.settings.StorageSettings
 import bharadwaj.juno.music.ui.screens.settings.DownloadsSettings
 import bharadwaj.juno.music.ui.screens.settings.ThemeScreen
 import bharadwaj.juno.music.ui.screens.settings.AiSettings
-import bharadwaj.juno.music.ui.screens.settings.integrations.ListenTogetherSettings
 import bharadwaj.juno.music.ui.screens.recognition.RecognitionScreen
 import bharadwaj.juno.music.ui.screens.recognition.RecognitionHistoryScreen
 import bharadwaj.juno.music.ui.screens.settings.UpdateSettings
@@ -93,19 +92,6 @@ fun NavGraphBuilder.navigationBuilder(
         LibraryScreen(navController)
     }
 
-    composable(Screens.ListenTogether.route) {
-        ListenTogetherScreen(navController, showTopBar = false)
-    }
-
-    composable(
-        route = "listen_together_from_topbar",
-    ) {
-        ListenTogetherScreen(navController, showTopBar = true)
-    }
-
-    composable("listen_together/chat") {
-        CommentTogetherScreen(navController)
-    }
 
     composable("history") {
         HistoryScreen(navController)
@@ -398,9 +384,6 @@ fun NavGraphBuilder.navigationBuilder(
         SpotifyImportScreen(navController)
     }
 
-    composable(route = "settings/integrations/listen_together") {
-        ListenTogetherSettings(navController, scrollBehavior)
-    }
 
     composable("settings/about") {
         AboutScreen(navController, scrollBehavior)

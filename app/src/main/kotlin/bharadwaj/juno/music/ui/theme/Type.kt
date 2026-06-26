@@ -61,7 +61,7 @@ object JUNOCorners {
     val xl: RoundedCornerShape
         @Composable
         get() {
-            val radiusFloat by rememberPreference(ThumbnailCornerRadiusKey, defaultValue = 3f)
+            val radiusFloat by rememberPreference(ThumbnailCornerRadiusKey, defaultValue = 16f)
             return RoundedCornerShape(radiusFloat.dp)
         }
     val full = RoundedCornerShape(50)

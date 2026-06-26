@@ -151,9 +151,6 @@ import bharadwaj.juno.music.constants.OnboardingCompletedKey
 import bharadwaj.juno.music.constants.EnableHighRefreshRateKey
 import bharadwaj.juno.music.constants.FloatingToolbarBottomPadding
 import bharadwaj.juno.music.constants.FloatingToolbarHorizontalPadding
-import bharadwaj.juno.music.constants.ListenTogetherInTopBarKey
-import bharadwaj.juno.music.constants.ListenTogetherUsernameKey
-import bharadwaj.juno.music.constants.ENABLE_LISTEN_TOGETHER
 import bharadwaj.juno.music.constants.MiniPlayerBottomSpacing
 import bharadwaj.juno.music.constants.MiniPlayerHeight
 import bharadwaj.juno.music.constants.NavigationBarAnimationSpec
@@ -186,6 +183,8 @@ import bharadwaj.juno.music.ui.component.AppNavigationRail
 import bharadwaj.juno.music.ui.component.BottomSheetMenu
 import bharadwaj.juno.music.ui.component.BottomSheetPage
 import bharadwaj.juno.music.ui.component.FloatingNavigationToolbar
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 import bharadwaj.juno.music.ui.component.LocalBottomSheetPageState
 import bharadwaj.juno.music.ui.component.LocalMenuState
 import bharadwaj.juno.music.ui.component.rememberBottomSheetState
@@ -193,7 +192,6 @@ import bharadwaj.juno.music.ui.component.shimmer.ShimmerTheme
 import bharadwaj.juno.music.ui.menu.YouTubeSongMenu
 import bharadwaj.juno.music.ui.player.BottomSheetPlayer
 import bharadwaj.juno.music.ui.screens.Screens
-import bharadwaj.juno.music.ui.screens.SettingDialoge
 import bharadwaj.juno.music.ui.screens.WelcomeDialog
 import bharadwaj.juno.music.ui.screens.navigationBuilder
 import bharadwaj.juno.music.ui.screens.settings.DarkMode
@@ -244,8 +242,6 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var syncUtils: SyncUtils
 
-    @Inject
-    lateinit var listenTogetherManager: bharadwaj.juno.music.listentogether.ListenTogetherManager
 
     private lateinit var navController: NavHostController
     private var pendingIntent: Intent? = null
@@ -258,8 +254,6 @@ class MainActivity : ComponentActivity() {
                 try {
                     playerConnection = PlayerConnection(this@MainActivity, service, database, lifecycleScope)
                     Timber.tag("MainActivity").d("PlayerConnection created successfully")
-                    
-                    listenTogetherManager.setPlayerConnection(playerConnection)
                 } catch (e: Exception) {
                     Timber.tag("MainActivity").e(e, "Failed to create PlayerConnection")
                 }
@@ -267,8 +261,6 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            
-            listenTogetherManager.setPlayerConnection(null)
             playerConnection?.dispose()
             playerConnection = null
         }
@@ -321,8 +313,6 @@ class MainActivity : ComponentActivity() {
         window.decorView.layoutDirection = View.LAYOUT_DIRECTION_LTR
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        
-        listenTogetherManager.initialize()
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             val locale = dataStore[AppLanguageKey]
@@ -517,7 +507,6 @@ class MainActivity : ComponentActivity() {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val (previousTab, setPreviousTab) = rememberSaveable { mutableStateOf("home") }
 
-                val (listenTogetherInTopBar) = rememberPreference(ListenTogetherInTopBarKey, defaultValue = true)
                 val navigationItems = remember { 
                     bharadwaj.juno.music.ui.component.NavigationItemsList(
                         listOf(
@@ -544,7 +533,6 @@ class MainActivity : ComponentActivity() {
                     listOf(
                         Screens.Home.route,
                         Screens.Library.route,
-                        Screens.ListenTogether.route,
                         "settings",
                     )
                 }
@@ -637,15 +625,31 @@ class MainActivity : ComponentActivity() {
                     shouldShowNavigationBar,
                     playerBottomSheetState.isDismissed,
                     showRail,
+                    currentRoute,
+                    useNewMiniPlayerDesign,
                 ) {
                     var bottom = bottomInset
                     if (shouldShowNavigationBar && !showRail) {
-                        bottom += NavigationBarHeight
+                        bottom += NavigationBarHeight + FloatingToolbarBottomPadding
                     }
-                    if (!playerBottomSheetState.isDismissed) bottom += MiniPlayerHeight
+                    if (!playerBottomSheetState.isDismissed) {
+                        bottom += MiniPlayerHeight
+                        if (useNewMiniPlayerDesign) {
+                            bottom += MiniPlayerBottomSpacing
+                        }
+                    }
+                    // Global 12.dp content gap above bottom navigation/player elements
+                    bottom += 12.dp
+                    
+                    val isEdgeToEdge = currentRoute == "home" ||
+                        currentRoute == "search_input" ||
+                        currentRoute == "library"
+                    
+                    val topInset = if (isEdgeToEdge) 0.dp else AppBarHeight
+
                     windowsInsets
                         .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
-                        .add(WindowInsets(top = AppBarHeight, bottom = bottom))
+                        .add(WindowInsets(top = topInset, bottom = bottom))
                 }
                 appBarScrollBehavior(
                     canScroll = {
@@ -731,23 +735,11 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                var shouldShowTopBar by rememberSaveable { mutableStateOf(false) }
-
-                LaunchedEffect(navBackStackEntry, listenTogetherInTopBar) {
-                    val currentRoute = navBackStackEntry?.destination?.route
-                    val isListenTogetherScreen = currentRoute == Screens.ListenTogether.route || 
-                        currentRoute == "listen_together_from_topbar"
-                    shouldShowTopBar = currentRoute in topLevelScreens &&
-                        currentRoute != "settings" &&
-                        !(isListenTogetherScreen && listenTogetherInTopBar)
-                }
-
                 val coroutineScope = rememberCoroutineScope()
                 var sharedSong: SongItem? by remember {
                     mutableStateOf(null)
                 }
                 val snackbarHostState = remember { SnackbarHostState() }
-                var showSettingDialoge by remember { mutableStateOf(false) }
 
                 val (_, setLastOpenedVersionCode) = rememberPreference(bharadwaj.juno.music.constants.LastOpenedVersionCodeKey, -1)
                 val (_, setOnboardingCompleted) = rememberPreference(OnboardingCompletedKey, false)
@@ -807,7 +799,6 @@ class MainActivity : ComponentActivity() {
                     Screens.Home.route -> "JUNO"
                     Screens.Search.route -> stringResource(R.string.search)
                     Screens.Library.route -> stringResource(R.string.filter_library)
-                    Screens.ListenTogether.route -> stringResource(R.string.together)
                     else -> ""
                 }
 
@@ -823,6 +814,7 @@ class MainActivity : ComponentActivity() {
 
                 val ringtoneViewModel: RingtoneViewModel = viewModel()
                 val ringtoneUiState by ringtoneViewModel.uiState.collectAsState()
+                val hazeState = remember { HazeState() }
 
                 CompositionLocalProvider(
                     LocalRingtoneViewModel provides ringtoneViewModel,
@@ -833,105 +825,10 @@ class MainActivity : ComponentActivity() {
                     LocalDownloadUtil provides downloadUtil,
                     LocalShimmerTheme provides ShimmerTheme,
                     LocalSyncUtils provides syncUtils,
-                    LocalListenTogetherManager provides listenTogetherManager,
                 ) {
 
                     Scaffold(
                         snackbarHost = { SnackbarHost(snackbarHostState) },
-                        topBar = {
-                            AnimatedVisibility(
-                                visible = shouldShowTopBar,
-                                enter = fadeIn(animationSpec = tween(durationMillis = 300)),
-                                exit = fadeOut(animationSpec = tween(durationMillis = 200))
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(52.dp)
-                                        .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer)
-                                        .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top))
-                                        .windowInsetsPadding(
-                                            if (showRail) {
-                                                WindowInsets(left = NavigationBarHeight)
-                                                    .add(cutoutInsets.only(WindowInsetsSides.Start))
-                                            } else {
-                                                cutoutInsets.only(WindowInsetsSides.Start + WindowInsetsSides.End)
-                                            }
-                                        )
-                                        .padding(horizontal = 16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = currentTitle,
-                                        style = MaterialTheme.typography.titleLarge.copy(
-                                            fontWeight = if (currentTitle == "JUNO") FontWeight.ExtraBold else FontWeight.Bold,
-                                            fontSize = if (currentTitle == "JUNO") 22.sp else 20.sp,
-                                            letterSpacing = if (currentTitle == "JUNO") 1.2.sp else 0.sp
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        // 1. Listen Together / Community
-                                        if (ENABLE_LISTEN_TOGETHER) {
-                                            IconButton(
-                                                onClick = { navController.navigate("listen_together_from_topbar") },
-                                                modifier = Modifier.size(36.dp)
-                                            ) {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.group_outlined),
-                                                    contentDescription = stringResource(R.string.together),
-                                                    modifier = Modifier.size(20.dp),
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                        // 2. Sync
-                                        IconButton(
-                                            onClick = {
-                                                coroutineScope.launch {
-                                                    syncUtils.performFullSync()
-                                                    snackbarHostState.showSnackbar("Library sync started in background")
-                                                }
-                                            },
-                                            modifier = Modifier.size(36.dp)
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.refresh),
-                                                contentDescription = "Sync",
-                                                modifier = Modifier.size(20.dp),
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        // 3. Settings / Profile
-                                        IconButton(
-                                            onClick = { showSettingDialoge = true },
-                                            modifier = Modifier.size(36.dp)
-                                        ) {
-                                            if (accountImageUrl != null) {
-                                                AsyncImage(
-                                                    model = accountImageUrl,
-                                                    contentDescription = stringResource(R.string.account),
-                                                    modifier = Modifier
-                                                        .size(20.dp)
-                                                        .clip(CircleShape)
-                                                )
-                                            } else {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.settings),
-                                                    contentDescription = stringResource(R.string.account),
-                                                    modifier = Modifier.size(20.dp),
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
                         bottomBar = {
                             val onNavItemClick: (Screens, Boolean) -> Unit = remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState) {
                                 { screen: Screens, isSelected: Boolean ->
@@ -969,7 +866,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
-                            if (!showRail && currentRoute != "update" && currentRoute != "listen_together/chat") {
+                            if (!showRail && currentRoute != "update") {
                                 val navigationBarHeight by animateDpAsState(
                                     targetValue = if (shouldShowNavigationBar && !showRail) NavigationBarHeight else 0.dp,
                                     animationSpec = NavigationBarAnimationSpec,
@@ -1005,6 +902,7 @@ class MainActivity : ComponentActivity() {
                                         FloatingNavigationToolbar(
                                             items = navigationItems,
                                             pureBlack = pureBlack,
+                                            hazeState = hazeState,
                                             isSelected = { screen ->
                                                 currentRoute == screen.route || currentRoute?.startsWith("${screen.route}/") == true
                                             },
@@ -1019,22 +917,9 @@ class MainActivity : ComponentActivity() {
                                                 .height(NavigationBarHeight)
                                         )
                                     }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .align(Alignment.BottomCenter)
-                                            .height(bottomInsetDp)
-                                            
-                                            .graphicsLayer {
-                                                val progress = playerBottomSheetState.progress
-                                                alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar)) 0f else 1f
-                                            }
-                                            .background(baseBg)
-                                    )
                                 }
                             } else {
-                                if (currentRoute != "update" && currentRoute != "listen_together/chat") {
+                                if (currentRoute != "update") {
                                     BottomSheetPlayer(
                                         state = playerBottomSheetState,
                                         navController = navController,
@@ -1114,7 +999,7 @@ class MainActivity : ComponentActivity() {
                                     onSearchLongClick = onRailSearchLongClick
                                 )
                             }
-                            Box(Modifier.weight(1f)) {
+                            Box(Modifier.weight(1f).haze(state = hazeState)) {
                                 
                                 NavHost(
                                     navController = navController,
@@ -1253,16 +1138,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    if (showSettingDialoge) {
-                        SettingDialoge(
-                            onDismissRequest = { showSettingDialoge = false },
-                            onNavigate = { route ->
-                                showSettingDialoge = false
-                                navController.navigate(route)
-                            },
-                            homeViewModel = homeViewModel
-                        )
-                    }
+
 
                     if (showWelcomeDialog) {
                         WelcomeDialog(
@@ -1291,19 +1167,6 @@ class MainActivity : ComponentActivity() {
         intent.removeExtra(Intent.EXTRA_TEXT)
         val coroutineScope = lifecycle.coroutineScope
 
-        val listenCode = uri.getQueryParameter("code")
-            ?: uri.getQueryParameter("room")
-            ?: uri.pathSegments.getOrNull(1)
-        val isListenLink = uri.pathSegments.firstOrNull() == "listen" || uri.host?.equals("listen", ignoreCase = true) == true
-        if (!listenCode.isNullOrBlank() && isListenLink) {
-            if (ENABLE_LISTEN_TOGETHER) {
-                val username = dataStore.get(ListenTogetherUsernameKey, "").ifBlank { "Guest" }
-                listenTogetherManager.joinRoom(listenCode, username)
-            } else {
-                Toast.makeText(this, "Listen Together is being upgraded and will return in a future update.", Toast.LENGTH_SHORT).show()
-            }
-            return
-        }
 
         when (val path = uri.pathSegments.firstOrNull()) {
             "playlist" -> uri.getQueryParameter("list")?.let { playlistId ->
@@ -1403,5 +1266,4 @@ val LocalPlayerConnection = staticCompositionLocalOf<PlayerConnection?> { error(
 val LocalPlayerAwareWindowInsets = compositionLocalOf<WindowInsets> { error("No WindowInsets provided") }
 val LocalDownloadUtil = staticCompositionLocalOf<DownloadUtil> { error("No DownloadUtil provided") }
 val LocalSyncUtils = staticCompositionLocalOf<SyncUtils> { error("No SyncUtils provided") }
-val LocalListenTogetherManager = staticCompositionLocalOf<bharadwaj.juno.music.listentogether.ListenTogetherManager?> { null }
 val LocalIsPlayerExpanded = compositionLocalOf { false }

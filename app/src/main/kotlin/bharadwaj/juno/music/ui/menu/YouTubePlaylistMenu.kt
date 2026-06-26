@@ -59,7 +59,6 @@ import com.music.innertube.models.SongItem
 import com.music.innertube.utils.completed
 import bharadwaj.juno.music.LocalDatabase
 import bharadwaj.juno.music.LocalDownloadUtil
-import bharadwaj.juno.music.LocalListenTogetherManager
 import bharadwaj.juno.music.LocalPlayerConnection
 import bharadwaj.juno.music.R
 import bharadwaj.juno.music.constants.ListThumbnailSize
@@ -102,8 +101,7 @@ fun YouTubePlaylistMenu(
     val database = LocalDatabase.current
     val downloadUtil = LocalDownloadUtil.current
     val playerConnection = LocalPlayerConnection.current ?: return
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
+    val isGuest = false
     val dbPlaylist by database.playlistByBrowseId(playlist.id).collectAsState(initial = null)
     val isPinned by database.speedDialDao.isPinned(playlist.id).collectAsState(initial = false)
 

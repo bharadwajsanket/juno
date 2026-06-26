@@ -110,7 +110,6 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
 import androidx.navigation.NavController
-import bharadwaj.juno.music.LocalListenTogetherManager
 import bharadwaj.juno.music.LocalPlayerConnection
 import bharadwaj.juno.music.R
 import bharadwaj.juno.music.constants.ListItemHeight
@@ -120,7 +119,6 @@ import bharadwaj.juno.music.constants.ShowCommentButtonKey
 import bharadwaj.juno.music.extensions.metadata
 import bharadwaj.juno.music.extensions.move
 import bharadwaj.juno.music.extensions.toggleRepeatMode
-import bharadwaj.juno.music.listentogether.RoomRole
 import bharadwaj.juno.music.models.MediaMetadata
 import bharadwaj.juno.music.ui.component.ActionPromptDialog
 import bharadwaj.juno.music.ui.component.BottomSheet
@@ -229,9 +227,7 @@ fun Queue(
     }
 
     
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val listenTogetherRoleState = listenTogetherManager?.role?.collectAsState(initial = bharadwaj.juno.music.listentogether.RoomRole.NONE)
-    val isListenTogetherGuest = listenTogetherRoleState?.value == RoomRole.GUEST
+    val isListenTogetherGuest = false
 
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsState()

@@ -72,7 +72,6 @@ import bharadwaj.juno.music.constants.GridItemSize
 import bharadwaj.juno.music.constants.GridItemsSizeKey
 import bharadwaj.juno.music.constants.HidePlayerThumbnailKey
 import bharadwaj.juno.music.constants.LibraryFilter
-import bharadwaj.juno.music.constants.ListenTogetherInTopBarKey
 import bharadwaj.juno.music.constants.LyricsAnimationStyle
 import bharadwaj.juno.music.constants.LyricsAnimationStyleKey
 import bharadwaj.juno.music.constants.LyricsStandardBlurKey
@@ -280,10 +279,6 @@ fun AppearanceSettings(
         showRestartDialog = true
     }
 
-    val (listenTogetherInTopBar, onListenTogetherInTopBarChange) = rememberPreference(
-        ListenTogetherInTopBarKey,
-        defaultValue = true
-    )
 
     val (swipeToSong, onSwipeToSongChange) = rememberPreference(
         SwipeToSongKey,
@@ -1110,7 +1105,7 @@ fun AppearanceSettings(
 
         val (thumbnailCornerRadius, onThumbnailCornerRadiusChange) = rememberPreference(
             ThumbnailCornerRadiusKey,
-            defaultValue = 3f
+            defaultValue = 16f
         )
         
         var showSensitivityDialog by rememberSaveable { mutableStateOf(false) }
@@ -1720,27 +1715,6 @@ fun AppearanceSettings(
                     onClick = { onSwipeToRemoveSongChange(!swipeToRemoveSong) }
                 ),
                 Material3SettingsItem(
-                    icon = painterResource(R.drawable.group_outlined),
-                    title = { Text(stringResource(R.string.listen_together_in_top_bar)) },
-                    description = { Text(stringResource(R.string.listen_together_in_top_bar_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = listenTogetherInTopBar,
-                            onCheckedChange = onListenTogetherInTopBarChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (listenTogetherInTopBar) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    },
-                    onClick = { onListenTogetherInTopBarChange(!listenTogetherInTopBar) }
-                ),
-                Material3SettingsItem(
                     icon = painterResource(R.drawable.grid_view),
                     title = { Text(stringResource(R.string.grid_cell_size)) },
                     description = {
@@ -1891,7 +1865,7 @@ fun AppearanceSettings(
                 )
             )
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        
     }
 
     TopAppBar(

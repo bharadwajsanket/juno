@@ -12,8 +12,6 @@ import androidx.room.Room
 import bharadwaj.juno.music.constants.MaxSongCacheSizeKey
 import bharadwaj.juno.music.db.InternalDatabase
 import bharadwaj.juno.music.db.MusicDatabase
-import bharadwaj.juno.music.listentogether.ListenTogetherClient
-import bharadwaj.juno.music.listentogether.ListenTogetherManager
 import bharadwaj.juno.music.utils.dataStore
 import bharadwaj.juno.music.utils.get
 import dagger.Module
@@ -119,16 +117,4 @@ object AppModule {
         )
     }
 
-    @Singleton
-    @Provides
-    fun provideListenTogetherClient(
-        @ApplicationContext context: Context,
-    ): ListenTogetherClient = ListenTogetherClient(context)
-
-    @Singleton
-    @Provides
-    fun provideListenTogetherManager(
-        @ApplicationContext context: Context,
-        client: ListenTogetherClient,
-    ): ListenTogetherManager = ListenTogetherManager(client, context)
 }

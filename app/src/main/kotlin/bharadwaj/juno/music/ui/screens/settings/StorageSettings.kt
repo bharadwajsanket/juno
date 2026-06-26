@@ -520,7 +520,7 @@ fun StorageSettings(
                 )
             )
         )
-        Spacer(Modifier.padding(bottom = 30.dp))
+        
     }
 
     TopAppBar(

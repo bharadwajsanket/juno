@@ -240,8 +240,6 @@ class MusicService :
     @Inject
     lateinit var widgetManager: JunoWidgetManager
 
-    @Inject
-    lateinit var listenTogetherManager: bharadwaj.juno.music.listentogether.ListenTogetherManager
     
 
     private lateinit var audioManager: AudioManager
@@ -738,18 +736,12 @@ class MusicService :
 
 
 
-        combine(
-            dataStore.data.map { prefs ->
-                Triple(
-                    prefs[CrossfadeEnabledKey] ?: false,
-                    prefs[CrossfadeDurationKey] ?: 5f,
-                    prefs[CrossfadeGaplessKey] ?: true
-                )
-            },
-            listenTogetherManager.roomState
-        ) { (enabled, duration, gapless), roomState ->
-            
-            Triple(enabled && roomState == null, duration, gapless)
+        dataStore.data.map { prefs ->
+            Triple(
+                prefs[CrossfadeEnabledKey] ?: false,
+                prefs[CrossfadeDurationKey] ?: 5f,
+                prefs[CrossfadeGaplessKey] ?: true
+            )
         }
             .distinctUntilChanged()
             .collect(scope) { (enabled, duration, gapless) ->

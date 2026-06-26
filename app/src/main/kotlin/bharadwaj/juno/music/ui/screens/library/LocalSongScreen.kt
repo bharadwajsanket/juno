@@ -262,11 +262,7 @@ fun LocalSongScreen(
         )
     }
 
-    val topPadding = if (isEmbedded) {
-        LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateTopPadding()
-    } else {
-        0.dp
-    }
+    val topPadding = 0.dp
 
     Scaffold(
         modifier = Modifier
@@ -328,7 +324,7 @@ fun LocalSongScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
                             .padding(top = 8.dp, bottom = 4.dp),
-                        windowInsets = if (isEmbedded) WindowInsets(0.dp) else SearchBarDefaults.windowInsets,
+                        windowInsets = SearchBarDefaults.windowInsets,
                     ) {}
                 } else {
                     LargeTopAppBar(
@@ -367,7 +363,7 @@ fun LocalSongScreen(
                             scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                         ),
                         scrollBehavior = scrollBehavior,
-                        windowInsets = if (isEmbedded) WindowInsets(0.dp) else TopAppBarDefaults.windowInsets,
+                        windowInsets = TopAppBarDefaults.windowInsets,
                     )
                 }
             }

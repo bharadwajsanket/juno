@@ -52,7 +52,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
@@ -83,7 +82,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.tween
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavController
@@ -148,6 +158,10 @@ import bharadwaj.juno.music.ui.menu.AlbumMenu
 import bharadwaj.juno.music.ui.menu.ArtistMenu
 import bharadwaj.juno.music.ui.menu.SongMenu
 import bharadwaj.juno.music.ui.menu.YouTubeAlbumMenu
+import bharadwaj.juno.music.ui.component.HomeHeaderThemes
+import bharadwaj.juno.music.ui.component.HomeHeaderTheme
+import bharadwaj.juno.music.ui.component.TimePeriod
+import bharadwaj.juno.music.ui.component.HeaderLayoutType
 import bharadwaj.juno.music.ui.menu.YouTubeArtistMenu
 import bharadwaj.juno.music.ui.menu.YouTubePlaylistMenu
 import bharadwaj.juno.music.ui.menu.YouTubeSongMenu
@@ -196,7 +210,7 @@ fun CommunityPlaylistCard(
     val isDark = isSystemInDarkTheme()
 
     val containerColor = if (isDark) {
-        MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+        MaterialTheme.colorScheme.surfaceContainerHigh
     } else {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     }
@@ -212,7 +226,7 @@ fun CommunityPlaylistCard(
             containerColor = containerColor
         ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
-        shape = RoundedCornerShape(24.dp),
+        shape = JUNOCorners.xl,
         onClick = onClick
     ) {
         Column(
@@ -302,7 +316,7 @@ fun CommunityPlaylistCard(
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .combinedClickable(onClick = { onSongClick(song) }),
+                            .bounceClick(onClick = { onSongClick(song) }),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -458,7 +472,7 @@ fun DailyDiscoverCard(
         modifier = modifier
             .fillMaxSize()
             .clip(JUNOCorners.xl)
-            .combinedClickable(
+            .bounceClick(
                 onClick = onClick,
                 onLongClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -498,10 +512,10 @@ fun DailyDiscoverCard(
                         .background(
                             brush = Brush.verticalGradient(
                                 colors = listOf(
-                                    Color.Black.copy(alpha = 0.3f),
+                                    Color.Black.copy(alpha = 0.25f),
                                     Color.Transparent,
-                                    Color.Black.copy(alpha = 0.5f),
-                                    Color.Black.copy(alpha = 0.75f)
+                                    Color.Black.copy(alpha = 0.55f),
+                                    Color.Black.copy(alpha = 0.82f)
                                 )
                             )
                         )
@@ -510,15 +524,19 @@ fun DailyDiscoverCard(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(24.dp),
+                        .padding(20.dp),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
                         Text(
                             text = dailyDiscover.recommendation.title,
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color.White
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = buildString {
                                 append((dailyDiscover.recommendation as? SongItem)?.artists?.joinToString(", ") { it.name } ?: "")
@@ -527,7 +545,9 @@ fun DailyDiscoverCard(
                                 }
                             },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = Color.White.copy(alpha = 0.75f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
@@ -608,19 +628,17 @@ fun HomeScreen(
     val (randomizeHomeOrder) = rememberPreference(RandomizeHomeOrderKey, true)
     val (showSpeedDial) = rememberPreference(ShowSpeedDialKey, true)
     val (localProfileName) = rememberPreference(LocalProfileNameKey, "")
-    val greeting = remember(localProfileName) {
+    val timePeriod = remember {
         val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-        val greetingText = when (hour) {
-            in 5..11 -> "Good Morning"
-            in 12..16 -> "Good Afternoon"
-            in 17..21 -> "Good Evening"
-            else -> "Good Night"
+        when (hour) {
+            in 5..11 -> TimePeriod.MORNING
+            in 12..16 -> TimePeriod.AFTERNOON
+            in 17..20 -> TimePeriod.EVENING
+            else -> TimePeriod.NIGHT
         }
-        if (localProfileName.isNotBlank()) {
-            "$greetingText, $localProfileName"
-        } else {
-            greetingText
-        }
+    }
+    val headerTheme = remember {
+        HomeHeaderThemes.themes.filter { it.timePeriod == timePeriod }.random()
     }
 
 
@@ -685,7 +703,7 @@ fun HomeScreen(
                 song = it,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .combinedClickable(
+                    .bounceClick(
                         onClick = {
                             if (it.id == mediaMetadata?.id) {
                                 playerConnection.togglePlayPause()
@@ -719,7 +737,7 @@ fun HomeScreen(
                 coroutineScope = scope,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .combinedClickable(
+                    .bounceClick(
                         onClick = {
                             navController.navigate("album/${it.id}")
                         },
@@ -740,7 +758,7 @@ fun HomeScreen(
                 artist = it,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .combinedClickable(
+                    .bounceClick(
                         onClick = {
                             navController.navigate("artist/${it.id}")
                         },
@@ -771,7 +789,7 @@ fun HomeScreen(
             coroutineScope = scope,
             thumbnailRatio = 1f,
             modifier = Modifier
-                .combinedClickable(
+                .bounceClick(
                     onClick = {
                         when (item) {
                             is SongItem -> playerConnection.playQueue(
@@ -955,20 +973,95 @@ fun HomeScreen(
 
             LazyColumn(
                 state = lazylistState,
-                contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues()
+                contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 item(key = "greeting_header") {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, top = 20.dp, end = 16.dp, bottom = 12.dp)
+                            .padding(start = 20.dp, top = 32.dp, end = 20.dp, bottom = 12.dp)
                     ) {
-                        Text(
-                            text = greeting,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
+                        val greeting = remember(localProfileName, accountName, headerTheme) {
+                            val displayName = localProfileName.ifBlank {
+                                accountName?.split(" ")?.firstOrNull()?.trim() ?: "Sanket"
+                            }
+                            headerTheme.greetingTemplate.replace("{name}", displayName)
+                        }
+                        val alignment = when (headerTheme.layoutType) {
+                            HeaderLayoutType.LEFT_ALIGN -> Alignment.Start
+                            HeaderLayoutType.CENTER_ALIGN -> Alignment.CenterHorizontally
+                            HeaderLayoutType.RIGHT_ALIGN -> Alignment.End
+                            HeaderLayoutType.SPLIT_LAYOUT -> Alignment.Start
+                        }
+                        val textAlign = when (headerTheme.layoutType) {
+                            HeaderLayoutType.LEFT_ALIGN -> TextAlign.Start
+                            HeaderLayoutType.CENTER_ALIGN -> TextAlign.Center
+                            HeaderLayoutType.RIGHT_ALIGN -> TextAlign.End
+                            HeaderLayoutType.SPLIT_LAYOUT -> TextAlign.Start
+                        }
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(132.dp)
+                                .shadow(
+                                    elevation = 4.dp,
+                                    shape = RoundedCornerShape(24.dp),
+                                    clip = false
+                                ),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color.Transparent
+                            ),
+                            border = BorderStroke(1.dp, headerTheme.textColor.copy(alpha = 0.08f))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(headerTheme.backgroundBrush)
+                                    .padding(horizontal = 24.dp, vertical = 20.dp)
+                            ) {
+                                // Background Illustration
+                                headerTheme.illustration(
+                                    Modifier.fillMaxSize(),
+                                    headerTheme.accentColor
+                                )
+
+                                // Text Content
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = alignment
+                                ) {
+                                    Text(
+                                        text = greeting,
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = (-0.3).sp,
+                                            fontSize = 20.sp
+                                        ),
+                                        color = headerTheme.textColor,
+                                        textAlign = textAlign,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = headerTheme.subtitle,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontWeight = FontWeight.Medium,
+                                            letterSpacing = 0.1.sp,
+                                            fontSize = 13.sp
+                                        ),
+                                        color = headerTheme.subtitleColor,
+                                        textAlign = textAlign,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -992,12 +1085,25 @@ fun HomeScreen(
                                         modifier = Modifier.animateItem()
                                     ) {
                                         items(items, key = { it.id }) { item ->
+                                            val clShape = RoundedCornerShape(26.dp)
                                             Box(
                                                 modifier = Modifier
-                                                    .width(200.dp)
-                                                    .height(160.dp)
-                                                    .clip(RoundedCornerShape(16.dp))
-                                                    .combinedClickable(
+                                                    .width(232.dp)
+                                                    .height(192.dp)
+                                                    .shadow(
+                                                        elevation = 6.dp,
+                                                        shape = clShape,
+                                                        clip = false,
+                                                        ambientColor = Color.Black.copy(alpha = 0.18f),
+                                                        spotColor = Color.Black.copy(alpha = 0.32f)
+                                                    )
+                                                    .clip(clShape)
+                                                    .border(
+                                                        width = 1.dp,
+                                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f),
+                                                        shape = clShape
+                                                    )
+                                                    .bounceClick(
                                                         onClick = {
                                                             when (item) {
                                                                 is Song -> {
@@ -1043,9 +1149,10 @@ fun HomeScreen(
                                                             Brush.verticalGradient(
                                                                 colors = listOf(
                                                                     Color.Transparent,
-                                                                    Color.Black.copy(alpha = 0.15f),
-                                                                    Color.Black.copy(alpha = 0.7f),
-                                                                    Color.Black.copy(alpha = 0.88f)
+                                                                    Color.Transparent,
+                                                                    Color.Black.copy(alpha = 0.1f),
+                                                                    Color.Black.copy(alpha = 0.62f),
+                                                                    Color.Black.copy(alpha = 0.86f)
                                                                 )
                                                             )
                                                         )
@@ -1056,8 +1163,9 @@ fun HomeScreen(
                                                     Box(
                                                         modifier = Modifier
                                                             .align(Alignment.TopEnd)
-                                                            .padding(8.dp)
-                                                            .size(26.dp)
+                                                            .padding(10.dp)
+                                                            .size(28.dp)
+                                                            .shadow(elevation = 3.dp, shape = CircleShape)
                                                             .background(MaterialTheme.colorScheme.primary, CircleShape),
                                                         contentAlignment = Alignment.Center
                                                     ) {
@@ -1073,16 +1181,17 @@ fun HomeScreen(
                                                 Column(
                                                     modifier = Modifier
                                                         .align(Alignment.BottomStart)
-                                                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                                                        .padding(horizontal = 14.dp, vertical = 12.dp)
                                                 ) {
                                                     Text(
                                                         text = item.title,
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        fontWeight = FontWeight.SemiBold,
+                                                        style = MaterialTheme.typography.titleSmall,
+                                                        fontWeight = FontWeight.Bold,
                                                         color = Color.White,
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Ellipsis
                                                     )
+                                                    Spacer(modifier = Modifier.height(2.dp))
                                                     val subtitle = when (item) {
                                                         is Song -> item.artists.joinToString { it.name }
                                                         is Album -> item.artists.joinToString { it.name }
@@ -1091,8 +1200,8 @@ fun HomeScreen(
                                                     }
                                                     Text(
                                                         text = subtitle,
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = Color.White.copy(alpha = 0.72f),
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        color = Color.White.copy(alpha = 0.75f),
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Ellipsis
                                                     )
@@ -1135,7 +1244,7 @@ fun HomeScreen(
                                                 isPlaying = isPlaying,
                                                 modifier = Modifier
                                                     .width(currentGridHeight)
-                                                    .combinedClickable(
+                                                    .bounceClick(
                                                         onClick = {
                                                             if (song.id == mediaMetadata?.id) {
                                                                 playerConnection.togglePlayPause()
@@ -1188,7 +1297,7 @@ fun HomeScreen(
                                                 isPlaying = isPlaying,
                                                 modifier = Modifier
                                                     .width(currentGridHeight)
-                                                    .combinedClickable(
+                                                    .bounceClick(
                                                         onClick = {
                                                             if (song.id == mediaMetadata?.id) {
                                                                 playerConnection.togglePlayPause()
@@ -1305,7 +1414,7 @@ fun HomeScreen(
                                                                         isPlaying = isPlaying,
                                                                         modifier = Modifier
                                                                             .fillMaxSize()
-                                                                            .combinedClickable(
+                                                                            .bounceClick(
                                                                                 onClick = {
                                                                                     when (item) {
                                                                                         is SongItem -> playerConnection.playQueue(
@@ -1367,16 +1476,28 @@ fun HomeScreen(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 repeat(pagerState.pageCount) { iteration ->
-                                                    val color = if (pagerState.currentPage == iteration)
-                                                        MaterialTheme.colorScheme.primary
-                                                    else
-                                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                                    val isSelected = pagerState.currentPage == iteration
+                                                    val width by animateDpAsState(
+                                                        targetValue = if (isSelected) 16.dp else 6.dp,
+                                                        animationSpec = spring(
+                                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                            stiffness = Spring.StiffnessLow
+                                                        ),
+                                                        label = "indicatorWidth"
+                                                    )
+                                                    val color by animateColorAsState(
+                                                        targetValue = if (isSelected)
+                                                            MaterialTheme.colorScheme.primary
+                                                        else
+                                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                                        label = "indicatorColor"
+                                                    )
                                                     Box(
                                                         modifier = Modifier
-                                                            .padding(4.dp)
-                                                            .clip(CircleShape)
+                                                            .padding(horizontal = 4.dp)
+                                                            .clip(RoundedCornerShape(3.dp))
                                                             .background(color)
-                                                            .size(8.dp)
+                                                            .size(width = width, height = 6.dp)
                                                     )
                                                 }
                                             }
@@ -1416,7 +1537,7 @@ fun HomeScreen(
                                                 isPlaying = isPlaying,
                                                 modifier = Modifier
                                                     .width(currentGridHeight)
-                                                    .combinedClickable(
+                                                    .bounceClick(
                                                         onClick = {
                                                             if (song!!.id == mediaMetadata?.id) {
                                                                 playerConnection.togglePlayPause()
@@ -1678,7 +1799,7 @@ fun HomeScreen(
                                                 },
                                                 modifier = Modifier
                                                     .width(horizontalLazyGridItemWidth)
-                                                    .combinedClickable(
+                                                    .bounceClick(
                                                         onClick = {
                                                             if (song!!.id == mediaMetadata?.id) {
                                                                 playerConnection.togglePlayPause()
@@ -1978,10 +2099,39 @@ fun HomeScreen(
                 }
 
                 item(key = "bottom_spacer") {
-                    Spacer(modifier = Modifier.height(30.dp))
+                    Spacer(modifier = Modifier.height(36.dp))
                 }
             }
 
         }
     }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun Modifier.bounceClick(
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null
+): Modifier {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "bounceScale"
+    )
+    return this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .combinedClickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = onClick,
+            onLongClick = onLongClick
+        )
 }

@@ -151,7 +151,6 @@ import coil3.request.allowHardware
 import coil3.toBitmap
 import bharadwaj.juno.music.LocalDatabase
 import bharadwaj.juno.music.LocalDownloadUtil
-import bharadwaj.juno.music.LocalListenTogetherManager
 import bharadwaj.juno.music.LocalPlayerConnection
 import bharadwaj.juno.music.playback.PlayerConnection
 import bharadwaj.juno.music.playback.CastConnectionHandler
@@ -180,7 +179,6 @@ import bharadwaj.juno.music.db.entities.LyricsEntity
 import bharadwaj.juno.music.extensions.SwipeGesture
 import bharadwaj.juno.music.extensions.togglePlayPause
 import bharadwaj.juno.music.extensions.toggleRepeatMode
-import bharadwaj.juno.music.listentogether.RoomRole
 import bharadwaj.juno.music.models.MediaMetadata
 import bharadwaj.juno.music.playback.ExoDownloadService
 import bharadwaj.juno.music.junomusic.getConnectedBluetoothDeviceName
@@ -371,9 +369,7 @@ fun BottomSheetPlayer(
     val squigglySlider by rememberPreference(SquigglySliderKey, defaultValue = false)
     
     
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val listenTogetherRoleState = listenTogetherManager?.role?.collectAsState(initial = RoomRole.NONE)
-    val isListenTogetherGuest = listenTogetherRoleState?.value == RoomRole.GUEST
+    val isListenTogetherGuest = false
     
     
     val castHandler = remember(playerConnection) {
@@ -2377,7 +2373,6 @@ fun BottomSheetPlayer(
                                     modifier = Modifier.animateContentSize(),
                                     isPlayerExpanded = isExpandedProvider,
                                     isLandscape = true,
-                                    isListenTogetherGuest = isListenTogetherGuest
                                 )
                             }
                         }
@@ -2439,7 +2434,6 @@ fun BottomSheetPlayer(
                                     sliderPositionProvider = sliderPositionProvider,
                                     modifier = Modifier.nestedScroll(state.preUpPostDownNestedScrollConnection),
                                     isPlayerExpanded = isExpandedProvider,
-                                    isListenTogetherGuest = isListenTogetherGuest
                                 )
                             }
                         }

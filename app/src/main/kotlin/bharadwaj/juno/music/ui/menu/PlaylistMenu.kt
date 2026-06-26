@@ -44,7 +44,6 @@ import androidx.media3.exoplayer.offline.DownloadService
 import com.music.innertube.YouTube
 import bharadwaj.juno.music.LocalDatabase
 import bharadwaj.juno.music.LocalDownloadUtil
-import bharadwaj.juno.music.LocalListenTogetherManager
 import bharadwaj.juno.music.LocalPlayerConnection
 import bharadwaj.juno.music.R
 import bharadwaj.juno.music.db.entities.Playlist
@@ -81,8 +80,7 @@ fun PlaylistMenu(
     val database = LocalDatabase.current
     val downloadUtil = LocalDownloadUtil.current
     val playerConnection = LocalPlayerConnection.current ?: return
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
+    val isGuest = false
     val dbPlaylist by database.playlist(playlist.id).collectAsState(initial = playlist)
     var songs by remember {
         mutableStateOf(emptyList<Song>())

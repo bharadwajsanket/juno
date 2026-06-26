@@ -7,6 +7,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.provider.Settings
 import bharadwaj.juno.music.constants.EnableHapticsKey
+import bharadwaj.juno.music.constants.HapticIntensityKey
 
 enum class HapticType {
     LIGHT,
@@ -65,59 +66,61 @@ class HapticManager private constructor(context: Context) {
         val v = vibrator ?: return
         if (!v.hasVibrator()) return
 
+        val intensity = appContext.dataStore.get(HapticIntensityKey, 0.6f)
+        val baseAmplitude = (intensity * 255).toInt().coerceIn(1, 255)
+
         try {
-            when (type) {
-                HapticType.LIGHT -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        v.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
-                    } else {
-                        @Suppress("DEPRECATION")
-                        v.vibrate(10)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                when (type) {
+                    HapticType.LIGHT -> {
+                        val amp = (baseAmplitude * 0.4f).toInt().coerceIn(1, 255)
+                        v.vibrate(VibrationEffect.createOneShot(10, amp))
+                    }
+                    HapticType.MEDIUM -> {
+                        val amp = (baseAmplitude * 0.7f).toInt().coerceIn(1, 255)
+                        v.vibrate(VibrationEffect.createOneShot(20, amp))
+                    }
+                    HapticType.HEAVY -> {
+                        v.vibrate(VibrationEffect.createOneShot(35, baseAmplitude))
+                    }
+                    HapticType.MICRO_TICK -> {
+                        val amp = (baseAmplitude * 0.25f).toInt().coerceIn(1, 255)
+                        v.vibrate(VibrationEffect.createOneShot(5, amp))
+                    }
+                    HapticType.SLIDER_TICK -> {
+                        val now = System.currentTimeMillis()
+                        if (now - lastSliderTickTime >= 45) {
+                            lastSliderTickTime = now
+                            val amp = (baseAmplitude * 0.2f).toInt().coerceIn(1, 255)
+                            v.vibrate(VibrationEffect.createOneShot(3, amp))
+                        }
+                    }
+                    HapticType.BOUNDARY -> {
+                        val amp1 = (baseAmplitude * 0.5f).toInt().coerceIn(1, 255)
+                        v.vibrate(
+                            VibrationEffect.createWaveform(
+                                longArrayOf(0, 10, 40, 10),
+                                intArrayOf(0, amp1, 0, baseAmplitude),
+                                -1
+                            )
+                        )
                     }
                 }
-                HapticType.MEDIUM -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        v.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK))
-                    } else {
-                        @Suppress("DEPRECATION")
-                        v.vibrate(25)
-                    }
-                }
-                HapticType.HEAVY -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        v.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
-                    } else {
-                        @Suppress("DEPRECATION")
-                        v.vibrate(40)
-                    }
-                }
-                HapticType.MICRO_TICK -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        v.vibrate(VibrationEffect.createOneShot(5, 40))
-                    } else {
-                        @Suppress("DEPRECATION")
-                        v.vibrate(5)
-                    }
-                }
-                HapticType.SLIDER_TICK -> {
-                    val now = System.currentTimeMillis()
-                    if (now - lastSliderTickTime >= 45) {
-                        lastSliderTickTime = now
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            v.vibrate(VibrationEffect.createOneShot(3, 30))
-                        } else {
-                            @Suppress("DEPRECATION")
+            } else {
+                @Suppress("DEPRECATION")
+                when (type) {
+                    HapticType.LIGHT -> v.vibrate(10)
+                    HapticType.MEDIUM -> v.vibrate(25)
+                    HapticType.HEAVY -> v.vibrate(40)
+                    HapticType.MICRO_TICK -> v.vibrate(5)
+                    HapticType.SLIDER_TICK -> {
+                        val now = System.currentTimeMillis()
+                        if (now - lastSliderTickTime >= 45) {
+                            lastSliderTickTime = now
                             v.vibrate(3)
                         }
                     }
-                }
-                HapticType.BOUNDARY -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        v.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK))
-                    } else {
-                        @Suppress("DEPRECATION")
-                        v.vibrate(longArrayOf(0, 10, 40, 10), -1)
-                    }
+                    HapticType.BOUNDARY -> v.vibrate(longArrayOf(0, 10, 40, 10), -1)
                 }
             }
         } catch (e: Exception) {

@@ -101,7 +101,6 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
 import bharadwaj.juno.music.LocalDatabase
-import bharadwaj.juno.music.LocalListenTogetherManager
 import bharadwaj.juno.music.LocalPlayerConnection
 import bharadwaj.juno.music.R
 import bharadwaj.juno.music.constants.CropAlbumArtKey
@@ -115,7 +114,6 @@ import bharadwaj.juno.music.constants.SwipeThumbnailKey
 import bharadwaj.juno.music.constants.ThumbnailCornerRadius
 import bharadwaj.juno.music.constants.UseNewMiniPlayerDesignKey
 import bharadwaj.juno.music.db.entities.ArtistEntity
-import bharadwaj.juno.music.listentogether.ListenTogetherManager
 import bharadwaj.juno.music.models.MediaMetadata
 import bharadwaj.juno.music.playback.CastConnectionHandler
 import bharadwaj.juno.music.playback.PlayerConnection
@@ -231,9 +229,8 @@ private fun NewMiniPlayer(
     val swipeThumbnailPref by rememberPreference(SwipeThumbnailKey, true)
     
     
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
-    val swipeThumbnail = swipeThumbnailPref && !isListenTogetherGuest
+    val isListenTogetherGuest = false
+    val swipeThumbnail = swipeThumbnailPref
     
     val layoutDirection = LocalLayoutDirection.current
     val coroutineScope = rememberCoroutineScope()
@@ -413,7 +410,6 @@ private fun NewMiniPlayer(
                     isCasting = isCasting,
                     castHandler = castHandler,
                     playerConnection = playerConnection,
-                    listenTogetherManager = listenTogetherManager,
                     tint = onSurfaceColor,
                     modifier = Modifier.size(32.dp),
                     iconModifier = Modifier.size(20.dp)
@@ -595,9 +591,8 @@ private fun LegacyMiniPlayer(
     val swipeThumbnailPref by rememberPreference(SwipeThumbnailKey, true)
     
     
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
-    val swipeThumbnail = swipeThumbnailPref && !isListenTogetherGuest
+    val isListenTogetherGuest = false
+    val swipeThumbnail = swipeThumbnailPref
 
     val layoutDirection = LocalLayoutDirection.current
     val coroutineScope = rememberCoroutineScope()
@@ -724,8 +719,7 @@ private fun LegacyMiniPlayer(
                 playbackState = playbackState,
                 isCasting = isCasting,
                 castHandler = castHandler,
-                playerConnection = playerConnection,
-                listenTogetherManager = listenTogetherManager
+                playerConnection = playerConnection
             )
 
             IconButton(
@@ -767,7 +761,6 @@ private fun LegacyPlayPauseButton(
     isCasting: Boolean,
     castHandler: CastConnectionHandler?,
     playerConnection: PlayerConnection,
-    listenTogetherManager: ListenTogetherManager?,
     tint: Color = androidx.compose.material3.LocalContentColor.current,
     modifier: Modifier = Modifier,
     iconModifier: Modifier = Modifier
@@ -775,7 +768,7 @@ private fun LegacyPlayPauseButton(
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
     val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
-    val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
+    val isListenTogetherGuest = false
     val isMuted by playerConnection.isMuted.collectAsState()
     val context = LocalContext.current
     val hapticManager = remember { HapticManager.getInstance(context) }

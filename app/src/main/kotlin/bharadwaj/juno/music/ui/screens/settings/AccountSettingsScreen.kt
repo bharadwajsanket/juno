@@ -254,7 +254,7 @@ fun AccountSettingsScreen(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                
             }
         }
 

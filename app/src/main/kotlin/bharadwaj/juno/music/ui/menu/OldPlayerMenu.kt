@@ -51,7 +51,6 @@ import androidx.navigation.NavController
 import com.music.innertube.YouTube
 import bharadwaj.juno.music.LocalDatabase
 import bharadwaj.juno.music.LocalDownloadUtil
-import bharadwaj.juno.music.LocalListenTogetherManager
 import bharadwaj.juno.music.LocalPlayerConnection
 import bharadwaj.juno.music.R
 import bharadwaj.juno.music.constants.EnableExportAsMp3Key
@@ -59,9 +58,7 @@ import bharadwaj.juno.music.constants.ExportDirectoryUriKey
 import bharadwaj.juno.music.constants.ExportedSongIdsKey
 import bharadwaj.juno.music.constants.ExportingSongIdsKey
 import bharadwaj.juno.music.constants.ListItemHeight
-import bharadwaj.juno.music.constants.ENABLE_LISTEN_TOGETHER
 import bharadwaj.juno.music.extensions.toggleRepeatMode
-import bharadwaj.juno.music.listentogether.RoomRole
 import bharadwaj.juno.music.models.MediaMetadata
 import bharadwaj.juno.music.playback.ExoDownloadService
 import bharadwaj.juno.music.ui.component.BottomSheetState
@@ -104,9 +101,7 @@ fun OldPlayerMenu(
 
     val download by LocalDownloadUtil.current.getDownload(mediaMetadata.id).collectAsState(initial = null)
 
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val listenTogetherRoleState = listenTogetherManager?.role?.collectAsState(initial = RoomRole.NONE)
-    val isListenTogetherGuest = listenTogetherRoleState?.value == RoomRole.GUEST
+    val isListenTogetherGuest = false
 
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
     val librarySong by database.song(mediaMetadata.id).collectAsState(initial = null)
@@ -143,11 +138,7 @@ fun OldPlayerMenu(
         onDismiss = { showChoosePlaylistDialog = false }
     )
 
-    ListenTogetherDialog(
-        visible = showListenTogetherDialog,
-        mediaMetadata = mediaMetadata,
-        onDismiss = { showListenTogetherDialog = false }
-    )
+
 
     if (showSelectArtistDialog) {
         ListDialog(onDismiss = { showSelectArtistDialog = false }) {
@@ -566,48 +557,7 @@ fun OldPlayerMenu(
             )
         }
 
-        if (ENABLE_LISTEN_TOGETHER) {
-            item { Spacer(modifier = Modifier.height(12.dp)) }
 
-            
-            item {
-                Material3MenuGroup(
-                    items = buildList {
-                        add(
-                            Material3MenuItemData(
-                                title = { Text(text = stringResource(R.string.listen_together)) },
-                                icon = {
-                                    Icon(
-                                        painter = painterResource(R.drawable.group),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                },
-                                onClick = { showListenTogetherDialog = true }
-                            )
-                        )
-                        if (isListenTogetherGuest) {
-                            add(
-                                Material3MenuItemData(
-                                    title = { Text(text = stringResource(R.string.resync)) },
-                                    icon = {
-                                        Icon(
-                                            painter = painterResource(R.drawable.replay),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    },
-                                    onClick = {
-                                        listenTogetherManager?.requestSync()
-                                        onDismiss()
-                                    }
-                                )
-                            )
-                        }
-                    }
-                )
-            }
-        }
 
         item { Spacer(modifier = Modifier.height(12.dp)) }
 

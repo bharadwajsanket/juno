@@ -173,14 +173,4 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-## Listen Together Serialization
--keep class bharadwaj.juno.music.listentogether.** { *; }
--keepclassmembers class bharadwaj.juno.music.listentogether.** {
-    *;
-}
--keepclassmembers class bharadwaj.juno.music.listentogether.** {
-    *** Companion;
-}
--keepclasseswithmembers class bharadwaj.juno.music.listentogether.** {
-    kotlinx.serialization.KSerializer serializer(...);
-}
+

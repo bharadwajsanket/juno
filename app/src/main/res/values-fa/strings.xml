@@ -392,8 +392,6 @@
     <string name="bluetooth_headphones">هدفون بلوتوثی</string>
     <string name="license">پروانه عمومی همگانی گنو نسخه ۳.۰ (GPL v3.0)</string>
     <string name="standard_lyrics_blur">تاری (Blur) استاندارد متن آهنگ</string>
-    <string name="listen_together_smart_resync">همگام‌سازی هوشمند شبکه</string>
-    <string name="listen_together_smart_resync_desc">همگام‌سازی و رساندن خودکار پخش به پخش‌کننده اصلی پس از قطع و وصل شدن اتصال</string>
     <string name="spotify_import_title">وارد کردن از اسپاتیفای</string>
     <string name="spotify_import_desc">اتصال به اسپاتیفای، انتخاب لیست‌های پخش و شبیه‌سازی آن‌ها در لیست‌های پخش محلی ArchiveTune.</string>
     <string name="spotify_connect">اتصال به اسپاتیفای</string>

@@ -47,7 +47,6 @@ JUNO is currently undergoing a major rebrand and UI overhaul. Features, UI compo
 
 ### 🌐 Connectivity
 * **Spotify Playlist Import**: Search and import Spotify playlists directly into the local Room database.
-* **Listen Together**: Sync playback session with other devices to listen together in real time.
 
 ### 📐 Design
 * **JUNO Design System**: Spacing, corner, and sizing scales applied systematically for high layout harmony.
@@ -134,7 +133,6 @@ Room Database / Network Sources
 - [ ] Cross-device sync
 - [ ] Wear OS support
 - [ ] Backup & restore
-- [ ] Improved Listen Together
 - [ ] Advanced equalizer
 - [ ] Material You integration
 - [ ] iOS companion exploration

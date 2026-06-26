@@ -243,7 +243,7 @@ fun PrivacySettings(
                 )
             )
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        
     }
 
     TopAppBar(
