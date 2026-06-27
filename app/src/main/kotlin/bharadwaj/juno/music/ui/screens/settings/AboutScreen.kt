@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -39,7 +38,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.navigation.NavController
 import bharadwaj.juno.music.BuildConfig
 import bharadwaj.juno.music.LocalPlayerAwareWindowInsets
@@ -134,7 +132,7 @@ fun AboutScreen(
                         icon = painterResource(R.drawable.github),
                         title = "GitHub",
                         subtitle = "View repository source code",
-                        onClick = { uriHandler.openUri("https://github.com/bharadwajsanket/JUNO-Music") },
+                        onClick = { uriHandler.openUri("https://github.com/bharadwajsanket/juno") },
                     )
                     AboutDivider()
                     AboutActionRow(

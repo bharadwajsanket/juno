@@ -73,6 +73,7 @@ import bharadwaj.juno.music.db.entities.SongEntity
 import bharadwaj.juno.music.extensions.toMediaItem
 import bharadwaj.juno.music.models.MediaMetadata
 import bharadwaj.juno.music.models.toMediaMetadata
+import bharadwaj.juno.music.ui.component.ShareStoryDialog
 import bharadwaj.juno.music.playback.ExoDownloadService
 import bharadwaj.juno.music.playback.queues.YouTubeQueue
 import bharadwaj.juno.music.ui.component.ListDialog
@@ -123,6 +124,19 @@ fun YouTubeSongMenu(
 
     val isExporting = remember(exportingSongIds, song.id) { exportingSongIds.split(",").contains(song.id) }
     val isExported = remember(exportedSongIds, song.id) { exportedSongIds.split(",").contains(song.id) }
+
+    var showShareStoryDialog by remember { mutableStateOf(false) }
+
+    if (showShareStoryDialog) {
+        ShareStoryDialog(
+            mediaMetadata = song.toMediaMetadata(),
+            lyricText = null,
+            onDismiss = {
+                showShareStoryDialog = false
+                onDismiss()
+            }
+        )
+    }
 
     var showChoosePlaylistDialog by rememberSaveable {  
         mutableStateOf(false)  
@@ -314,13 +328,7 @@ fun YouTubeSongMenu(
                         },
                         text = stringResource(R.string.share),
                         onClick = {
-                            val intent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, song.shareLink)
-                            }
-                            context.startActivity(Intent.createChooser(intent, null))
-                            onDismiss()
+                            showShareStoryDialog = true
                         }
                     )
                 ),

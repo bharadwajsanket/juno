@@ -50,7 +50,6 @@ import bharadwaj.juno.music.ui.screens.settings.AccountSettingsScreen
 import bharadwaj.juno.music.ui.screens.settings.StorageSettings
 import bharadwaj.juno.music.ui.screens.settings.DownloadsSettings
 import bharadwaj.juno.music.ui.screens.settings.ThemeScreen
-import bharadwaj.juno.music.ui.screens.settings.AiSettings
 import bharadwaj.juno.music.ui.screens.recognition.RecognitionScreen
 import bharadwaj.juno.music.ui.screens.recognition.RecognitionHistoryScreen
 import bharadwaj.juno.music.ui.screens.settings.UpdateSettings
@@ -329,10 +328,6 @@ fun NavGraphBuilder.navigationBuilder(
         RomanizationSettings(navController, scrollBehavior)
     }
 
-    composable("settings/ai") {
-        AiSettings(navController, scrollBehavior)
-    }
-    
     composable("settings/player") {
         PlayerSettings(navController, scrollBehavior)
     }

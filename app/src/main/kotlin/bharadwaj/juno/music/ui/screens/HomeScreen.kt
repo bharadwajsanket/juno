@@ -158,10 +158,7 @@ import bharadwaj.juno.music.ui.menu.AlbumMenu
 import bharadwaj.juno.music.ui.menu.ArtistMenu
 import bharadwaj.juno.music.ui.menu.SongMenu
 import bharadwaj.juno.music.ui.menu.YouTubeAlbumMenu
-import bharadwaj.juno.music.ui.component.HomeHeaderThemes
-import bharadwaj.juno.music.ui.component.HomeHeaderTheme
-import bharadwaj.juno.music.ui.component.TimePeriod
-import bharadwaj.juno.music.ui.component.HeaderLayoutType
+import bharadwaj.juno.music.ambient.ui.AmbientSceneHost
 import bharadwaj.juno.music.ui.menu.YouTubeArtistMenu
 import bharadwaj.juno.music.ui.menu.YouTubePlaylistMenu
 import bharadwaj.juno.music.ui.menu.YouTubeSongMenu
@@ -628,17 +625,10 @@ fun HomeScreen(
     val (randomizeHomeOrder) = rememberPreference(RandomizeHomeOrderKey, true)
     val (showSpeedDial) = rememberPreference(ShowSpeedDialKey, true)
     val (localProfileName) = rememberPreference(LocalProfileNameKey, "")
-    val timePeriod = remember {
-        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-        when (hour) {
-            in 5..11 -> TimePeriod.MORNING
-            in 12..16 -> TimePeriod.AFTERNOON
-            in 17..20 -> TimePeriod.EVENING
-            else -> TimePeriod.NIGHT
+    val displayName = remember(localProfileName, accountName) {
+        localProfileName.ifBlank {
+            accountName?.split(" ")?.firstOrNull()?.trim() ?: "there"
         }
-    }
-    val headerTheme = remember {
-        HomeHeaderThemes.themes.filter { it.timePeriod == timePeriod }.random()
     }
 
 
@@ -977,92 +967,10 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 item(key = "greeting_header") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 20.dp, top = 32.dp, end = 20.dp, bottom = 12.dp)
-                    ) {
-                        val greeting = remember(localProfileName, accountName, headerTheme) {
-                            val displayName = localProfileName.ifBlank {
-                                accountName?.split(" ")?.firstOrNull()?.trim() ?: "Sanket"
-                            }
-                            headerTheme.greetingTemplate.replace("{name}", displayName)
-                        }
-                        val alignment = when (headerTheme.layoutType) {
-                            HeaderLayoutType.LEFT_ALIGN -> Alignment.Start
-                            HeaderLayoutType.CENTER_ALIGN -> Alignment.CenterHorizontally
-                            HeaderLayoutType.RIGHT_ALIGN -> Alignment.End
-                            HeaderLayoutType.SPLIT_LAYOUT -> Alignment.Start
-                        }
-                        val textAlign = when (headerTheme.layoutType) {
-                            HeaderLayoutType.LEFT_ALIGN -> TextAlign.Start
-                            HeaderLayoutType.CENTER_ALIGN -> TextAlign.Center
-                            HeaderLayoutType.RIGHT_ALIGN -> TextAlign.End
-                            HeaderLayoutType.SPLIT_LAYOUT -> TextAlign.Start
-                        }
-
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(132.dp)
-                                .shadow(
-                                    elevation = 4.dp,
-                                    shape = RoundedCornerShape(24.dp),
-                                    clip = false
-                                ),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color.Transparent
-                            ),
-                            border = BorderStroke(1.dp, headerTheme.textColor.copy(alpha = 0.08f))
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(headerTheme.backgroundBrush)
-                                    .padding(horizontal = 24.dp, vertical = 20.dp)
-                            ) {
-                                // Background Illustration
-                                headerTheme.illustration(
-                                    Modifier.fillMaxSize(),
-                                    headerTheme.accentColor
-                                )
-
-                                // Text Content
-                                Column(
-                                    modifier = Modifier.fillMaxSize(),
-                                    verticalArrangement = Arrangement.Center,
-                                    horizontalAlignment = alignment
-                                ) {
-                                    Text(
-                                        text = greeting,
-                                        style = MaterialTheme.typography.titleLarge.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            letterSpacing = (-0.3).sp,
-                                            fontSize = 20.sp
-                                        ),
-                                        color = headerTheme.textColor,
-                                        textAlign = textAlign,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = headerTheme.subtitle,
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.Medium,
-                                            letterSpacing = 0.1.sp,
-                                            fontSize = 13.sp
-                                        ),
-                                        color = headerTheme.subtitleColor,
-                                        textAlign = textAlign,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    AmbientSceneHost(
+                        displayName = displayName,
+                        modifier = Modifier.padding(start = 20.dp, top = 32.dp, end = 20.dp, bottom = 12.dp),
+                    )
                 }
 
 

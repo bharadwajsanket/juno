@@ -32,8 +32,8 @@ android {
         applicationId = "bharadwaj.juno.music"
         minSdk = 26
         targetSdk = 36
-        versionCode = 354
-        versionName = "3.5.4"
+        versionCode = 400
+        versionName = "4.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

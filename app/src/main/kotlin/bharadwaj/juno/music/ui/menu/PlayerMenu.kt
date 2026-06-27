@@ -82,6 +82,7 @@ import bharadwaj.juno.music.constants.ExportedSongIdsKey
 import bharadwaj.juno.music.constants.ExportingSongIdsKey
 import bharadwaj.juno.music.constants.ListItemHeight
 import bharadwaj.juno.music.models.MediaMetadata
+import bharadwaj.juno.music.ui.component.ShareStoryDialog
 import bharadwaj.juno.music.playback.ExoDownloadService
 import bharadwaj.juno.music.ui.component.BottomSheetState
 import bharadwaj.juno.music.ui.component.ListDialog
@@ -136,6 +137,19 @@ fun PlayerMenu(
         remember(mediaMetadata.artists) {
             mediaMetadata.artists.filter { it.id != null }
         }
+
+    var showShareStoryDialog by remember { mutableStateOf(false) }
+
+    if (showShareStoryDialog) {
+        ShareStoryDialog(
+            mediaMetadata = mediaMetadata,
+            lyricText = null,
+            onDismiss = {
+                showShareStoryDialog = false
+                onDismiss()
+            }
+        )
+    }
 
     var showChoosePlaylistDialog by rememberSaveable {
         mutableStateOf(false)
@@ -323,16 +337,7 @@ fun PlayerMenu(
                         },
                         text = stringResource(R.string.share),
                         onClick = {
-                            val intent = android.content.Intent().apply {
-                                action = android.content.Intent.ACTION_SEND
-                                type = "text/plain"
-                                putExtra(
-                                    android.content.Intent.EXTRA_TEXT,
-                                    "https://share.junomusic.fun/watch?v=${mediaMetadata.id}"
-                                )
-                            }
-                            context.startActivity(android.content.Intent.createChooser(intent, null))
-                            onDismiss()
+                            showShareStoryDialog = true
                         }
                     )
                 ),

@@ -73,6 +73,7 @@ import bharadwaj.juno.music.ui.component.Material3MenuGroup
 import bharadwaj.juno.music.ui.component.Material3MenuItemData
 import bharadwaj.juno.music.ui.component.MediaMetadataListItem
 import bharadwaj.juno.music.ui.component.NewAction
+import bharadwaj.juno.music.ui.component.ShareStoryDialog
 import bharadwaj.juno.music.ui.component.NewActionGrid
 import bharadwaj.juno.music.utils.listItemShape
 import kotlinx.coroutines.Dispatchers
@@ -107,6 +108,19 @@ fun QueueMenu(
 
     val artists = remember(mediaMetadata.artists) {
         mediaMetadata.artists.filter { it.id != null }
+    }
+
+    var showShareStoryDialog by remember { mutableStateOf(false) }
+
+    if (showShareStoryDialog) {
+        ShareStoryDialog(
+            mediaMetadata = mediaMetadata,
+            lyricText = null,
+            onDismiss = {
+                showShareStoryDialog = false
+                onDismiss()
+            }
+        )
     }
 
     var showChoosePlaylistDialog by rememberSaveable {
@@ -273,16 +287,7 @@ fun QueueMenu(
                         },
                         text = stringResource(R.string.share),
                         onClick = {
-                            onDismiss()
-                            val intent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                type = "text/plain"
-                                putExtra(
-                                    Intent.EXTRA_TEXT,
-                                    "https://share.junomusic.fun/watch?v=${mediaMetadata.id}"
-                                )
-                            }
-                            context.startActivity(Intent.createChooser(intent, null))
+                            showShareStoryDialog = true
                         }
                     )
                 ),

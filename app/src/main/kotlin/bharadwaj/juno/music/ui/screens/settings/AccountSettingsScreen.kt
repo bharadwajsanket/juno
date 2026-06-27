@@ -75,8 +75,7 @@ fun AccountSettingsScreen(
     var showTokenEditor by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    val (localProfileName, onLocalProfileNameChange) = rememberPreference(LocalProfileNameKey, "")
-    var showProfileNameDialog by remember { mutableStateOf(false) }
+
 
     Scaffold(
         topBar = {
@@ -157,19 +156,7 @@ fun AccountSettingsScreen(
                 )
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
 
-            Material3SettingsGroup(
-                title = stringResource(R.string.offline_profile),
-                items = listOf(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.person),
-                        title = { Text(stringResource(R.string.display_name)) },
-                        description = { Text(localProfileName) },
-                        onClick = { showProfileNameDialog = true }
-                    )
-                )
-            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -371,17 +358,6 @@ fun AccountSettingsScreen(
             }
         }
 
-        if (showProfileNameDialog) {
-            TextFieldDialog(
-                title = { Text(stringResource(R.string.display_name)) },
-                icon = { Icon(painterResource(R.drawable.person), null) },
-                initialTextFieldValue = TextFieldValue(text = localProfileName),
-                onDone = {
-                    onLocalProfileNameChange(it)
-                    showProfileNameDialog = false
-                },
-                onDismiss = { showProfileNameDialog = false }
-            )
-        }
+
     }
 }

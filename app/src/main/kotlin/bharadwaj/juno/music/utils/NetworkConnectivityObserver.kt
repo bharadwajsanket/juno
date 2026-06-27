@@ -58,12 +58,11 @@ class NetworkConnectivityObserver(context: Context) {
             
             
             val hasInternet = networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-            
-            
             val isValidated =
                 networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
 
-            hasInternet && isValidated
+            // Relax validated capability requirement to support emulators/local proxies
+            hasInternet
         } catch (e: Exception) {
             false
         }

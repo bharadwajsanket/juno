@@ -435,15 +435,6 @@ val LyricsRomanizeHindiKey = booleanPreferencesKey("lyricsRomanizeHindi")
 val LyricsRomanizePunjabiKey = booleanPreferencesKey("lyricsRomanizePunjabi")
 val LyricsRomanizeAsMainKey = booleanPreferencesKey("lyricsRomanizeAsMain")
 val LyricsRomanizeCyrillicByLineKey = booleanPreferencesKey("lyricsRomanizeCyrillicByLine")
-val TranslateLyricsKey = booleanPreferencesKey("translateLyrics")
-val OpenRouterApiKey = stringPreferencesKey("openRouterApiKey")
-val AiProviderKey = stringPreferencesKey("aiProvider")
-val OpenRouterBaseUrlKey = stringPreferencesKey("openRouterBaseUrl")
-val OpenRouterModelKey = stringPreferencesKey("openRouterModel")
-val TranslateModeKey = stringPreferencesKey("translateMode")
-val TranslateLanguageKey = stringPreferencesKey("translateLanguage")
-val DeeplApiKey = stringPreferencesKey("deeplApiKey")
-val DeeplFormalityKey = stringPreferencesKey("deeplFormality")
 val LyricsGlowEffectKey = booleanPreferencesKey("lyricsGlowEffect")
 val AppleMusicLyricsBlurKey = booleanPreferencesKey("appleMusicLyricsBlur")
 val LyricsStandardBlurKey = booleanPreferencesKey("lyricsStandardBlur")
@@ -748,3 +739,22 @@ val HapticIntensityKey = floatPreferencesKey("hapticIntensity")
 
 val SuperDataSaverKey = booleanPreferencesKey("super_data_saver")
 
+// ─── Ambient Home ────────────────────────────────────────────────────────────
+
+/** JSON-serialised [bharadwaj.juno.music.ambient.model.AmbientLocation] (offline fallback). */
+val AmbientCachedLocationKey = stringPreferencesKey("ambient_cached_location")
+
+/** JSON-serialised [bharadwaj.juno.music.ambient.model.AmbientWeather] (offline fallback). */
+val AmbientCachedWeatherKey = stringPreferencesKey("ambient_cached_weather")
+
+/** Epoch ms of the last successful weather fetch — used to determine cache freshness. */
+val AmbientLastFetchEpochKey = longPreferencesKey("ambient_last_fetch_epoch")
+
+/**
+ * Name of the [bharadwaj.juno.music.ambient.model.AmbientScene] to force for debugging.
+ * Null / absent means no override is active.
+ */
+val AmbientDebugForcedSceneKey = stringPreferencesKey("ambient_debug_forced_scene")
+
+/** Master toggle for the Ambient Home feature. Defaults to true. */
+val AmbientEnabledKey = booleanPreferencesKey("ambient_enabled")

@@ -26,6 +26,9 @@ import bharadwaj.juno.music.ui.component.Material3SettingsGroup
 import bharadwaj.juno.music.ui.component.Material3SettingsItem
 import bharadwaj.juno.music.ui.utils.backToMain
 import bharadwaj.juno.music.ui.theme.JUNOSpacing
+import bharadwaj.juno.music.constants.LocalProfileNameKey
+import bharadwaj.juno.music.ui.component.TextFieldDialog
+import androidx.compose.ui.text.input.TextFieldValue
 
 import androidx.hilt.navigation.compose.hiltViewModel
 import bharadwaj.juno.music.viewmodels.HomeViewModel
@@ -74,6 +77,8 @@ fun SettingsScreen(
 
     val (useLoginForBrowse, onUseLoginForBrowseChange) = rememberPreference(UseLoginForBrowse, true)
     val (ytmSync, onYtmSyncChange) = rememberPreference(YtmSyncKey, true)
+    val (localProfileName, onLocalProfileNameChange) = rememberPreference(LocalProfileNameKey, "")
+    var showProfileNameDialog by remember { mutableStateOf(false) }
 
     var searchQuery by remember { mutableStateOf("") }
 
@@ -254,6 +259,23 @@ fun SettingsScreen(
             )
 
             Material3SettingsGroup(
+                title = "Personalization",
+                items = listOf(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.person),
+                        title = { Text(stringResource(R.string.display_name)) },
+                        description = {
+                            Text(
+                                if (localProfileName.isNotEmpty()) localProfileName
+                                else stringResource(R.string.display_name_desc)
+                            )
+                        },
+                        onClick = { showProfileNameDialog = true }
+                    )
+                )
+            )
+
+            Material3SettingsGroup(
                 title = "JUNO Settings",
                 items = listOf(
                     Material3SettingsItem(
@@ -273,12 +295,6 @@ fun SettingsScreen(
                         title = { Text("Appearance") },
                         description = { Text("Dark mode, player themes, and visual settings") },
                         onClick = { navController.navigate("settings/appearance") }
-                    ),
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.lyrics),
-                        title = { Text("Lyrics") },
-                        description = { Text("Lyrics provider, styling, and text size") },
-                        onClick = { navController.navigate("settings/ai") }
                     ),
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.graphic_eq),
@@ -305,6 +321,20 @@ fun SettingsScreen(
                         onClick = { navController.navigate("settings/about") }
                     )
                 ).filterNotNull()
+            )
+        }
+        
+        if (showProfileNameDialog) {
+            TextFieldDialog(
+                title = { Text(stringResource(R.string.display_name)) },
+                icon = { Icon(painterResource(R.drawable.person), null) },
+                initialTextFieldValue = TextFieldValue(text = localProfileName),
+                onDone = {
+                    onLocalProfileNameChange(it.trim())
+                    showProfileNameDialog = false
+                },
+                onDismiss = { showProfileNameDialog = false },
+                isInputValid = { true }
             )
         }
     }
@@ -409,25 +439,11 @@ private val settingsSearchItems = listOf(
         route = "settings/appearance"
     ),
     SettingsSearchItem(
-        title = "Lyrics",
-        subtitle = "Lyrics provider, styling, and text size",
-        category = "Lyrics",
-        keywords = listOf("lyrics", "lyr", "text", "provider", "styling", "genius", "lrclib", "translation"),
-        route = "settings/ai"
-    ),
-    SettingsSearchItem(
-        title = "Lyrics Provider",
-        subtitle = "Choose Genius, Lrclib, or other lyrics sources",
-        category = "Lyrics",
-        keywords = listOf("lyrics", "provider", "source", "genius", "lrclib", "ai"),
-        route = "settings/ai"
-    ),
-    SettingsSearchItem(
-        title = "Lyrics Translation",
-        subtitle = "Enable lyrics translation where available",
-        category = "Lyrics",
-        keywords = listOf("lyrics", "translation", "translate", "language"),
-        route = "settings/ai"
+        title = "Display Name",
+        subtitle = "Set your local display name for personalized greetings",
+        category = "Personalization",
+        keywords = listOf("display name", "personalization", "name", "nickname", "greeting"),
+        route = "settings"
     ),
     SettingsSearchItem(
         title = "Romanization",

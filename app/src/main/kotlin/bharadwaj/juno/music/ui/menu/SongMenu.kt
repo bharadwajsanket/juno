@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
+import bharadwaj.juno.music.ui.component.ShareStoryDialog
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -148,6 +149,19 @@ fun SongMenu(
             }
             value = sorted
         }
+    }
+
+    var showShareStoryDialog by remember { mutableStateOf(false) }
+
+    if (showShareStoryDialog) {
+        ShareStoryDialog(
+            mediaMetadata = song.toMediaMetadata(),
+            lyricText = null,
+            onDismiss = {
+                showShareStoryDialog = false
+                onDismiss()
+            }
+        )
     }
 
     var showEditDialog by rememberSaveable {
@@ -395,13 +409,7 @@ fun SongMenu(
                         },
                         text = stringResource(R.string.share),
                         onClick = {
-                            onDismiss()
-                            val intent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, "https://share.junomusic.fun/watch?v=${song.id}")
-                            }
-                            context.startActivity(Intent.createChooser(intent, null))
+                            showShareStoryDialog = true
                         }
                     )
                 ),

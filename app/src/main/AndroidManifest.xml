@@ -21,8 +21,12 @@
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <!-- Optional: If you also need to scan for Bluetooth devices -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <!-- Ambient Home: coarse is sufficient for weather; fine is optional for higher accuracy -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- Microphone feature for music recognition (not required) -->
+
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
 <!--    install permission-->

@@ -37,7 +37,798 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
+enum class ShareTemplate {
+    MINIMAL,
+    DARK,
+    GRADIENT,
+    GLASS,
+    LYRICS_FOCUS
+}
+
 object ComposeToImage {
+
+    fun saveToGallery(context: Context, bitmap: Bitmap, fileName: String): Uri? {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, "$fileName.png")
+                    put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/Juno")
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
+                }
+                val uri = context.contentResolver.insert(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    contentValues
+                ) ?: return null
+
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                }
+                contentValues.clear()
+                contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                context.contentResolver.update(uri, contentValues, null, null)
+                uri
+            } else {
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val junoDir = File(picturesDir, "Juno")
+                if (!junoDir.exists()) junoDir.mkdirs()
+                val imageFile = File(junoDir, "$fileName.png")
+                FileOutputStream(imageFile).use { outputStream ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                }
+                val mediaScanIntent = android.content.Intent(android.content.Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+                val fileUri = Uri.fromFile(imageFile)
+                mediaScanIntent.data = fileUri
+                context.sendBroadcast(mediaScanIntent)
+                fileUri
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun drawBranding(
+        canvas: Canvas,
+        context: Context,
+        centerY: Float,
+        textColor: Int,
+        scale: Float
+    ) {
+        val appName = "JUNO"
+        val textPaint = TextPaint().apply {
+            color = textColor
+            textSize = 12f * scale
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            isAntiAlias = true
+            letterSpacing = 0.15f
+        }
+        val textWidth = textPaint.measureText(appName)
+        val iconSize = 18f * scale
+        val spacing = 8f * scale
+        val totalWidth = iconSize + spacing + textWidth
+        val startX = (360f * scale - totalWidth) / 2f
+
+        try {
+            val iconDrawable = context.getDrawable(R.drawable.ic_launcher_foreground)
+            val iconBitmap = iconDrawable?.toBitmap(iconSize.toInt(), iconSize.toInt())
+            if (iconBitmap != null) {
+                val iconRect = RectF(startX, centerY - iconSize / 2f, startX + iconSize, centerY + iconSize / 2f)
+                canvas.drawBitmap(iconBitmap, null, iconRect, Paint().apply { isAntiAlias = true })
+                iconBitmap.recycle()
+            }
+        } catch (_: Exception) {}
+
+        val textY = centerY - (textPaint.descent() + textPaint.ascent()) / 2f
+        canvas.drawText(appName, startX + iconSize + spacing, textY, textPaint)
+    }
+
+    suspend fun createStoryImage(
+        context: Context,
+        coverArtUrl: String?,
+        songTitle: String,
+        artistName: String,
+        albumName: String?,
+        lyrics: String?,
+        template: ShareTemplate
+    ): Bitmap = withContext(Dispatchers.Default) {
+        val imageWidth = 1080
+        val imageHeight = 1920
+        val scale = 3.0f
+
+        val bitmap = createBitmap(imageWidth, imageHeight)
+        val canvas = Canvas(bitmap)
+
+        var coverArtBitmap: Bitmap? = null
+        if (coverArtUrl != null) {
+            try {
+                val imageLoader = ImageLoader(context)
+                val request = ImageRequest.Builder(context)
+                    .data(coverArtUrl)
+                    .size(1024)
+                    .allowHardware(false)
+                    .build()
+                val result = imageLoader.execute(request)
+                coverArtBitmap = result.image?.toBitmap()
+            } catch (_: Exception) {}
+        }
+
+        val hasLyrics = !lyrics.isNullOrBlank()
+
+        when (template) {
+            ShareTemplate.MINIMAL -> {
+                canvas.drawColor(0xFF121212.toInt())
+
+                val textPaintColor = 0xFFFFFFFF.toInt()
+                val secPaintColor = 0x80FFFFFF.toInt()
+
+                val artworkSize = (if (hasLyrics) 160f else 240f) * scale
+                val artworkTop = (if (hasLyrics) 90f else 130f) * scale
+                val artworkLeft = (360f * scale - artworkSize) / 2f
+                val artworkRect = RectF(artworkLeft, artworkTop, artworkLeft + artworkSize, artworkTop + artworkSize)
+                val roundedPaint = Paint().apply { isAntiAlias = true }
+
+                if (coverArtBitmap != null) {
+                    val path = Path().apply {
+                        addRoundRect(artworkRect, 12f * scale, 12f * scale, Path.Direction.CW)
+                    }
+                    canvas.save()
+                    canvas.clipPath(path)
+                    canvas.drawBitmap(coverArtBitmap, null, artworkRect, roundedPaint)
+                    canvas.restore()
+                } else {
+                    val path = Path().apply {
+                        addRoundRect(artworkRect, 12f * scale, 12f * scale, Path.Direction.CW)
+                    }
+                    val fallbackPaint = Paint().apply {
+                        color = 0xFF282828.toInt()
+                        isAntiAlias = true
+                    }
+                    canvas.drawPath(path, fallbackPaint)
+                }
+
+                val titlePaint = TextPaint().apply {
+                    color = textPaintColor
+                    textSize = (if (hasLyrics) 18f else 22f) * scale
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    isAntiAlias = true
+                }
+                val artistPaint = TextPaint().apply {
+                    color = secPaintColor
+                    textSize = (if (hasLyrics) 14f else 16f) * scale
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                    isAntiAlias = true
+                }
+
+                val titleLayout = StaticLayout.Builder.obtain(songTitle, 0, songTitle.length, titlePaint, (312f * scale).toInt())
+                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                    .setMaxLines(1)
+                    .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                    .build()
+
+                val artistLayout = StaticLayout.Builder.obtain(artistName, 0, artistName.length, artistPaint, (312f * scale).toInt())
+                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                    .setMaxLines(1)
+                    .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                    .build()
+
+                val titleY = artworkTop + artworkSize + (24f * scale)
+                canvas.save()
+                canvas.translate(24f * scale, titleY)
+                titleLayout.draw(canvas)
+                canvas.translate(0f, titleLayout.height.toFloat() + (6f * scale))
+                artistLayout.draw(canvas)
+
+                if (!albumName.isNullOrBlank()) {
+                    val albumPaint = TextPaint().apply {
+                        color = secPaintColor
+                        textSize = (if (hasLyrics) 12f else 13f) * scale
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                        isAntiAlias = true
+                    }
+                    val albumLayout = StaticLayout.Builder.obtain(albumName, 0, albumName.length, albumPaint, (312f * scale).toInt())
+                        .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                        .setMaxLines(1)
+                        .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                        .build()
+                    canvas.translate(0f, artistLayout.height.toFloat() + (4f * scale))
+                    albumLayout.draw(canvas)
+                }
+                canvas.restore()
+
+                if (hasLyrics && lyrics != null) {
+                    val lyricsTop = 340f * scale
+                    val lyricsHeight = 160f * scale
+                    val lyricsWidth = 312f * scale
+
+                    val lyricsPaint = TextPaint().apply {
+                        color = textPaintColor
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                        isAntiAlias = true
+                        letterSpacing = 0.005f
+                    }
+
+                    var lyricsTextSize = 20f * scale
+                    val minLyricsSize = 13f * scale
+                    var lyricsLayout: StaticLayout
+
+                    while (lyricsTextSize > minLyricsSize) {
+                        lyricsPaint.textSize = lyricsTextSize
+                        lyricsLayout = StaticLayout.Builder.obtain(lyrics, 0, lyrics.length, lyricsPaint, lyricsWidth.toInt())
+                            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                            .setLineSpacing(0f, 1.3f)
+                            .build()
+                        if (lyricsLayout.height <= lyricsHeight) {
+                            break
+                        }
+                        lyricsTextSize -= 0.5f * scale
+                    }
+
+                    lyricsPaint.textSize = lyricsTextSize
+                    lyricsLayout = StaticLayout.Builder.obtain(lyrics, 0, lyrics.length, lyricsPaint, lyricsWidth.toInt())
+                        .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                        .setLineSpacing(0f, 1.3f)
+                        .build()
+
+                    val lyricsContentHeight = lyricsLayout.height
+                    val lyricsY = lyricsTop + (lyricsHeight - lyricsContentHeight) / 2f
+
+                    canvas.save()
+                    canvas.translate(24f * scale, lyricsY)
+                    lyricsLayout.draw(canvas)
+                    canvas.restore()
+                }
+
+                drawBranding(canvas, context, 580f * scale, textPaintColor, scale)
+            }
+            ShareTemplate.DARK -> {
+                canvas.drawColor(0xFF000000.toInt())
+
+                val textPaintColor = 0xFFFFFFFF.toInt()
+                val secPaintColor = 0xFF8E8E93.toInt()
+
+                val artworkSize = (if (hasLyrics) 180f else 260f) * scale
+                val artworkTop = (if (hasLyrics) 80f else 120f) * scale
+                val artworkLeft = (360f * scale - artworkSize) / 2f
+                val artworkRect = RectF(artworkLeft, artworkTop, artworkLeft + artworkSize, artworkTop + artworkSize)
+                val roundedPaint = Paint().apply { isAntiAlias = true }
+
+                if (coverArtBitmap != null) {
+                    val path = Path().apply {
+                        addRoundRect(artworkRect, 8f * scale, 8f * scale, Path.Direction.CW)
+                    }
+                    canvas.save()
+                    canvas.clipPath(path)
+                    canvas.drawBitmap(coverArtBitmap, null, artworkRect, roundedPaint)
+                    canvas.restore()
+                } else {
+                    val path = Path().apply {
+                        addRoundRect(artworkRect, 8f * scale, 8f * scale, Path.Direction.CW)
+                    }
+                    val fallbackPaint = Paint().apply {
+                        color = 0xFF1C1C1E.toInt()
+                        isAntiAlias = true
+                    }
+                    canvas.drawPath(path, fallbackPaint)
+                }
+
+                val titlePaint = TextPaint().apply {
+                    color = textPaintColor
+                    textSize = (if (hasLyrics) 19f else 24f) * scale
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    isAntiAlias = true
+                }
+                val artistPaint = TextPaint().apply {
+                    color = secPaintColor
+                    textSize = (if (hasLyrics) 14f else 16f) * scale
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                    isAntiAlias = true
+                }
+
+                val titleLayout = StaticLayout.Builder.obtain(songTitle, 0, songTitle.length, titlePaint, (312f * scale).toInt())
+                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                    .setMaxLines(1)
+                    .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                    .build()
+
+                val artistLayout = StaticLayout.Builder.obtain(artistName, 0, artistName.length, artistPaint, (312f * scale).toInt())
+                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                    .setMaxLines(1)
+                    .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                    .build()
+
+                val titleY = artworkTop + artworkSize + (24f * scale)
+                canvas.save()
+                canvas.translate(24f * scale, titleY)
+                titleLayout.draw(canvas)
+                canvas.translate(0f, titleLayout.height.toFloat() + (6f * scale))
+                artistLayout.draw(canvas)
+                canvas.restore()
+
+                if (hasLyrics && lyrics != null) {
+                    val lyricsTop = 350f * scale
+                    val lyricsHeight = 170f * scale
+                    val lyricsWidth = 312f * scale
+
+                    val lyricsPaint = TextPaint().apply {
+                        color = textPaintColor
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                        isAntiAlias = true
+                        letterSpacing = 0.005f
+                    }
+
+                    var lyricsTextSize = 20f * scale
+                    val minLyricsSize = 13f * scale
+                    var lyricsLayout: StaticLayout
+
+                    while (lyricsTextSize > minLyricsSize) {
+                        lyricsPaint.textSize = lyricsTextSize
+                        lyricsLayout = StaticLayout.Builder.obtain(lyrics, 0, lyrics.length, lyricsPaint, lyricsWidth.toInt())
+                            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                            .setLineSpacing(0f, 1.3f)
+                            .build()
+                        if (lyricsLayout.height <= lyricsHeight) {
+                            break
+                        }
+                        lyricsTextSize -= 0.5f * scale
+                    }
+
+                    lyricsPaint.textSize = lyricsTextSize
+                    lyricsLayout = StaticLayout.Builder.obtain(lyrics, 0, lyrics.length, lyricsPaint, lyricsWidth.toInt())
+                        .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                        .setLineSpacing(0f, 1.3f)
+                        .build()
+
+                    val lyricsContentHeight = lyricsLayout.height
+                    val lyricsY = lyricsTop + (lyricsHeight - lyricsContentHeight) / 2f
+
+                    canvas.save()
+                    canvas.translate(24f * scale, lyricsY)
+                    lyricsLayout.draw(canvas)
+                    canvas.restore()
+                }
+
+                drawBranding(canvas, context, 580f * scale, secPaintColor, scale)
+            }
+            ShareTemplate.GRADIENT -> {
+                var topColor = 0xFF4A148C.toInt()
+                var bottomColor = 0xFF1A237E.toInt()
+                if (coverArtBitmap != null) {
+                    val palette = Palette.from(coverArtBitmap).generate()
+                    topColor = palette.getVibrantColor(0xFF4A148C.toInt())
+                    bottomColor = palette.getDarkVibrantColor(0xFF1A237E.toInt())
+                }
+
+                val gradPaint = Paint().apply {
+                    isAntiAlias = true
+                    shader = LinearGradient(0f, 0f, 0f, imageHeight.toFloat(), intArrayOf(topColor, bottomColor), null, Shader.TileMode.CLAMP)
+                }
+                canvas.drawRect(0f, 0f, imageWidth.toFloat(), imageHeight.toFloat(), gradPaint)
+
+                val textPaintColor = 0xFFFFFFFF.toInt()
+                val secPaintColor = 0xB3FFFFFF.toInt()
+
+                val artworkSize = (if (hasLyrics) 170f else 250f) * scale
+                val artworkTop = (if (hasLyrics) 80f else 125f) * scale
+                val artworkLeft = (360f * scale - artworkSize) / 2f
+                val artworkRect = RectF(artworkLeft, artworkTop, artworkLeft + artworkSize, artworkTop + artworkSize)
+
+                val shadowPaint = Paint().apply {
+                    color = 0x4D000000.toInt()
+                    isAntiAlias = true
+                    setShadowLayer(8f * scale, 0f, 4f * scale, 0x4D000000.toInt())
+                }
+                canvas.drawRoundRect(artworkRect, 16f * scale, 16f * scale, shadowPaint)
+
+                val roundedPaint = Paint().apply { isAntiAlias = true }
+                if (coverArtBitmap != null) {
+                    val path = Path().apply {
+                        addRoundRect(artworkRect, 16f * scale, 16f * scale, Path.Direction.CW)
+                    }
+                    canvas.save()
+                    canvas.clipPath(path)
+                    canvas.drawBitmap(coverArtBitmap, null, artworkRect, roundedPaint)
+                    canvas.restore()
+                } else {
+                    val path = Path().apply {
+                        addRoundRect(artworkRect, 16f * scale, 16f * scale, Path.Direction.CW)
+                    }
+                    val fallbackPaint = Paint().apply {
+                        color = 0x33FFFFFF.toInt()
+                        isAntiAlias = true
+                    }
+                    canvas.drawPath(path, fallbackPaint)
+                }
+
+                val titlePaint = TextPaint().apply {
+                    color = textPaintColor
+                    textSize = (if (hasLyrics) 18f else 22f) * scale
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    isAntiAlias = true
+                }
+                val artistPaint = TextPaint().apply {
+                    color = secPaintColor
+                    textSize = (if (hasLyrics) 14f else 16f) * scale
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                    isAntiAlias = true
+                }
+
+                val titleLayout = StaticLayout.Builder.obtain(songTitle, 0, songTitle.length, titlePaint, (312f * scale).toInt())
+                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                    .setMaxLines(1)
+                    .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                    .build()
+
+                val artistLayout = StaticLayout.Builder.obtain(artistName, 0, artistName.length, artistPaint, (312f * scale).toInt())
+                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                    .setMaxLines(1)
+                    .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                    .build()
+
+                val titleY = artworkTop + artworkSize + (24f * scale)
+                canvas.save()
+                canvas.translate(24f * scale, titleY)
+                titleLayout.draw(canvas)
+                canvas.translate(0f, titleLayout.height.toFloat() + (6f * scale))
+                artistLayout.draw(canvas)
+                canvas.restore()
+
+                if (hasLyrics && lyrics != null) {
+                    val lyricsTop = 345f * scale
+                    val lyricsHeight = 165f * scale
+                    val lyricsWidth = 312f * scale
+
+                    val lyricsPaint = TextPaint().apply {
+                        color = textPaintColor
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                        isAntiAlias = true
+                        letterSpacing = 0.005f
+                        setShadowLayer(2f * scale, 0f, 1f * scale, 0x4D000000.toInt())
+                    }
+
+                    var lyricsTextSize = 20f * scale
+                    val minLyricsSize = 13f * scale
+                    var lyricsLayout: StaticLayout
+
+                    while (lyricsTextSize > minLyricsSize) {
+                        lyricsPaint.textSize = lyricsTextSize
+                        lyricsLayout = StaticLayout.Builder.obtain(lyrics, 0, lyrics.length, lyricsPaint, lyricsWidth.toInt())
+                            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                            .setLineSpacing(0f, 1.3f)
+                            .build()
+                        if (lyricsLayout.height <= lyricsHeight) {
+                            break
+                        }
+                        lyricsTextSize -= 0.5f * scale
+                    }
+
+                    lyricsPaint.textSize = lyricsTextSize
+                    lyricsLayout = StaticLayout.Builder.obtain(lyrics, 0, lyrics.length, lyricsPaint, lyricsWidth.toInt())
+                        .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                        .setLineSpacing(0f, 1.3f)
+                        .build()
+
+                    val lyricsContentHeight = lyricsLayout.height
+                    val lyricsY = lyricsTop + (lyricsHeight - lyricsContentHeight) / 2f
+
+                    canvas.save()
+                    canvas.translate(24f * scale, lyricsY)
+                    lyricsLayout.draw(canvas)
+                    canvas.restore()
+                }
+
+                drawBranding(canvas, context, 580f * scale, textPaintColor, scale)
+            }
+            ShareTemplate.GLASS -> {
+                if (coverArtBitmap != null) {
+                    try {
+                        val scaledBitmap = Bitmap.createScaledBitmap(coverArtBitmap, 108, 192, true)
+                        val blurredBitmap = fastBlur(scaledBitmap, 1f, 25)
+                        if (blurredBitmap != null) {
+                            val blurRect = RectF(0f, 0f, imageWidth.toFloat(), imageHeight.toFloat())
+                            canvas.drawBitmap(blurredBitmap, null, blurRect, null)
+                            blurredBitmap.recycle()
+                        }
+                        scaledBitmap.recycle()
+                    } catch (_: Exception) {
+                        canvas.drawColor(0xFF1E1E1E.toInt())
+                    }
+                } else {
+                    canvas.drawColor(0xFF1E1E1E.toInt())
+                }
+
+                canvas.drawColor(0x80000000.toInt(), PorterDuff.Mode.SRC_OVER)
+
+                val glassLeft = 24f * scale
+                val glassTop = (if (hasLyrics) 50f else 80f) * scale
+                val glassRight = 336f * scale
+                val glassBottom = (if (hasLyrics) 560f else 520f) * scale
+                val glassRect = RectF(glassLeft, glassTop, glassRight, glassBottom)
+
+                val glassPaint = Paint().apply {
+                    color = 0x26FFFFFF.toInt()
+                    style = Paint.Style.FILL
+                    isAntiAlias = true
+                }
+                canvas.drawRoundRect(glassRect, 24f * scale, 24f * scale, glassPaint)
+
+                val glassBorderPaint = Paint().apply {
+                    color = 0x33FFFFFF.toInt()
+                    style = Paint.Style.STROKE
+                    strokeWidth = 1.5f * scale
+                    isAntiAlias = true
+                }
+                canvas.drawRoundRect(glassRect, 24f * scale, 24f * scale, glassBorderPaint)
+
+                val textPaintColor = 0xFFFFFFFF.toInt()
+                val secPaintColor = 0xB3FFFFFF.toInt()
+
+                val artworkSize = (if (hasLyrics) 120f else 180f) * scale
+                val artworkTop = (if (hasLyrics) 80f else 115f) * scale
+                val artworkLeft = (360f * scale - artworkSize) / 2f
+                val artworkRect = RectF(artworkLeft, artworkTop, artworkLeft + artworkSize, artworkTop + artworkSize)
+                val roundedPaint = Paint().apply { isAntiAlias = true }
+
+                if (coverArtBitmap != null) {
+                    val path = Path().apply {
+                        addRoundRect(artworkRect, 12f * scale, 12f * scale, Path.Direction.CW)
+                    }
+                    canvas.save()
+                    canvas.clipPath(path)
+                    canvas.drawBitmap(coverArtBitmap, null, artworkRect, roundedPaint)
+                    canvas.restore()
+                } else {
+                    val path = Path().apply {
+                        addRoundRect(artworkRect, 12f * scale, 12f * scale, Path.Direction.CW)
+                    }
+                    val fallbackPaint = Paint().apply {
+                        color = 0x33FFFFFF.toInt()
+                        isAntiAlias = true
+                    }
+                    canvas.drawPath(path, fallbackPaint)
+                }
+
+                val titlePaint = TextPaint().apply {
+                    color = textPaintColor
+                    textSize = (if (hasLyrics) 16f else 20f) * scale
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    isAntiAlias = true
+                }
+                val artistPaint = TextPaint().apply {
+                    color = secPaintColor
+                    textSize = (if (hasLyrics) 13f else 15f) * scale
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                    isAntiAlias = true
+                }
+
+                val titleLayout = StaticLayout.Builder.obtain(songTitle, 0, songTitle.length, titlePaint, (264f * scale).toInt())
+                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                    .setMaxLines(1)
+                    .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                    .build()
+
+                val artistLayout = StaticLayout.Builder.obtain(artistName, 0, artistName.length, artistPaint, (264f * scale).toInt())
+                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                    .setMaxLines(1)
+                    .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                    .build()
+
+                val titleY = artworkTop + artworkSize + (20f * scale)
+                canvas.save()
+                canvas.translate(48f * scale, titleY)
+                titleLayout.draw(canvas)
+                canvas.translate(0f, titleLayout.height.toFloat() + (4f * scale))
+                artistLayout.draw(canvas)
+                canvas.restore()
+
+                if (hasLyrics && lyrics != null) {
+                    val lyricsTop = 280f * scale
+                    val lyricsHeight = 180f * scale
+                    val lyricsWidth = 264f * scale
+
+                    val lyricsPaint = TextPaint().apply {
+                        color = textPaintColor
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                        isAntiAlias = true
+                        letterSpacing = 0.005f
+                    }
+
+                    var lyricsTextSize = 17f * scale
+                    val minLyricsSize = 12f * scale
+                    var lyricsLayout: StaticLayout
+
+                    while (lyricsTextSize > minLyricsSize) {
+                        lyricsPaint.textSize = lyricsTextSize
+                        lyricsLayout = StaticLayout.Builder.obtain(lyrics, 0, lyrics.length, lyricsPaint, lyricsWidth.toInt())
+                            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                            .setLineSpacing(0f, 1.3f)
+                            .build()
+                        if (lyricsLayout.height <= lyricsHeight) {
+                            break
+                        }
+                        lyricsTextSize -= 0.5f * scale
+                    }
+
+                    lyricsPaint.textSize = lyricsTextSize
+                    lyricsLayout = StaticLayout.Builder.obtain(lyrics, 0, lyrics.length, lyricsPaint, lyricsWidth.toInt())
+                        .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                        .setLineSpacing(0f, 1.3f)
+                        .build()
+
+                    val lyricsContentHeight = lyricsLayout.height
+                    val lyricsY = lyricsTop + (lyricsHeight - lyricsContentHeight) / 2f
+
+                    canvas.save()
+                    canvas.translate(48f * scale, lyricsY)
+                    lyricsLayout.draw(canvas)
+                    canvas.restore()
+                }
+
+                drawBranding(canvas, context, (if (hasLyrics) 510f else 470f) * scale, textPaintColor, scale)
+            }
+            ShareTemplate.LYRICS_FOCUS -> {
+                canvas.drawColor(0xFF16171B.toInt())
+
+                val gradient = LinearGradient(0f, 0f, 0f, imageHeight.toFloat(), intArrayOf(0xFF1E2024.toInt(), 0xFF0F1012.toInt()), null, Shader.TileMode.CLAMP)
+                canvas.drawPaint(Paint().apply { shader = gradient })
+
+                val textPaintColor = 0xFFFFFFFF.toInt()
+                val secPaintColor = 0xCCFFFFFF.toInt()
+
+                if (hasLyrics && lyrics != null) {
+                    val lyricsTop = 80f * scale
+                    val lyricsHeight = 330f * scale
+                    val lyricsWidth = 312f * scale
+
+                    val lyricsPaint = TextPaint().apply {
+                        color = textPaintColor
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                        isAntiAlias = true
+                        letterSpacing = 0.005f
+                    }
+
+                    var lyricsTextSize = 26f * scale
+                    val minLyricsSize = 16f * scale
+                    var lyricsLayout: StaticLayout
+
+                    while (lyricsTextSize > minLyricsSize) {
+                        lyricsPaint.textSize = lyricsTextSize
+                        lyricsLayout = StaticLayout.Builder.obtain(lyrics, 0, lyrics.length, lyricsPaint, lyricsWidth.toInt())
+                            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                            .setLineSpacing(0f, 1.3f)
+                            .build()
+                        if (lyricsLayout.height <= lyricsHeight) {
+                            break
+                        }
+                        lyricsTextSize -= 0.5f * scale
+                    }
+
+                    lyricsPaint.textSize = lyricsTextSize
+                    lyricsLayout = StaticLayout.Builder.obtain(lyrics, 0, lyrics.length, lyricsPaint, lyricsWidth.toInt())
+                        .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                        .setLineSpacing(0f, 1.3f)
+                        .build()
+
+                    val lyricsContentHeight = lyricsLayout.height
+                    val lyricsY = lyricsTop + (lyricsHeight - lyricsContentHeight) / 2f
+
+                    canvas.save()
+                    canvas.translate(24f * scale, lyricsY)
+                    lyricsLayout.draw(canvas)
+                    canvas.restore()
+
+                    val footerY = 460f * scale
+                    val footerArtSize = 64f * scale
+                    val footerArtRect = RectF(24f * scale, footerY, 24f * scale + footerArtSize, footerY + footerArtSize)
+
+                    if (coverArtBitmap != null) {
+                        val path = Path().apply {
+                            addRoundRect(footerArtRect, 8f * scale, 8f * scale, Path.Direction.CW)
+                        }
+                        canvas.save()
+                        canvas.clipPath(path)
+                        canvas.drawBitmap(coverArtBitmap, null, footerArtRect, Paint().apply { isAntiAlias = true })
+                        canvas.restore()
+                    } else {
+                        val path = Path().apply {
+                            addRoundRect(footerArtRect, 8f * scale, 8f * scale, Path.Direction.CW)
+                        }
+                        canvas.drawRoundRect(footerArtRect, 8f * scale, 8f * scale, Paint().apply { color = 0xFF282828.toInt(); isAntiAlias = true })
+                    }
+
+                    val titlePaint = TextPaint().apply {
+                        color = textPaintColor
+                        textSize = 15f * scale
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                        isAntiAlias = true
+                    }
+                    val artistPaint = TextPaint().apply {
+                        color = secPaintColor
+                        textSize = 12f * scale
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                        isAntiAlias = true
+                    }
+
+                    val maxTextWidth = 360f * scale - 100f * scale - 24f * scale
+                    val titleLayout = StaticLayout.Builder.obtain(songTitle, 0, songTitle.length, titlePaint, maxTextWidth.toInt())
+                        .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                        .setMaxLines(1)
+                        .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                        .build()
+
+                    val artistLayout = StaticLayout.Builder.obtain(artistName, 0, artistName.length, artistPaint, maxTextWidth.toInt())
+                        .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                        .setMaxLines(1)
+                        .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                        .build()
+
+                    val textHeight = titleLayout.height + artistLayout.height + 3f * scale
+                    val textY = footerY + (footerArtSize - textHeight) / 2f
+
+                    canvas.save()
+                    canvas.translate(100f * scale, textY)
+                    titleLayout.draw(canvas)
+                    canvas.translate(0f, titleLayout.height.toFloat() + 3f * scale)
+                    artistLayout.draw(canvas)
+                    canvas.restore()
+                } else {
+                    val artworkSize = 240f * scale
+                    val artworkTop = 130f * scale
+                    val artworkLeft = (360f * scale - artworkSize) / 2f
+                    val artworkRect = RectF(artworkLeft, artworkTop, artworkLeft + artworkSize, artworkTop + artworkSize)
+
+                    if (coverArtBitmap != null) {
+                        val path = Path().apply {
+                            addRoundRect(artworkRect, 16f * scale, 16f * scale, Path.Direction.CW)
+                        }
+                        canvas.save()
+                        canvas.clipPath(path)
+                        canvas.drawBitmap(coverArtBitmap, null, artworkRect, Paint().apply { isAntiAlias = true })
+                        canvas.restore()
+                    } else {
+                        canvas.drawRoundRect(artworkRect, 16f * scale, 16f * scale, Paint().apply { color = 0xFF282828.toInt(); isAntiAlias = true })
+                    }
+
+                    val titlePaint = TextPaint().apply {
+                        color = textPaintColor
+                        textSize = 22f * scale
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                        isAntiAlias = true
+                    }
+                    val artistPaint = TextPaint().apply {
+                        color = secPaintColor
+                        textSize = 16f * scale
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                        isAntiAlias = true
+                    }
+
+                    val titleLayout = StaticLayout.Builder.obtain(songTitle, 0, songTitle.length, titlePaint, (312f * scale).toInt())
+                        .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                        .setMaxLines(1)
+                        .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                        .build()
+
+                    val artistLayout = StaticLayout.Builder.obtain(artistName, 0, artistName.length, artistPaint, (312f * scale).toInt())
+                        .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                        .setMaxLines(1)
+                        .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                        .build()
+
+                    val titleY = artworkTop + artworkSize + (32f * scale)
+                    canvas.save()
+                    canvas.translate(24f * scale, titleY)
+                    titleLayout.draw(canvas)
+                    canvas.translate(0f, titleLayout.height.toFloat() + (8f * scale))
+                    artistLayout.draw(canvas)
+                    canvas.restore()
+                }
+
+                drawBranding(canvas, context, 580f * scale, textPaintColor, scale)
+            }
+        }
+
+        return@withContext bitmap
+    }
 
     suspend fun createLyricsImage(
         context: Context,

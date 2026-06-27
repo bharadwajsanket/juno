@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -55,6 +56,7 @@ fun WelcomeDialog(
         } else {
             list.add(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
+        list.add(Manifest.permission.ACCESS_COARSE_LOCATION)
         list.toTypedArray()
     }
 
@@ -70,6 +72,28 @@ fun WelcomeDialog(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
         permissionsGranted = result.values.all { it }
+    }
+
+    var showLearnMore by remember { mutableStateOf(false) }
+
+    if (showLearnMore) {
+        AlertDialog(
+            onDismissRequest = { showLearnMore = false },
+            title = { Text("About Living Sky & Privacy") },
+            text = {
+                Text(
+                    text = "• Why location is needed: Juno uses your location to calculate current local weather, timezone offsets, and sunset/sunrise schedules.\n\n" +
+                           "• Privacy first: Your coordinates are kept entirely on-device and never uploaded or stored. Weather queries are completed anonymously.\n\n" +
+                           "• Approximate accuracy: JUNO requests only approximate (coarse) location. Exact GPS tracking is never performed.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showLearnMore = false }) {
+                    Text("Close")
+                }
+            }
+        )
     }
 
     Dialog(
@@ -107,7 +131,7 @@ fun WelcomeDialog(
                         .verticalScroll(rememberScrollState())
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     if (step == 0) {
                         // Step 0: Welcome & Name
@@ -189,7 +213,7 @@ fun WelcomeDialog(
                         )
 
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             PermissionItem(
@@ -202,9 +226,34 @@ fun WelcomeDialog(
                                 title = "Local Music Library",
                                 description = "To scan and play audio files stored on your device."
                             )
+                            PermissionItem(
+                                iconRes = R.drawable.location_on,
+                                title = "Living Sky (Location)",
+                                description = "To reflect the weather and sunrise/sunset outside."
+                            )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showLearnMore = true }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.info),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Learn More about Living Sky & Privacy",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
 
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp),

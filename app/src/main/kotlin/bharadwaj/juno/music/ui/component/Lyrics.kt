@@ -145,14 +145,6 @@ import bharadwaj.juno.music.constants.LyricsScrollKey
 import bharadwaj.juno.music.constants.LyricsTextPositionKey
 import bharadwaj.juno.music.constants.LyricsTextSizeKey
 import bharadwaj.juno.music.constants.PlayerBackgroundStyle
-import bharadwaj.juno.music.constants.OpenRouterApiKey
-import bharadwaj.juno.music.constants.DeeplApiKey
-import bharadwaj.juno.music.constants.AiProviderKey
-import bharadwaj.juno.music.constants.OpenRouterBaseUrlKey
-import bharadwaj.juno.music.constants.OpenRouterModelKey
-import bharadwaj.juno.music.constants.TranslateLanguageKey
-import bharadwaj.juno.music.constants.TranslateModeKey
-import bharadwaj.juno.music.constants.DeeplFormalityKey
 import bharadwaj.juno.music.constants.PlayerBackgroundStyleKey
 import bharadwaj.juno.music.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import bharadwaj.juno.music.lyrics.LyricsEntry
@@ -176,7 +168,6 @@ import bharadwaj.juno.music.lyrics.LyricsUtils.romanizePunjabi
 import bharadwaj.juno.music.lyrics.LyricsUtils.romanizeCyrillic
 import bharadwaj.juno.music.lyrics.LyricsUtils.romanizeJapanese
 import bharadwaj.juno.music.lyrics.LyricsUtils.romanizeKorean
-import bharadwaj.juno.music.lyrics.LyricsTranslationHelper
 import bharadwaj.juno.music.ui.component.shimmer.ShimmerHost
 import bharadwaj.juno.music.ui.component.shimmer.TextPlaceholder
 import bharadwaj.juno.music.ui.screens.settings.DarkMode
@@ -231,14 +222,7 @@ fun Lyrics(
     val lyricsLineSpacing by rememberPreference(LyricsLineSpacingKey, 1.3f)
     val lyricsStandardBlur by rememberPreference(LyricsStandardBlurKey, false)
     
-    val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
-    val deeplApiKey by rememberPreference(DeeplApiKey, "")
-    val aiProvider by rememberPreference(AiProviderKey, "OpenRouter")
-    val openRouterBaseUrl by rememberPreference(OpenRouterBaseUrlKey, "https://openrouter.ai/api/v1/chat/completions")
-    val openRouterModel by rememberPreference(OpenRouterModelKey, "google/gemini-2.5-flash-lite")
-    val translateLanguage by rememberPreference(TranslateLanguageKey, "en")
-    val translateMode by rememberPreference(TranslateModeKey, "Literal")
-    val deeplFormality by rememberPreference(DeeplFormalityKey, "default")
+
     
     val scope = rememberCoroutineScope()
 
@@ -450,64 +434,7 @@ fun Lyrics(
             !lyrics.isNullOrEmpty() && lyrics.startsWith("[")
         }
 
-    
-    val translationStatus by LyricsTranslationHelper.status.collectAsState()
-    val hasActiveTranslations by LyricsTranslationHelper.hasActiveTranslations.collectAsState()
-    
-    
-    DisposableEffect(Unit) {
-        LyricsTranslationHelper.setCompositionActive(true)
-        onDispose {
-            LyricsTranslationHelper.setCompositionActive(false)
-            LyricsTranslationHelper.cancelTranslation()
-        }
-    }
-    
-    
-    LaunchedEffect(lines, lyricsEntity, translateLanguage, translateMode) {
-        if (lines.isNotEmpty() && lyricsEntity != null) {
-            LyricsTranslationHelper.loadTranslationsFromDatabase(
-                lyrics = lines,
-                lyricsEntity = lyricsEntity,
-                targetLanguage = translateLanguage,
-                mode = translateMode
-            )
-        }
-    }
-    
-    
-    LaunchedEffect(showLyrics, lines.size) {
-        LyricsTranslationHelper.manualTrigger.collect {
-            val effectiveApiKey = if (aiProvider == "DeepL") deeplApiKey else openRouterApiKey
-            if (showLyrics && lines.isNotEmpty() && effectiveApiKey.isNotBlank()) {
-                LyricsTranslationHelper.translateLyrics(
-                    lyrics = lines,
-                    targetLanguage = translateLanguage,
-                    apiKey = openRouterApiKey,
-                    baseUrl = openRouterBaseUrl,
-                    model = openRouterModel,
-                    mode = translateMode,
-                    scope = scope,
-                    context = context,
-                    provider = aiProvider,
-                    deeplApiKey = deeplApiKey,
-                    deeplFormality = deeplFormality,
-                    useStreaming = true,
-                    songId = currentSong?.id ?: "",
-                    database = database
-                )
-            } else if (effectiveApiKey.isBlank()) {
-                Toast.makeText(context, context.getString(R.string.ai_api_key_required), Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    
-    LaunchedEffect(Unit) {
-        LyricsTranslationHelper.clearTranslationsTrigger.collect {
-            lines.forEach { it.translatedTextFlow.value = null }
-        }
-    }
+    val hasActiveTranslations = false
 
     
     val expressiveAccent = when (playerBackground) {
@@ -726,99 +653,7 @@ fun Lyrics(
             .padding(bottom = 12.dp)
     ) {
         
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .zIndex(1f)
-                .padding(top = 56.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            when (val status = translationStatus) {
-                is LyricsTranslationHelper.TranslationStatus.Translating -> {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            androidx.compose.material3.CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = stringResource(R.string.ai_translating_lyrics),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-                is LyricsTranslationHelper.TranslationStatus.Error -> {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.error),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = status.message,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
-                }
-                is LyricsTranslationHelper.TranslationStatus.Success -> {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.check),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = stringResource(R.string.ai_lyrics_translated),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer
-                            )
-                        }
-                    }
-                }
-                is LyricsTranslationHelper.TranslationStatus.Idle -> {
-                    
-                }
-            }
-        }
+
 
         if (lyrics == LYRICS_NOT_FOUND) {
             Box(
