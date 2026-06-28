@@ -176,7 +176,7 @@ fun CommitScreen(
             }
 
             try {
-                val url = URL("https://api.github.com/repos/bharadwajsanket/JUNO-Music/commits?branch=main&per_page=50")
+                val url = URL("https://api.github.com/repos/bharadwajsanket/juno/commits?branch=main&per_page=50")
                 val connection = url.openConnection() as java.net.HttpURLConnection
                 connection.setRequestProperty("User-Agent", "junomusic-Commit-App")
                 connection.setRequestProperty("Accept", "application/vnd.github+json")

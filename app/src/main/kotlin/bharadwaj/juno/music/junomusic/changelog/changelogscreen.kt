@@ -141,7 +141,7 @@ fun ChangelogScreen(
                         showingCached = true
                     }
                 } else {
-                    val changelogUrl = URL("https://github.com/bharadwajsanket/JUNO-Music/releases/download/$tag/changelog.json")
+                    val changelogUrl = URL("https://github.com/bharadwajsanket/juno/releases/download/$tag/changelog.json")
                     val connection = changelogUrl.openConnection() as HttpURLConnection
                     connection.setRequestProperty("User-Agent", "junomusic-Changelog-App")
                     connection.setRequestProperty("Accept", "application/json")
@@ -258,7 +258,7 @@ fun ChangelogScreen(
             }
 
             try {
-                val releasesUrl = URL("https://api.github.com/repos/bharadwajsanket/JUNO-Music/releases")
+                val releasesUrl = URL("https://api.github.com/repos/bharadwajsanket/juno/releases")
                 val connection = releasesUrl.openConnection() as HttpURLConnection
                 connection.setRequestProperty("User-Agent", "junomusic-Changelog-App")
                 connection.setRequestProperty("Accept", "application/vnd.github+json")

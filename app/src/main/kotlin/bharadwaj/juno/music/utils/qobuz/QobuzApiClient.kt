@@ -8,6 +8,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import bharadwaj.juno.music.BuildConfig
 
 // Models
 
@@ -105,7 +106,7 @@ class QobuzApiClient {
     private val httpClient: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor { chain ->
             val request = chain.request().newBuilder()
-                .header("User-Agent", "JUNO-Music/1.0")
+                .header("User-Agent", "Juno/${BuildConfig.VERSION_NAME}")
                 .build()
             chain.proceed(request)
         }

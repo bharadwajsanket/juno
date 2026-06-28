@@ -1,13 +1,11 @@
-
-
 package bharadwaj.juno.music.junomusic.updater
-
 
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,11 +18,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -32,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +46,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.navigation.NavHostController
@@ -80,8 +78,6 @@ import bharadwaj.juno.music.ui.component.middleItemShape
 import bharadwaj.juno.music.ui.component.endItemShape
 import bharadwaj.juno.music.ui.component.detachedItemShape
 import bharadwaj.juno.music.ui.component.parseMarkdown
-import bharadwaj.juno.music.ui.component.endItemShape
-import bharadwaj.juno.music.ui.component.detachedItemShape
 import bharadwaj.juno.music.ui.component.AnimatedActionButton
 import bharadwaj.juno.music.ui.component.ExpressiveIconButton
 import bharadwaj.juno.music.ui.component.ErrorSnackbar
@@ -94,16 +90,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.text.ClickableText
-import androidx.compose.ui.text.style.TextDecoration
+import timber.log.Timber
 
 data class ChangelogSection(val title: String, val items: List<String>)
 
@@ -117,11 +111,70 @@ sealed class JUNOUpdateStatus {
         val releaseDate: String,
         val description: String?,
         val imageUrl: String?,
-        val apkUrl: String?
+        val apkUrl: String?,
+        val isFromCache: Boolean = false
     ) : JUNOUpdateStatus()
 
-    data class NoUpdate(val version: String) : JUNOUpdateStatus()
+    data class NoUpdate(val version: String, val isFromCache: Boolean = false) : JUNOUpdateStatus()
     data class Error(val message: String) : JUNOUpdateStatus()
+}
+
+fun isSafeApkFile(context: Context, file: File): Boolean {
+    return try {
+        val expectedDir = getDownloadedApksDir(context).canonicalPath
+        val fileCanonical = file.canonicalPath
+        fileCanonical.startsWith(expectedDir) && file.isFile && file.name.endsWith(".apk", ignoreCase = true)
+    } catch (e: Exception) {
+        false
+    }
+}
+
+fun verifyApkIntegrity(context: Context, file: File): Boolean {
+    return try {
+        if (!file.exists() || !file.isFile) return false
+        val pm = context.packageManager
+        val info = pm.getPackageArchiveInfo(file.absolutePath, 0)
+        info != null
+    } catch (e: Exception) {
+        Timber.e(e, "APK integrity check failed for: ${file.absolutePath}")
+        false
+    }
+}
+
+fun shareApkFile(context: Context, file: File) {
+    try {
+        if (!isSafeApkFile(context, file)) {
+            Timber.e("Unsafe file requested for sharing: ${file.absolutePath}")
+            return
+        }
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.FileProvider", file)
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/vnd.android.package-archive"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(shareIntent, "Share JUNO Update APK"))
+    } catch (e: Exception) {
+        Timber.e(e, "Error sharing APK")
+    }
+}
+
+fun installApkFile(context: Context, file: File) {
+    try {
+        if (!isSafeApkFile(context, file)) {
+            Timber.e("Unsafe file requested for installation: ${file.absolutePath}")
+            return
+        }
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.FileProvider", file)
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        ContextCompat.startActivity(context, installIntent, null)
+    } catch (e: Exception) {
+        Timber.e(e, "Error launching package installer")
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -143,12 +196,28 @@ fun UpdateScreen(navController: NavHostController) {
         DownloadNotificationManager.initialize(context)
     }
 
-    
+    val installLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { _ ->
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (context.packageManager.canRequestPackageInstalls()) {
+                val file = downloadedFile
+                if (file != null && file.exists() && verifyApkIntegrity(context, file)) {
+                    installApkFile(context, file)
+                }
+            } else {
+                scope.launch {
+                    snackbarHostState.showSnackbar("Unknown sources permission is required to install updates.")
+                }
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         WorkManager.getInstance(context)
-            .getWorkInfosForUniqueWorkLiveData("update_download")
-            .observeForever { workInfos ->
-                val workInfo = workInfos?.firstOrNull() ?: return@observeForever
+            .getWorkInfosForUniqueWorkFlow("update_download")
+            .collect { workInfos ->
+                val workInfo = workInfos.firstOrNull() ?: return@collect
 
                 when (workInfo.state) {
                     WorkInfo.State.RUNNING -> {
@@ -160,11 +229,19 @@ fun UpdateScreen(navController: NavHostController) {
                         isDownloadComplete = true
                         val filePath = workInfo.outputData.getString("file_path")
                         if (filePath != null) {
-                            downloadedFile = File(filePath)
+                            val f = File(filePath)
+                            if (f.exists()) {
+                                downloadedFile = f
+                            } else {
+                                isDownloadComplete = false
+                                downloadedFile = null
+                                downloadProgress = 0f
+                            }
                         }
                     }
                     WorkInfo.State.FAILED -> {
                         isDownloading = false
+                        downloadProgress = 0f
                         scope.launch {
                             snackbarHostState.showSnackbar(context.getString(R.string.download_failed))
                         }
@@ -178,7 +255,6 @@ fun UpdateScreen(navController: NavHostController) {
             }
     }
 
-    
     LaunchedEffect(isDownloadComplete, downloadedFile) {
         if (isDownloadComplete && downloadedFile != null) {
             if (!downloadedFile!!.exists()) {
@@ -192,11 +268,10 @@ fun UpdateScreen(navController: NavHostController) {
     fun triggerUpdateCheck() {
         status = JUNOUpdateStatus.Checking
         scope.launch {
-            
             delay(1000L)
             checkForUpdate(
                 context = context,
-                onSuccess = { tag, isAvailable, changelog, size, date, description, imageUrl, apkUrl ->
+                onSuccess = { tag, isAvailable, changelog, size, date, description, imageUrl, apkUrl, isFromCache ->
                     saveLastCheckedTime(context, LocalDateTime.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy, h:mm a")))
                     saveUpdateAvailableState(context, isAvailable)
                     status = if (isAvailable) {
@@ -207,10 +282,11 @@ fun UpdateScreen(navController: NavHostController) {
                             releaseDate = date,
                             description = description,
                             imageUrl = imageUrl,
-                            apkUrl = apkUrl
+                            apkUrl = apkUrl,
+                            isFromCache = isFromCache
                         )
                     } else {
-                        JUNOUpdateStatus.NoUpdate(tag)
+                        JUNOUpdateStatus.NoUpdate(tag, isFromCache = isFromCache)
                     }
                 },
                 onError = {
@@ -308,10 +384,16 @@ fun UpdateScreen(navController: NavHostController) {
                                     onClick = {
                                         if (isDownloadComplete) {
                                             val file = downloadedFile
-                                            if (file == null || !file.exists()) {
+                                            if (file == null || !file.exists() || !verifyApkIntegrity(context, file)) {
+                                                if (file != null && file.exists()) {
+                                                    file.delete()
+                                                }
                                                 isDownloadComplete = false
                                                 downloadedFile = null
                                                 downloadProgress = 0f
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar("Downloaded APK is corrupted or invalid. Please download again.")
+                                                }
                                                 return@AnimatedActionButton
                                             }
                                             file.let { f ->
@@ -320,17 +402,11 @@ fun UpdateScreen(navController: NavHostController) {
                                                         val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                                                             data = Uri.parse("package:${context.packageName}")
                                                         }
-                                                        context.startActivity(intent)
+                                                        installLauncher.launch(intent)
                                                         return@let
                                                     }
                                                 }
-                                                val uri = FileProvider.getUriForFile(context, "${context.packageName}.FileProvider", file)
-                                                val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                                                    setDataAndType(uri, "application/vnd.android.package-archive")
-                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                }
-                                                ContextCompat.startActivity(context, installIntent, null)
+                                                installApkFile(context, f)
                                             }
                                         } else {
                                             val urlToDownload = currentStatus.apkUrl
@@ -343,7 +419,7 @@ fun UpdateScreen(navController: NavHostController) {
                                                     .setInputData(workDataOf("apk_url" to urlToDownload, "version" to currentStatus.version, "file_size" to currentStatus.size))
                                                     .addTag("update_download")
                                                     .build()
-                                                WorkManager.getInstance(context).enqueueUniqueWork("update_download", ExistingWorkPolicy.REPLACE, downloadRequest)
+                                                WorkManager.getInstance(context).enqueueUniqueWork("update_download", ExistingWorkPolicy.KEEP, downloadRequest)
                                                 isDownloading = true
                                             }
                                         }
@@ -387,9 +463,22 @@ fun UpdateScreen(navController: NavHostController) {
                     ) {
                         when (val currentStatus = status) {
                             is JUNOUpdateStatus.Checking -> {
-                                androidx.compose.material3.ContainedLoadingIndicator(
-                                    modifier = Modifier.size(64.dp)
-                                )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        strokeWidth = 3.dp,
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = stringResource(R.string.checking_for_updates),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
 
                             is JUNOUpdateStatus.NoUpdate -> {
@@ -417,26 +506,51 @@ fun UpdateScreen(navController: NavHostController) {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = TextAlign.Center
                                     )
+                                    val lastChecked = getLastCheckedTime(context)
+                                    if (lastChecked.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = stringResource(R.string.last_checked, lastChecked),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
                                 }
                             }
 
                             is JUNOUpdateStatus.Error -> {
                                 Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier.padding(24.dp)
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.error),
                                         contentDescription = null,
-                                        modifier = Modifier.size(120.dp),
+                                        modifier = Modifier.size(80.dp),
                                         tint = MaterialTheme.colorScheme.error
                                     )
                                     Spacer(modifier = Modifier.height(24.dp))
                                     Text(
                                         text = currentStatus.message,
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
                                         textAlign = TextAlign.Center,
                                         fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.check_internet_connection),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    AnimatedActionButton(
+                                        text = stringResource(R.string.check_for_update),
+                                        onClick = { triggerUpdateCheck() },
+                                        modifier = Modifier.widthIn(min = 150.dp)
                                     )
                                 }
                             }
@@ -446,6 +560,32 @@ fun UpdateScreen(navController: NavHostController) {
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalAlignment = Alignment.Start
                                 ) {
+                                    if (currentStatus.isFromCache) {
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+                                            shape = RoundedCornerShape(12.dp),
+                                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.error),
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Text(
+                                                    text = "Offline - Showing cached release info",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                                )
+                                            }
+                                        }
+                                    }
+
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Text(
                                         text = stringResource(R.string.release_date_v, currentStatus.releaseDate),
@@ -538,6 +678,21 @@ fun UpdateScreen(navController: NavHostController) {
                                         Spacer(modifier = Modifier.height(24.dp))
                                     }
 
+                                    if (isDownloadComplete && downloadedFile != null) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        TextButton(
+                                            onClick = { shareApkFile(context, downloadedFile!!) },
+                                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Share,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Share APK / Install Manually")
+                                        }
+                                    }
                                 }
                             }
                             else -> {}
@@ -548,8 +703,6 @@ fun UpdateScreen(navController: NavHostController) {
         }
     }
 }
-
-
 
 const val PREFS_NAME = "settings"
 const val KEY_AUTO_UPDATE_CHECK = "auto_update_check"
@@ -618,15 +771,26 @@ private fun formatGitHubDate(githubDate: String): String = try {
     githubDate
 }
 
+fun cleanVersionString(version: String): String {
+    var clean = version.trim()
+    val firstDigitOrDotIdx = clean.indexOfFirst { it.isDigit() || it == '.' }
+    if (firstDigitOrDotIdx > 0) {
+        clean = clean.substring(firstDigitOrDotIdx)
+    }
+    return clean
+}
 
 fun isNewerVersion(latestVersion: String, currentVersion: String): Boolean {
-    val latestVersionClean = latestVersion.removePrefix("b").removePrefix("v")
-    val currentVersionClean = currentVersion.removePrefix("b").removePrefix("v")
+    val latestClean = cleanVersionString(latestVersion)
+    val currentClean = cleanVersionString(currentVersion)
 
-    val latestParts = latestVersionClean.split(".").map { it.toIntOrNull() ?: 0 }
-    val currentParts = currentVersionClean.split(".").map { it.toIntOrNull() ?: 0 }
-    
-    
+    val latestParts = latestClean.split(".").map { segment ->
+        segment.takeWhile { it.isDigit() }.toIntOrNull() ?: 0
+    }
+    val currentParts = currentClean.split(".").map { segment ->
+        segment.takeWhile { it.isDigit() }.toIntOrNull() ?: 0
+    }
+
     for (i in 0 until maxOf(latestParts.size, currentParts.size)) {
         val latest = latestParts.getOrElse(i) { 0 }
         val current = currentParts.getOrElse(i) { 0 }
@@ -635,18 +799,104 @@ fun isNewerVersion(latestVersion: String, currentVersion: String): Boolean {
             latest < current -> return false
         }
     }
-    
-    
-    if (latestVersionClean == currentVersionClean) {
-        val latestIsBeta = latestVersion.startsWith("b")
-        val currentIsBeta = currentVersion.startsWith("b")
-        
-        if (currentIsBeta && !latestIsBeta) return true
-    }
-    
+
     return false
 }
 
+fun selectBestApk(assets: JSONArray, currentVariant: String, currentAbi: String): JSONObject? {
+    val candidates = mutableListOf<Pair<JSONObject, Int>>()
+    for (i in 0 until assets.length()) {
+        val asset = assets.getJSONObject(i)
+        val name = asset.getString("name")
+        if (!name.endsWith(".apk", ignoreCase = true)) continue
+        if (name.contains("debug", ignoreCase = true)) continue
+
+        var score = 100 // Base score
+
+        val hasGms = name.contains("gms", ignoreCase = true)
+        val hasFoss = name.contains("foss", ignoreCase = true)
+
+        if (currentVariant.equals("gms", ignoreCase = true)) {
+            if (hasGms) score += 20
+            if (hasFoss) score -= 50
+        } else if (currentVariant.equals("foss", ignoreCase = true)) {
+            if (hasFoss) score += 20
+            if (hasGms) score -= 50
+        }
+
+        val nameLower = name.lowercase()
+        val abis = listOf("arm64", "armeabi", "x86", "x86_64")
+        var assetAbi: String? = null
+        for (abi in abis) {
+            if (nameLower.contains(abi)) {
+                assetAbi = abi
+                break
+            }
+        }
+
+        if (assetAbi != null) {
+            if (assetAbi == currentAbi.lowercase()) {
+                score += 10
+            } else {
+                score -= 80 // Incompatible architecture
+            }
+        } else {
+            if (nameLower.contains("universal")) {
+                score += 5
+            }
+        }
+        candidates.add(asset to score)
+    }
+
+    return candidates.sortedByDescending { it.second }.firstOrNull()?.first
+}
+
+fun parseReleaseBodyToChangelog(body: String, context: Context): List<ChangelogSection> {
+    val sections = mutableListOf<ChangelogSection>()
+    var currentTitle = context.getString(R.string.changelog)
+    var currentItems = mutableListOf<String>()
+
+    val lines = body.split("\n")
+    for (line in lines) {
+        val trimmed = line.trim()
+        if (trimmed.isEmpty()) continue
+
+        if (trimmed.startsWith("#")) {
+            if (currentItems.isNotEmpty()) {
+                sections.add(ChangelogSection(currentTitle, currentItems.toList()))
+                currentItems.clear()
+            }
+            var title = trimmed
+            while (title.startsWith("#")) {
+                title = title.substring(1)
+            }
+            currentTitle = title.trim()
+            if (currentTitle.isEmpty()) {
+                currentTitle = context.getString(R.string.changelog)
+            }
+        } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("• ")) {
+            val cleanItem = trimmed.substring(2).trim()
+            if (cleanItem.isNotEmpty()) {
+                currentItems.add(cleanItem)
+            }
+        } else if (trimmed.startsWith("-") || trimmed.startsWith("*")) {
+            val cleanItem = trimmed.substring(1).trim()
+            if (cleanItem.isNotEmpty()) {
+                currentItems.add(cleanItem)
+            }
+        } else {
+            currentItems.add(trimmed)
+        }
+    }
+
+    if (currentItems.isNotEmpty()) {
+        sections.add(ChangelogSection(currentTitle, currentItems.toList()))
+    }
+
+    return sections.ifEmpty {
+        listOf(ChangelogSection(context.getString(R.string.changelog), listOf(body.trim())))
+    }
+}
 
 fun saveLatestReleaseToCache(context: Context, jsonResponse: String) {
     try {
@@ -658,7 +908,7 @@ fun saveLatestReleaseToCache(context: Context, jsonResponse: String) {
             it.write(cacheData.toString().toByteArray())
         }
     } catch (e: Exception) {
-        Log.e("UpdateCheck", "Error saving latest release cache", e)
+        Timber.e(e, "Error saving latest release cache")
     }
 }
 
@@ -671,195 +921,240 @@ fun loadLatestReleaseFromCache(context: Context): Pair<Long, String>? {
         val response = cacheData.getString("response")
         Pair(timestamp, response)
     } catch (e: Exception) {
+        // Delete corrupt cache file
+        try {
+            context.deleteFile("latest_release_cache.json")
+        } catch (delEx: Exception) {
+            // ignore
+        }
         null
     }
 }
 
 suspend fun checkForUpdate(
     context: Context,
-    onSuccess: (tag: String, isAvailable: Boolean, changelog: List<ChangelogSection>, size: String, date: String, description: String?, imageUrl: String?, apkUrl: String?) -> Unit,
+    onSuccess: (tag: String, isAvailable: Boolean, changelog: List<ChangelogSection>, size: String, date: String, description: String?, imageUrl: String?, apkUrl: String?, isFromCache: Boolean) -> Unit,
     onError: () -> Unit,
     force: Boolean = false,
 ) {
     withContext(Dispatchers.IO) {
+        val currentVersion = BuildConfig.VERSION_NAME
+        val isBetaEnabled = getBetaUpdatesSetting(context)
+
         if (!force) {
             val cached = loadLatestReleaseFromCache(context)
             if (cached != null) {
                 val age = System.currentTimeMillis() - cached.first
-                if (age < 24 * 60 * 60 * 1000L) {
+                if (age < 12 * 60 * 60 * 1000L) { // 12 hours freshness
                     try {
-                        val cachedRelease = JSONObject(cached.second)
-                        val targetTagName = cachedRelease.getString("tag_name")
-                        val currentVersion = BuildConfig.VERSION_NAME
-                        val shouldShow = isNewerVersion(targetTagName, currentVersion)
-                        
-                        if (shouldShow) {
-                            val tagWithPrefix = cachedRelease.getString("tag_name")
-                            val changelogList = mutableListOf<ChangelogSection>()
-                            val body = cachedRelease.optString("body", context.getString(R.string.no_changelog_available))
-                            val fallbackItems = body.split("\n").filter { it.isNotBlank() }
-                            changelogList.add(ChangelogSection(context.getString(R.string.changelog), fallbackItems))
-                            
-                            val publishedAt = cachedRelease.getString("published_at")
-                            val formattedReleaseDate = formatGitHubDate(publishedAt)
-                            val assets = cachedRelease.getJSONArray("assets")
-                            var apkSizeInMB = ""
-                            var apkDownloadUrl = ""
-                            for (j in 0 until assets.length()) {
-                                val asset = assets.getJSONObject(j)
-                                val assetName = asset.getString("name")
-                                if (assetName.endsWith(".apk", ignoreCase = true) && !assetName.lowercase().contains("debug")) {
-                                    val apkSizeInBytes = asset.getLong("size")
-                                    apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
-                                    apkDownloadUrl = asset.getString("browser_download_url")
-                                    break
+                        val json = cached.second
+                        val targetRelease = if (json.trim().startsWith("[")) {
+                            val array = JSONArray(json)
+                            var found: JSONObject? = null
+                            for (i in 0 until array.length()) {
+                                val r = array.getJSONObject(i)
+                                val isDraft = r.optBoolean("draft", false)
+                                val isPrerelease = r.optBoolean("prerelease", false)
+                                if (isDraft) continue
+                                if (isPrerelease && !isBetaEnabled) continue
+                                found = r
+                                break
+                            }
+                            found
+                        } else {
+                            JSONObject(json)
+                        }
+
+                        if (targetRelease != null) {
+                            val targetTagName = targetRelease.getString("tag_name")
+                            val currentVersion = BuildConfig.VERSION_NAME
+                            val shouldShow = isNewerVersion(targetTagName, currentVersion)
+
+                            if (shouldShow) {
+                                val tagWithPrefix = targetRelease.getString("tag_name")
+                                val body = targetRelease.optString("body", "")
+                                val changelogList = parseReleaseBodyToChangelog(body, context)
+
+                                val publishedAt = targetRelease.getString("published_at")
+                                val formattedReleaseDate = formatGitHubDate(publishedAt)
+                                val assets = targetRelease.getJSONArray("assets")
+                                val bestAsset = selectBestApk(assets, BuildConfig.FLAVOR_variant, BuildConfig.FLAVOR_abi)
+
+                                if (bestAsset != null) {
+                                    val apkSizeInBytes = bestAsset.getLong("size")
+                                    val apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
+                                    val apkDownloadUrl = bestAsset.getString("browser_download_url")
+                                    withContext(Dispatchers.Main) {
+                                        onSuccess(tagWithPrefix, true, changelogList, apkSizeInMB, formattedReleaseDate, null, null, apkDownloadUrl, true)
+                                    }
+                                    return@withContext
                                 }
                             }
-                            if (apkDownloadUrl.isNotEmpty()) {
-                                withContext(Dispatchers.Main) {
-                                    onSuccess(tagWithPrefix, true, changelogList, apkSizeInMB, formattedReleaseDate, null, null, apkDownloadUrl)
-                                }
-                                return@withContext
+                            withContext(Dispatchers.Main) {
+                                onSuccess(currentVersion, false, emptyList(), "", "", null, null, null, true)
                             }
+                            return@withContext
                         }
-                        
-                        withContext(Dispatchers.Main) {
-                            onSuccess(currentVersion, false, emptyList(), "", "", null, null, null)
-                        }
-                        return@withContext
                     } catch (e: Exception) {
-                        Log.e("UpdateCheck", "Error parsing cached update", e)
+                        Timber.e(e, "Error parsing cached update")
                     }
                 }
             }
         }
 
         try {
-            val url = URL("https://api.github.com/repos/bharadwajsanket/JUNO-Music/releases/latest")
+            val urlString = "https://api.github.com/repos/bharadwajsanket/juno/releases"
+            val url = URL(urlString)
             val connection = url.openConnection() as java.net.HttpURLConnection
             connection.setRequestProperty("User-Agent", "junomusic-Update-App")
             connection.setRequestProperty("Accept", "application/vnd.github+json")
+            connection.connectTimeout = 15000
+            connection.readTimeout = 15000
+
             if (connection.responseCode == 200) {
                 val json = connection.inputStream.bufferedReader().use { it.readText() }
                 saveLatestReleaseToCache(context, json)
-                val targetRelease = JSONObject(json)
-                
-                val currentVersion = BuildConfig.VERSION_NAME
-                val targetTagName = targetRelease.getString("tag_name")
-                val shouldShow = isNewerVersion(targetTagName, currentVersion)
 
-                if (shouldShow) {
-                    val tagWithPrefix = targetRelease.getString("tag_name")
-                    val displayTag = tagWithPrefix
-
-                    val changelogList = mutableListOf<ChangelogSection>()
-                    var description: String? = null
-                    var imageUrl: String? = null
-                    try {
-                        val changelogUrl =
-                            URL("https://github.com/bharadwajsanket/JUNO-Music/releases/download/$tagWithPrefix/changelog.json")
-                        val changelogJson = changelogUrl.openStream().bufferedReader().use { it.readText() }
-                        val changelogData = JSONObject(changelogJson)
-
-                        description = changelogData.optString("description").takeIf { it.isNotEmpty() }
-                        imageUrl = changelogData.optString("image").takeIf { it.isNotEmpty() }
-
-                        val changelogArray = changelogData.getJSONArray("changelog")
-                        for (j in 0 until changelogArray.length()) {
-                            val sectionObj = changelogArray.getJSONObject(j)
-                            val title = sectionObj.getString("title")
-                            val itemsArray = sectionObj.getJSONArray("items")
-                            val itemsList = mutableListOf<String>()
-                            for (k in 0 until itemsArray.length()) {
-                                itemsList.add(itemsArray.getString(k))
-                            }
-                            changelogList.add(ChangelogSection(title, itemsList))
-                        }
-                    } catch (e: Exception) {
-                        val body = targetRelease.optString("body", context.getString(R.string.no_changelog_available))
-                        val fallbackItems = body.split("\n").filter { it.isNotBlank() }
-                        changelogList.add(ChangelogSection(context.getString(R.string.changelog), fallbackItems))
-                    }
-
-                    val publishedAt = targetRelease.getString("published_at")
-                    val formattedReleaseDate = formatGitHubDate(publishedAt)
-                    val assets = targetRelease.getJSONArray("assets")
-
-                    var apkSizeInMB = ""
-                    var apkDownloadUrl = ""
-                    for (j in 0 until assets.length()) {
-                        val asset = assets.getJSONObject(j)
-                        val assetName = asset.getString("name")
-                        if (assetName.endsWith(".apk", ignoreCase = true) && !assetName.lowercase().contains("debug")) {
-                            val apkSizeInBytes = asset.getLong("size")
-                            apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
-                            apkDownloadUrl = asset.getString("browser_download_url")
-                            break
-                        }
-                    }
-
-                    if (apkDownloadUrl.isNotEmpty()) {
-                        withContext(Dispatchers.Main) {
-                            onSuccess(displayTag, true, changelogList, apkSizeInMB, formattedReleaseDate, description, imageUrl, apkDownloadUrl)
-                        }
-                        return@withContext
-                    }
+                val array = JSONArray(json)
+                var targetRelease: JSONObject? = null
+                for (i in 0 until array.length()) {
+                    val r = array.getJSONObject(i)
+                    val isDraft = r.optBoolean("draft", false)
+                    val isPrerelease = r.optBoolean("prerelease", false)
+                    if (isDraft) continue
+                    if (isPrerelease && !isBetaEnabled) continue
+                    targetRelease = r
+                    break
                 }
 
-                withContext(Dispatchers.Main) {
-                    onSuccess(currentVersion, false, emptyList(), "", "", null, null, null)
+                if (targetRelease != null) {
+                    val currentVersion = BuildConfig.VERSION_NAME
+                    val targetTagName = targetRelease.getString("tag_name")
+                    val shouldShow = isNewerVersion(targetTagName, currentVersion)
+
+                    if (shouldShow) {
+                        val tagWithPrefix = targetRelease.getString("tag_name")
+                        val displayTag = tagWithPrefix
+
+                        val changelogList = mutableListOf<ChangelogSection>()
+                        var description: String? = null
+                        var imageUrl: String? = null
+                        try {
+                            val changelogUrl =
+                                URL("https://github.com/bharadwajsanket/juno/releases/download/$tagWithPrefix/changelog.json")
+                            val changelogConnection = changelogUrl.openConnection() as java.net.HttpURLConnection
+                            changelogConnection.connectTimeout = 8000
+                            changelogConnection.readTimeout = 8000
+                            val changelogJson = changelogConnection.inputStream.bufferedReader().use { it.readText() }
+                            val changelogData = JSONObject(changelogJson)
+
+                            description = changelogData.optString("description").takeIf { it.isNotEmpty() }
+                            imageUrl = changelogData.optString("image").takeIf { it.isNotEmpty() }
+
+                            val changelogArray = changelogData.getJSONArray("changelog")
+                            for (j in 0 until changelogArray.length()) {
+                                val sectionObj = changelogArray.getJSONObject(j)
+                                val title = sectionObj.getString("title")
+                                val itemsArray = sectionObj.getJSONArray("items")
+                                val itemsList = mutableListOf<String>()
+                                for (k in 0 until itemsArray.length()) {
+                                    itemsList.add(itemsArray.getString(k))
+                                }
+                                changelogList.add(ChangelogSection(title, itemsList))
+                            }
+                        } catch (e: Exception) {
+                            val body = targetRelease.optString("body", "")
+                            changelogList.addAll(parseReleaseBodyToChangelog(body, context))
+                        }
+
+                        val publishedAt = targetRelease.getString("published_at")
+                        val formattedReleaseDate = formatGitHubDate(publishedAt)
+                        val assets = targetRelease.getJSONArray("assets")
+
+                        val bestAsset = selectBestApk(assets, BuildConfig.FLAVOR_variant, BuildConfig.FLAVOR_abi)
+                        if (bestAsset != null) {
+                            val apkSizeInBytes = bestAsset.getLong("size")
+                            val apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
+                            val apkDownloadUrl = bestAsset.getString("browser_download_url")
+
+                            withContext(Dispatchers.Main) {
+                                onSuccess(displayTag, true, changelogList, apkSizeInMB, formattedReleaseDate, description, imageUrl, apkDownloadUrl, false)
+                            }
+                            return@withContext
+                        }
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        onSuccess(currentVersion, false, emptyList(), "", "", null, null, null, false)
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        onSuccess(currentVersion, false, emptyList(), "", "", null, null, null, false)
+                    }
                 }
             } else {
                 throw java.io.IOException("HTTP Error ${connection.responseCode}")
             }
         } catch (e: Exception) {
-            Log.e("UpdateCheck", "Error checking for updates: ${e.message}", e)
+            Timber.e(e, "Error checking for updates: ${e.message}")
             val cached = loadLatestReleaseFromCache(context)
             if (cached != null) {
                 try {
-                    val cachedRelease = JSONObject(cached.second)
-                    val targetTagName = cachedRelease.getString("tag_name")
-                    val currentVersion = BuildConfig.VERSION_NAME
-                    val shouldShow = isNewerVersion(targetTagName, currentVersion)
-                    if (shouldShow) {
-                        val tagWithPrefix = cachedRelease.getString("tag_name")
-                        val changelogList = mutableListOf<ChangelogSection>()
-                        val body = cachedRelease.optString("body", context.getString(R.string.no_changelog_available))
-                        val fallbackItems = body.split("\n").filter { it.isNotBlank() }
-                        changelogList.add(ChangelogSection(context.getString(R.string.changelog), fallbackItems))
-                        val publishedAt = cachedRelease.getString("published_at")
-                        val formattedReleaseDate = formatGitHubDate(publishedAt)
-                        val assets = cachedRelease.getJSONArray("assets")
-                        var apkSizeInMB = ""
-                        var apkDownloadUrl = ""
-                        for (j in 0 until assets.length()) {
-                            val asset = assets.getJSONObject(j)
-                            val assetName = asset.getString("name")
-                            if (assetName.endsWith(".apk", ignoreCase = true) && !assetName.lowercase().contains("debug")) {
-                                val apkSizeInBytes = asset.getLong("size")
-                                apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
-                                apkDownloadUrl = asset.getString("browser_download_url")
-                                break
-                            }
+                    val json = cached.second
+                    val targetRelease = if (json.trim().startsWith("[")) {
+                        val array = JSONArray(json)
+                        var found: JSONObject? = null
+                        for (i in 0 until array.length()) {
+                            val r = array.getJSONObject(i)
+                            val isDraft = r.optBoolean("draft", false)
+                            val isPrerelease = r.optBoolean("prerelease", false)
+                            if (isDraft) continue
+                            if (isPrerelease && !isBetaEnabled) continue
+                            found = r
+                            break
                         }
-                        if (apkDownloadUrl.isNotEmpty()) {
-                            withContext(Dispatchers.Main) {
-                                onSuccess(tagWithPrefix, true, changelogList, apkSizeInMB, formattedReleaseDate, null, null, apkDownloadUrl)
+                        found
+                    } else {
+                        JSONObject(json)
+                    }
+
+                    if (targetRelease != null) {
+                        val targetTagName = targetRelease.getString("tag_name")
+                        val currentVersion = BuildConfig.VERSION_NAME
+                        val shouldShow = isNewerVersion(targetTagName, currentVersion)
+                        if (shouldShow) {
+                            val tagWithPrefix = targetRelease.getString("tag_name")
+                            val body = targetRelease.optString("body", "")
+                            val changelogList = parseReleaseBodyToChangelog(body, context)
+
+                            val publishedAt = targetRelease.getString("published_at")
+                            val formattedReleaseDate = formatGitHubDate(publishedAt)
+                            val assets = targetRelease.getJSONArray("assets")
+                            val bestAsset = selectBestApk(assets, BuildConfig.FLAVOR_variant, BuildConfig.FLAVOR_abi)
+
+                            if (bestAsset != null) {
+                                val apkSizeInBytes = bestAsset.getLong("size")
+                                val apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
+                                val apkDownloadUrl = bestAsset.getString("browser_download_url")
+                                withContext(Dispatchers.Main) {
+                                    onSuccess(tagWithPrefix, true, changelogList, apkSizeInMB, formattedReleaseDate, null, null, apkDownloadUrl, true)
+                                }
+                                return@withContext
                             }
-                            return@withContext
                         }
                     }
                 } catch (parseEx: Exception) {
-                    Log.e("UpdateCheck", "Failed to parse fallback cache", parseEx)
+                    Timber.e(parseEx, "Failed to parse fallback cache")
                 }
             }
-            
+
             withContext(Dispatchers.Main) {
-                onSuccess(BuildConfig.VERSION_NAME, false, emptyList(), "", "", null, null, null)
+                onError()
             }
         }
     }
 }
+
 fun String.extractUrls(): List<Pair<IntRange, String>> {
     val urlPattern = Pattern.compile(
         "(?:^|[\\s])((https?://|www\\.|pic\\.)[\\w-]+(\\.[\\w-]+)+([/?].*)?)"
@@ -870,7 +1165,7 @@ fun String.extractUrls(): List<Pair<IntRange, String>> {
     while (matcher.find()) {
         val url = matcher.group(1)?.trim() ?: continue
         val range = IntRange(matcher.start(1), matcher.end(1) - 1)
-        
+
         val fullUrl = if (url.startsWith("http")) url else "https://$url"
         urlList.add(range to fullUrl)
     }
