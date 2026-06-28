@@ -176,7 +176,8 @@ fun AmbientSceneHost(
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
-            repo.stop()
+            // stop() is already called on ON_PAUSE — only remove the observer here
+            // to avoid a redundant double-stop on every composition teardown.
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
@@ -313,7 +314,10 @@ private fun AmbientSceneCard(
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                // 2. Celestial objects (Sun or Moon)
+                // 2. Celestial objects (Sun or Moon).
+                // Scene-specific scenes use static sets; SnowScene uses the live atmosphere
+                // because snow can fall at any hour — the celestial body must match the
+                // actual time of day rather than being unconditionally pinned to the sun.
                 when {
                     showsSun(activeScene) -> AmbientSun(
                         atmosphere = activeAtmosphere,
@@ -321,6 +325,16 @@ private fun AmbientSceneCard(
                         modifier = Modifier.fillMaxSize(),
                     )
                     showsMoon(activeScene) -> AmbientMoon(
+                        atmosphere = activeAtmosphere,
+                        colors = activeColors,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    activeScene == AmbientScene.SnowScene && activeAtmosphere.isSunVisible -> AmbientSun(
+                        atmosphere = activeAtmosphere,
+                        colors = activeColors,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    activeScene == AmbientScene.SnowScene && activeAtmosphere.isMoonVisible -> AmbientMoon(
                         atmosphere = activeAtmosphere,
                         colors = activeColors,
                         modifier = Modifier.fillMaxSize(),
@@ -344,10 +358,13 @@ private fun AmbientSceneCard(
                 )
 
                 // 5. Living Events (Rainbow, Birds, Shooting Stars, Fireflies)
+                // Pass the base atmosphere (not the wind-gusted copy) so that the
+                // minute-level seed and isCalm threshold remain stable across the
+                // continuous wind gust animation cycle.
                 AmbientLivingEvents(
-                    scene = activeScene,
+                    environment = environment,
                     colors = activeColors,
-                    atmosphere = activeAtmosphere,
+                    atmosphere = atmosphere,
                     modifier = Modifier.fillMaxSize(),
                 )
 
@@ -449,7 +466,8 @@ private fun showsSun(scene: AmbientScene): Boolean = scene in setOf(
     AmbientScene.SunsetBlaze,
     AmbientScene.CloudySunset,
     AmbientScene.RainySunset,
-    AmbientScene.SnowScene,
+    // Note: SnowScene is intentionally excluded — celestial body is driven by atmosphere
+    // (isSunVisible / isMoonVisible) so it correctly reflects day vs. night snowfall.
 )
 
 private fun showsMoon(scene: AmbientScene): Boolean = scene in setOf(

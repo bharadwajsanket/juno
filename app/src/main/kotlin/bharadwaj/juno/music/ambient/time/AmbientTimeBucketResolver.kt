@@ -33,21 +33,14 @@ object AmbientTimeBucketResolver {
         timezoneId: String,
         epochMs: Long = System.currentTimeMillis(),
     ): AmbientTimeData {
-        val timezone = try {
-            val systemTz = TimeZone.getTimeZone(timezoneId)
-            val systemOffsetHours = systemTz.getOffset(epochMs) / 3600000.0
-            val longOffsetHours = longitude / 15.0
-            if (Math.abs(systemOffsetHours - longOffsetHours) > 3.0) {
-                val offsetHours = Math.round(longOffsetHours).toInt().coerceIn(-12, 14)
-                val offsetMs = offsetHours * 3600 * 1000
-                java.util.SimpleTimeZone(offsetMs, "GMT${if (offsetHours >= 0) "+" else ""}$offsetHours")
-            } else {
-                systemTz
-            }
-        } catch (e: Exception) {
-            val offsetHours = Math.round(longitude / 15.0).toInt().coerceIn(-12, 14)
-            val offsetMs = offsetHours * 3600 * 1000
-            java.util.SimpleTimeZone(offsetMs, "GMT${if (offsetHours >= 0) "+" else ""}$offsetHours")
+        // Always trust the IANA timezone provided by the device — it is authoritative.
+        // TimeZone.getTimeZone() returns "GMT" for unrecognised IDs; in that case fall
+        // back to the device's current default timezone rather than a longitude estimate.
+        val timezone = if (timezoneId.isNotBlank()) {
+            val tz = TimeZone.getTimeZone(timezoneId)
+            if (tz.id == "GMT" && timezoneId != "GMT" && timezoneId != "UTC") TimeZone.getDefault() else tz
+        } else {
+            TimeZone.getDefault()
         }
 
         val solar = SunriseSunsetCalculator.calculate(latitude, longitude, timezone, epochMs)

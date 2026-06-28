@@ -6,23 +6,33 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import bharadwaj.juno.music.ambient.model.AmbientAtmosphere
 import bharadwaj.juno.music.ambient.model.AmbientEnvironment
-import bharadwaj.juno.music.ambient.model.AmbientEnvironmentResolver
-import bharadwaj.juno.music.ambient.model.AmbientScene
+import bharadwaj.juno.music.ambient.model.AmbientWeather
 import bharadwaj.juno.music.ambient.ui.AmbientSceneColors
 
 /**
  * Orchestrates deterministic, probability-driven atmospheric events (Birds, Rainbow, Shooting Stars, Fireflies).
- * Events are triggered deterministically based on location coordinates, weather parameters, and time buckets.
+ * Events are triggered deterministically based on weather parameters and time buckets.
+ *
+ * @param environment  Pre-resolved environment for the current scene (passed from [AmbientSceneCard]
+ *                     to avoid duplicate [AmbientEnvironmentResolver.resolve] calls).
+ * @param atmosphere   Base atmosphere snapshot (NOT the wind-gusted copy) so that the minute-level
+ *                     seed remains stable across the continuous wind gust animation cycle.
  */
 @Composable
 fun AmbientLivingEvents(
-    scene: AmbientScene,
+    environment: AmbientEnvironment,
     colors: AmbientSceneColors,
     atmosphere: AmbientAtmosphere,
     modifier: Modifier = Modifier,
 ) {
-    // Generate a minute-level tick seed
-    val minuteSeed = remember(atmosphere) {
+    // Minute-level seed: keyed on stable weather/time properties only — NOT on windSpeedKmh,
+    // which oscillates every animation frame and would cause the seed (and all probability
+    // checks) to re-evaluate on every frame.
+    val minuteSeed = remember(
+        atmosphere.condition,
+        atmosphere.isSunVisible,
+        atmosphere.isMoonVisible,
+    ) {
         System.currentTimeMillis() / 60_000L
     }
 
@@ -41,16 +51,20 @@ fun AmbientLivingEvents(
     // 2. Shooting Stars (Night only, clear sky, 8% probability)
     val showShootingStar = isMoon && clearSky && rand.nextFloat() < 0.08f
 
-    // 3. Fireflies (Night, calm wind < 15km/h, Forest or Meadow environments only, 40% probability)
-    val env = remember(scene) {
-        AmbientEnvironmentResolver.resolve(scene)
-    }
-    val isForestOrMeadow = env == AmbientEnvironment.Forest || env == AmbientEnvironment.Meadow
+    // 3. Fireflies (Night, calm wind < 15 km/h, Forest or Meadow environments only, 40% probability)
+    val isForestOrMeadow = environment == AmbientEnvironment.Forest || environment == AmbientEnvironment.Meadow
     val isCalm = atmosphere.windSpeedKmh < 15f
     val showFireflies = isMoon && isCalm && isForestOrMeadow && rand.nextFloat() < 0.40f
 
-    // 4. Rainbow (Daytime, low cloud cover < 0.45, high humidity indicator [represented by rainIntensity == 0 but snowIntensity == 0 during clear morning/noon], 15% probability)
-    val showRainbow = isSun && atmosphere.cloudDensity in 0.05f..0.45f && rand.nextFloat() < 0.15f
+    // 4. Rainbow: requires daytime AND actual precipitation (rain or drizzle).
+    //    A rainbow physically requires sunlight + water droplets — it cannot appear
+    //    on a dry clear-sky day regardless of cloud density.
+    val hasPrecipitation = atmosphere.rainIntensity > 0.05f ||
+        atmosphere.condition == AmbientWeather.Condition.Rain ||
+        atmosphere.condition == AmbientWeather.Condition.Drizzle ||
+        atmosphere.condition == AmbientWeather.Condition.HeavyRain
+    val showRainbow = isSun && hasPrecipitation && atmosphere.cloudDensity in 0.05f..0.65f &&
+        rand.nextFloat() < 0.15f
 
     Box(modifier = modifier) {
         if (showRainbow) {

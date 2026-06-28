@@ -3,6 +3,7 @@
 package bharadwaj.juno.music.constants
 
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -758,3 +759,10 @@ val AmbientDebugForcedSceneKey = stringPreferencesKey("ambient_debug_forced_scen
 
 /** Master toggle for the Ambient Home feature. Defaults to true. */
 val AmbientEnabledKey = booleanPreferencesKey("ambient_enabled")
+
+/** Latitude of the location used for the last successful weather fetch. */
+val AmbientCachedWeatherLatKey = doublePreferencesKey("ambient_cached_weather_lat")
+
+/** Longitude of the location used for the last successful weather fetch. */
+val AmbientCachedWeatherLonKey = doublePreferencesKey("ambient_cached_weather_lon")
+

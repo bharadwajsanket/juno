@@ -13,7 +13,7 @@
   <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin"></a>
   <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Compose-1.7.5-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/bharadwajsanket/juno?style=for-the-badge&color=28a745" alt="License"></a>
-  <a href="https://github.com/bharadwajsanket/juno/releases"><img src="https://img.shields.io/badge/Release-v4.0.0-blue?style=for-the-badge" alt="Release"></a>
+  <a href="https://github.com/bharadwajsanket/juno/releases"><img src="https://img.shields.io/badge/Release-v4.1.0-blue?style=for-the-badge" alt="Release"></a>
 </p>
 
 <br>
@@ -32,9 +32,18 @@ JUNO is an Android music player built with Jetpack Compose, designed around one 
 
 It plays your local library, streams when you want it to, downloads for offline use, and shows you synchronized lyrics — all wrapped in an interface that stays out of the way. Where most players compete for your attention with notifications, recommendations, and clutter, JUNO is built to recede into the background and let the music (and the moment around it) take over.
 
-The headline feature of v4.0.0 is **Living Sky & Living Environment** — a procedural rendering engine that mirrors the real sky and weather outside your window, turning the now-playing screen into something closer to a window than a control panel.
+The headline feature of the v4.0 series is **Living Sky & Living Environment** — a procedural rendering engine that mirrors the real sky and weather outside your window, turning the now-playing screen into something closer to a window than a control panel.
 
-> **Current status:** v4.0.0 — Stable, feature-complete.
+> **Current status:** v4.1.0 — Stable, feature-complete.
+
+### What's New in v4.1.0
+
+- **Living Sky Accuracy:** Resolved issues with rendering and celestial alignment, ensuring stars, sun, moon, clouds, precipitation, and greetings are strictly derived from the same unified state without contradictions.
+- **Weather Reliability:** Fixed Open-Meteo integration and weather caching. Cached data is now location-aware and automatically invalidated if the user travels more than 50 km.
+- **Greeting & Time Handling:** Fixed time bucket resolution for IST (+5:30) and other timezone boundary areas. Corrected greetings at 4–5 AM to always show morning/dawn greetings rather than "Good Afternoon".
+- **Performance Optimizations:** Removed redundant frame-level recomputations in animations (such as grass/cloud seed churn) and lifecycle teardowns.
+- **Premium Launcher Icon:** Refined the launcher icon geometry into adaptive, monochrome-supporting SVG vectors with optical vertical balance.
+- **Stability & Cleanup:** Fixed concurrent refresh job race conditions, inverted offline logs, and completed repository cleanup.
 
 <br>
 
@@ -149,7 +158,7 @@ State flows down, events flow up — each layer depends only on the one beneath 
 ## Installation
 
 1. Visit the [Releases](https://github.com/bharadwajsanket/juno/releases) page.
-2. Download the latest `JUNO-4.0.0-Universal.apk` (or the GMS variant).
+2. Download the latest `JUNO-4.1.0-Universal.apk` (or the GMS variant).
 3. Install on your device, enabling installation from unknown sources if prompted.
 
 <br>

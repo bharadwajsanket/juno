@@ -40,10 +40,7 @@ fun AmbientShootingStars(
 
     var progress by remember(seed) { mutableStateOf(0f) }
 
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-
     LaunchedEffect(seed) {
-        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
         progress = 0f
         val anim = androidx.compose.animation.core.Animatable(0f)
         anim.animateTo(

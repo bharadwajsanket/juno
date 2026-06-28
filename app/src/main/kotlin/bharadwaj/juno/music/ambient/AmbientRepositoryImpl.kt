@@ -64,6 +64,7 @@ class AmbientRepositoryImpl @Inject constructor(
     private var debugForcedScene: AmbientScene? = null
 
     /** Job holding the active location subscription; replaced on [refresh]. */
+    @Volatile
     private var locationJob: Job? = null
 
     init {
@@ -96,8 +97,10 @@ class AmbientRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refresh() {
-        Timber.tag(TAG).d("refresh() called")
-        locationJob?.cancel()
+        val previous = locationJob
+        if (previous != null && previous.isActive) {
+            previous.cancel()
+        }
         start()
     }
 
@@ -183,9 +186,9 @@ class AmbientRepositoryImpl @Inject constructor(
         val isOnline = networkObserver.isCurrentlyConnected()
 
         val weather: AmbientWeather = when {
-            isOnline && !weatherCache.isFresh() -> {
+            isOnline && !weatherCache.isFresh(location.latitude, location.longitude) -> {
                 weatherProvider.fetchWeather(location.latitude, location.longitude)
-                    .onSuccess { weatherCache.write(it) }
+                    .onSuccess { weatherCache.write(it, location.latitude, location.longitude) }
                     .getOrElse {
                         Timber.tag(TAG).w(it, "Live weather fetch failed, falling back to cache")
                         weatherCache.read() ?: buildDefaultWeather()
@@ -194,7 +197,7 @@ class AmbientRepositoryImpl @Inject constructor(
             else -> {
                 weatherCache.read() ?: if (isOnline) {
                     weatherProvider.fetchWeather(location.latitude, location.longitude)
-                        .onSuccess { weatherCache.write(it) }
+                        .onSuccess { weatherCache.write(it, location.latitude, location.longitude) }
                         .getOrElse { buildDefaultWeather() }
                 } else {
                     buildDefaultWeather()
@@ -239,7 +242,7 @@ class AmbientRepositoryImpl @Inject constructor(
 
         Timber.tag(TAG).d(
             "Scene resolved: $resolvedScene (bucket=${timeData.bucket}, " +
-                "condition=${weather.condition}, offline=$isOnline)",
+                "condition=${weather.condition}, offline=${!isOnline})",
         )
     }
 
