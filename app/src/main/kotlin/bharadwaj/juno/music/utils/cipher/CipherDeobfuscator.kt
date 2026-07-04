@@ -21,14 +21,15 @@ object CipherDeobfuscator {
 
     suspend fun deobfuscateStreamUrl(signatureCipher: String, videoId: String): String? {
         return try {
-            deobfuscateInternal(signatureCipher, videoId, isRetry = false)
+            val res = deobfuscateInternal(signatureCipher, videoId, isRetry = false)
+            res
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Cipher deobfuscation failed, retrying with fresh JS: ${e.message}")
-            
             try {
                 PlayerJsFetcher.invalidateCache()
                 closeWebView()
-                deobfuscateInternal(signatureCipher, videoId, isRetry = true)
+                val res = deobfuscateInternal(signatureCipher, videoId, isRetry = true)
+                res
             } catch (retryE: Exception) {
                 Timber.tag(TAG).e(retryE, "Cipher deobfuscation retry also failed: ${retryE.message}")
                 null
@@ -67,7 +68,8 @@ object CipherDeobfuscator {
     
     suspend fun transformNParamInUrl(url: String): String {
         return try {
-            transformNInternal(url)
+            val res = transformNInternal(url)
+            res
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "N-transform failed, returning original URL: ${e.message}")
             url

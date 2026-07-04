@@ -69,23 +69,5 @@ fun AmbientGreetingLayer(
             overflow = TextOverflow.Clip,
             modifier = Modifier.fillMaxWidth(0.62f),
         )
-
-        Spacer(modifier = Modifier.height(5.dp))
-
-        // Subtitle — one or two lines of supporting context
-        Text(
-            text = greeting.subtitle,
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.05.sp,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                shadow = shadow,
-            ),
-            color = colors.textSecondary,
-            maxLines = 2,
-            overflow = TextOverflow.Clip,
-            modifier = Modifier.fillMaxWidth(0.58f),
-        )
     }
 }

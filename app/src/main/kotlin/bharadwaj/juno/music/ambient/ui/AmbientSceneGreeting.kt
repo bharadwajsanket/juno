@@ -18,7 +18,15 @@ object AmbientSceneGreeting {
 
     fun resolve(scene: AmbientScene, displayName: String): AmbientGreeting {
         val season = currentSeason()
-        val (greeting, subtitles) = resolveGreetingAndSubtitles(scene, displayName, season)
+        val localTime = java.time.LocalTime.now()
+        val greetingPrefix = when (localTime.hour) {
+            in 5..11 -> "Good Morning"
+            in 12..16 -> "Good Afternoon"
+            in 17..20 -> "Good Evening"
+            else -> "Good Night"
+        }
+        val greeting = "$greetingPrefix, $displayName"
+        val (_, subtitles) = resolveGreetingAndSubtitles(scene, displayName, season)
         
         // Rotate hourly based on epoch time to ensure consistency but fresh variety
         val hourIndex = (System.currentTimeMillis() / 3_600_000L % subtitles.size).toInt()

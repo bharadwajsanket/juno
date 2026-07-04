@@ -38,6 +38,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -111,6 +113,9 @@ import androidx.media3.common.Timeline
 import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
 import androidx.navigation.NavController
 import bharadwaj.juno.music.LocalPlayerConnection
+import bharadwaj.juno.music.ui.theme.JUNOSpacing
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
 import bharadwaj.juno.music.R
 import bharadwaj.juno.music.constants.ListItemHeight
 import bharadwaj.juno.music.constants.PlayerBackgroundStyle
@@ -311,12 +316,17 @@ fun Queue(
             Box(Modifier.fillMaxSize().background(Color.Unspecified))
         },
         collapsedContent = {
+            val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.xs),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 30.dp, vertical = 12.dp)
+                        .then(if (isLandscape) Modifier.widthIn(max = 600.dp) else Modifier.fillMaxWidth())
+                        .padding(horizontal = JUNOSpacing.lg, vertical = JUNOSpacing.md)
                         .windowInsetsPadding(
                             WindowInsets.systemBars.only(
                                 WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal
@@ -470,6 +480,7 @@ fun Queue(
                         )
                     }
                 }
+            }
             if (showAudioDeviceBottomSheet) {
                 AudioDeviceBottomSheet(onDismiss = { showAudioDeviceBottomSheet = false })
             }
@@ -622,7 +633,15 @@ fun Queue(
             Modifier
                 .fillMaxSize()
                 .background(background),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .then(if (isLandscape) Modifier.widthIn(max = 600.dp) else Modifier.fillMaxWidth()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
             Column(
                 modifier =
                 Modifier
@@ -639,7 +658,7 @@ fun Queue(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .padding(horizontal = JUNOSpacing.sm, vertical = JUNOSpacing.xs)
                 ) {
                     AsyncImage(
                         model = mediaMetadata?.thumbnailUrl,
@@ -741,7 +760,7 @@ fun Queue(
 
                 FlowRow(
                     modifier = Modifier
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .padding(horizontal = JUNOSpacing.sm, vertical = JUNOSpacing.xs)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
                 ) {
@@ -856,7 +875,7 @@ fun Queue(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(horizontal = JUNOSpacing.md, vertical = JUNOSpacing.xs)
                 ) {
                     Column(
                         modifier = Modifier.weight(1f),
@@ -970,8 +989,8 @@ fun Queue(
                             .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
                             .add(
                                 WindowInsets(
-                                    top = 8.dp,
-                                    bottom = ListItemHeight + 8.dp,
+                                    top = JUNOSpacing.xs,
+                                    bottom = ListItemHeight + JUNOSpacing.xs,
                                 ),
                             ).asPaddingValues(),
                     modifier = Modifier
@@ -1262,6 +1281,7 @@ fun Queue(
                         )
                         .align(Alignment.BottomCenter),
                 )
+            }
             }
         }
     }

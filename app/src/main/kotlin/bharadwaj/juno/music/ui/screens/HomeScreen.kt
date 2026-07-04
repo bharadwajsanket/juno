@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -86,6 +87,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -121,7 +124,9 @@ import bharadwaj.juno.music.constants.RandomizeHomeOrderKey
 import bharadwaj.juno.music.constants.ShowSpeedDialKey
 import bharadwaj.juno.music.constants.SmallGridThumbnailHeight
 import bharadwaj.juno.music.constants.ThumbnailCornerRadius
+import androidx.compose.ui.unit.Dp
 import bharadwaj.juno.music.ui.theme.JUNOCorners
+import bharadwaj.juno.music.ui.theme.JUNOSpacing
 import bharadwaj.juno.music.db.entities.Album
 import bharadwaj.juno.music.db.entities.Artist
 import bharadwaj.juno.music.db.entities.LocalItem
@@ -938,10 +943,212 @@ fun HomeScreen(
             )
         }
     ) {
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopStart
+        /**
+         * Renders the Speed Dial grid inside a HorizontalPager.
+         * Computes columns dynamically based on target card width (104.dp) and standard cell spacing.
+         *
+         * @param items The speed dial items to display.
+         * @param availableWidth The total horizontal width constraints.
+         * @param pagerPadding The horizontal padding for the pager pages, aligning baseline grids in compact/wide modes.
+         */
+        @Composable
+        fun SpeedDialSection(
+            items: List<YTItem>,
+            availableWidth: Dp,
+            pagerPadding: Dp = JUNOSpacing.md,
+            modifier: Modifier = Modifier
         ) {
+            val spacing = JUNOSpacing.sm
+            val gridAvailableWidth = availableWidth - pagerPadding * 2
+            val targetCardSize = 104.dp
+            val computedColumns = ((gridAvailableWidth + spacing).value / (targetCardSize + spacing).value).toInt()
+            val columns = computedColumns.coerceIn(3, 8)
+            val rows = if (columns >= 6) 1 else if (columns >= 4) 2 else 3
+            val itemsPerPage = columns * rows
+
+            val minRequiredWidth = targetCardSize * columns + spacing * (columns - 1)
+            val cardSize = if (gridAvailableWidth < minRequiredWidth) {
+                (gridAvailableWidth - spacing * (columns - 1)) / columns
+            } else {
+                targetCardSize
+            }
+
+            val pagerState = rememberPagerState(pageCount = { (items.size + itemsPerPage - 1) / itemsPerPage })
+
+            Column(
+                modifier = modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    contentPadding = PaddingValues(horizontal = pagerPadding),
+                    pageSpacing = JUNOSpacing.md,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(cardSize * rows + spacing * (rows - 1) + JUNOSpacing.md),
+                ) { page ->
+                    val pageStartIndex = page * itemsPerPage
+                    val pageItems = items.drop(pageStartIndex).take(itemsPerPage)
+
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterVertically)
+                    ) {
+                        for (row in 0 until rows) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterHorizontally)
+                            ) {
+                                for (col in 0 until columns) {
+                                    val itemIndex = row * columns + col
+                                    val isRandomizeSlot = (page == 0 && itemIndex == itemsPerPage - 1)
+
+                                    if (isRandomizeSlot) {
+                                        Box(
+                                            modifier = Modifier.size(cardSize)
+                                        ) {
+                                            RandomizeGridItem(
+                                                isLoading = isRandomizing,
+                                                onClick = {
+                                                    if (isRandomizing) {
+                                                        randomizeJob?.cancel()
+                                                    } else {
+                                                        randomizeJob = scope.launch {
+                                                            val randomItem = viewModel.getRandomItem()
+                                                            if (randomItem != null) {
+                                                                when (randomItem) {
+                                                                    is SongItem -> playerConnection.playQueue(
+                                                                        YouTubeQueue(
+                                                                            randomItem.endpoint ?: WatchEndpoint(videoId = randomItem.id),
+                                                                            randomItem.toMediaMetadata()
+                                                                        )
+                                                                    )
+                                                                    is AlbumItem -> navController.navigate("album/${randomItem.id}")
+                                                                    is ArtistItem -> navController.navigate("artist/${randomItem.id}")
+                                                                    is PlaylistItem -> navController.navigate("online_playlist/${randomItem.id}")
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    } else if (itemIndex < pageItems.size) {
+                                        val item = pageItems[itemIndex]
+                                        val isPinned by remember(item.id) { database.speedDialDao.isPinned(item.id) }.collectAsState(initial = false)
+
+                                        Box(
+                                            modifier = Modifier.size(cardSize)
+                                        ) {
+                                            SpeedDialGridItem(
+                                                item = item,
+                                                isPinned = isPinned,
+                                                isActive = item.id in listOf(mediaMetadata?.album?.id, mediaMetadata?.id),
+                                                isPlaying = isPlaying,
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .bounceClick(
+                                                        onClick = {
+                                                            when (item) {
+                                                                is SongItem -> playerConnection.playQueue(
+                                                                    YouTubeQueue(
+                                                                        item.endpoint ?: WatchEndpoint(videoId = item.id),
+                                                                        item.toMediaMetadata()
+                                                                    )
+                                                                )
+                                                                is AlbumItem -> navController.navigate("album/${item.id}")
+                                                                is ArtistItem -> navController.navigate("artist/${item.id}")
+                                                                is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
+                                                            }
+                                                        },
+                                                        onLongClick = {
+                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                            menuState.show {
+                                                                when (item) {
+                                                                    is SongItem -> YouTubeSongMenu(
+                                                                        song = item,
+                                                                        navController = navController,
+                                                                        onDismiss = menuState::dismiss
+                                                                    )
+                                                                    is AlbumItem -> YouTubeAlbumMenu(
+                                                                        albumItem = item,
+                                                                        navController = navController,
+                                                                        onDismiss = menuState::dismiss
+                                                                    )
+                                                                    is ArtistItem -> YouTubeArtistMenu(
+                                                                        artist = item,
+                                                                        onDismiss = menuState::dismiss
+                                                                    )
+                                                                    is PlaylistItem -> YouTubePlaylistMenu(
+                                                                        playlist = item,
+                                                                        coroutineScope = scope,
+                                                                        onDismiss = menuState::dismiss
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    )
+                                            )
+                                        }
+                                    } else {
+                                        Box(modifier = Modifier.size(cardSize))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (pagerState.pageCount > 1) {
+                    Spacer(modifier = Modifier.height(JUNOSpacing.xs))
+                    Row(
+                        modifier = Modifier
+                            .height(24.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        repeat(pagerState.pageCount) { iteration ->
+                            val isSelected = pagerState.currentPage == iteration
+                            val width by animateDpAsState(
+                                targetValue = if (isSelected) 16.dp else 6.dp,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow
+                                ),
+                                label = "indicatorWidth"
+                            )
+                            val color by animateColorAsState(
+                                targetValue = if (isSelected)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                label = "indicatorColor"
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = JUNOSpacing.xxs)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(color)
+                                    .size(width = width, height = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        @Composable
+        fun HomeLazyColumn(
+            modifier: Modifier = Modifier,
+            showGreeting: Boolean,
+            filterSections: (HomeSection) -> Boolean,
+            speedDialAvailableWidth: Dp
+        ) {
+            BoxWithConstraints(
+                modifier = modifier,
+                contentAlignment = Alignment.TopStart
+            ) {
             val horizontalLazyGridItemWidthFactor = if (maxWidth * 0.475f >= 320.dp) 0.475f else 0.9f
             val horizontalLazyGridItemWidth = maxWidth * horizontalLazyGridItemWidthFactor
             val quickPicksSnapLayoutInfoProvider = remember(quickPicksLazyGridState) {
@@ -964,17 +1171,19 @@ fun HomeScreen(
             LazyColumn(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(JUNOSpacing.xs)
             ) {
-                item(key = "greeting_header") {
-                    AmbientSceneHost(
-                        displayName = displayName,
-                        modifier = Modifier.padding(start = 20.dp, top = 32.dp, end = 20.dp, bottom = 12.dp),
-                    )
+                if (showGreeting) {
+                    item(key = "greeting_header") {
+                        AmbientSceneHost(
+                            displayName = displayName,
+                            modifier = Modifier.padding(start = JUNOSpacing.md, top = JUNOSpacing.xl, end = JUNOSpacing.md, bottom = JUNOSpacing.xs),
+                        )
+                    }
                 }
 
 
-                homeSections.forEach { section ->
+                homeSections.filter(filterSections).forEach { section ->
                     when (section) {
 
                         // ── v3.5.0 NEW: Continue Listening (hero section) ──────────────────
@@ -988,8 +1197,8 @@ fun HomeScreen(
                                 }
                                 item(key = "continue_listening_list") {
                                     LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
+                                        horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                         modifier = Modifier.animateItem()
                                     ) {
                                         items(items, key = { it.id }) { item ->
@@ -1141,8 +1350,8 @@ fun HomeScreen(
                                 }
                                 item(key = "recently_played_list") {
                                     LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
+                                        horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                         modifier = Modifier.animateItem()
                                     ) {
                                         items(songs, key = { it.id }) { song ->
@@ -1194,8 +1403,8 @@ fun HomeScreen(
                                 }
                                 item(key = "favorites_list") {
                                     LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
+                                        horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                         modifier = Modifier.animateItem()
                                     ) {
                                         items(songs, key = { it.id }) { song ->
@@ -1237,183 +1446,11 @@ fun HomeScreen(
                                 }
 
                                 item(key = "speed_dial_list") {
-                                    val targetItemSize = 160.dp
-                                    val availableWidth = maxWidth - 32.dp
-                                    val columns = (availableWidth / targetItemSize).toInt().coerceAtLeast(3)
-                                    val rows = if (columns >= 6) 1 else if (columns >= 4) 2 else 3
-                                    val itemsPerPage = columns * rows
-                                    val itemWidth = availableWidth / columns
-
-                                    val pagerState = rememberPagerState(pageCount = { (items.size + itemsPerPage - 1) / itemsPerPage })
-
-                                    Column(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .animateItem(),
-                                    ) {
-                                        HorizontalPager(
-                                            state = pagerState,
-                                            contentPadding = PaddingValues(horizontal = 16.dp),
-                                            pageSpacing = 16.dp,
-                                            modifier =
-                                                Modifier
-                                                    .fillMaxWidth()
-                                                    .height(itemWidth * rows),
-                                        ) { page ->
-                                            val pageStartIndex = page * itemsPerPage
-                                            val pageItems = items.drop(pageStartIndex).take(itemsPerPage)
-
-                                            Column(modifier = Modifier.fillMaxSize()) {
-                                                for (row in 0 until rows) {
-                                                    Row(modifier = Modifier.fillMaxWidth()) {
-                                                        for (col in 0 until columns) {
-                                                            val itemIndex = row * columns + col
-
-                                                            val isRandomizeSlot = (page == 0 && itemIndex == itemsPerPage - 1)
-
-                                                            if (isRandomizeSlot) {
-                                                                Box(
-                                                                    modifier = Modifier
-                                                                        .width(itemWidth)
-                                                                        .height(itemWidth)
-                                                                        .padding(6.dp)
-                                                                ) {
-                                                                    RandomizeGridItem(
-                                                                        isLoading = isRandomizing,
-                                                                        onClick = {
-                                                                            if (isRandomizing) {
-                                                                                randomizeJob?.cancel()
-                                                                            } else {
-                                                                                randomizeJob = scope.launch {
-                                                                                    val randomItem = viewModel.getRandomItem()
-                                                                                    if (randomItem != null) {
-                                                                                        when (randomItem) {
-                                                                                            is SongItem -> playerConnection.playQueue(
-                                                                                                YouTubeQueue(
-                                                                                                    randomItem.endpoint ?: WatchEndpoint(videoId = randomItem.id),
-                                                                                                    randomItem.toMediaMetadata()
-                                                                                                )
-                                                                                            )
-                                                                                            is AlbumItem -> navController.navigate("album/${randomItem.id}")
-                                                                                            is ArtistItem -> navController.navigate("artist/${randomItem.id}")
-                                                                                            is PlaylistItem -> navController.navigate("online_playlist/${randomItem.id}") 
-                                                                                        }
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    )
-                                                                }
-                                                            } else if (itemIndex < pageItems.size) {
-                                                                val item = pageItems[itemIndex]
-                                                                val isPinned by remember(item.id) { database.speedDialDao.isPinned(item.id) }.collectAsState(initial = false)
-
-                                                                Box(
-                                                                    modifier = Modifier
-                                                                        .width(itemWidth)
-                                                                        .height(itemWidth)
-                                                                        .padding(6.dp)
-                                                                ) {
-                                                                    SpeedDialGridItem(
-                                                                        item = item,
-                                                                        isPinned = isPinned,
-                                                                        isActive = item.id in listOf(mediaMetadata?.album?.id, mediaMetadata?.id),
-                                                                        isPlaying = isPlaying,
-                                                                        modifier = Modifier
-                                                                            .fillMaxSize()
-                                                                            .bounceClick(
-                                                                                onClick = {
-                                                                                    when (item) {
-                                                                                        is SongItem -> playerConnection.playQueue(
-                                                                                            YouTubeQueue(
-                                                                                                item.endpoint ?: WatchEndpoint(videoId = item.id),
-                                                                                                item.toMediaMetadata()
-                                                                                            )
-                                                                                        )
-                                                                                        is AlbumItem -> navController.navigate("album/${item.id}")
-                                                                                        is ArtistItem -> navController.navigate("artist/${item.id}")
-
-                                                                                        is PlaylistItem -> navController.navigate("online_playlist/${item.id}") 
-                                                                                    }
-                                                                                },
-                                                                                onLongClick = {
-                                                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                                                    menuState.show {
-                                                                                        when (item) {
-                                                                                            is SongItem -> YouTubeSongMenu(
-                                                                                                song = item,
-                                                                                                navController = navController,
-                                                                                                onDismiss = menuState::dismiss
-                                                                                            )
-                                                                                            is AlbumItem -> YouTubeAlbumMenu(
-                                                                                                albumItem = item,
-                                                                                                navController = navController,
-                                                                                                onDismiss = menuState::dismiss
-                                                                                            )
-                                                                                            is ArtistItem -> YouTubeArtistMenu(
-                                                                                                artist = item,
-                                                                                                onDismiss = menuState::dismiss
-                                                                                            )
-                                                                                            is PlaylistItem -> YouTubePlaylistMenu(
-                                                                                                playlist = item,
-                                                                                                coroutineScope = scope,
-                                                                                                onDismiss = menuState::dismiss
-                                                                                            )
-                                                                                        }
-                                                                                    }
-                                                                                }
-                                                                            )
-                                                                    )
-                                                                }
-                                                            } else {
-                                                                Spacer(modifier = Modifier.width(itemWidth))
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        if (pagerState.pageCount > 1) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .height(24.dp)
-                                                    .fillMaxWidth(),
-                                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                repeat(pagerState.pageCount) { iteration ->
-                                                    val isSelected = pagerState.currentPage == iteration
-                                                    val width by animateDpAsState(
-                                                        targetValue = if (isSelected) 16.dp else 6.dp,
-                                                        animationSpec = spring(
-                                                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                            stiffness = Spring.StiffnessLow
-                                                        ),
-                                                        label = "indicatorWidth"
-                                                    )
-                                                    val color by animateColorAsState(
-                                                        targetValue = if (isSelected)
-                                                            MaterialTheme.colorScheme.primary
-                                                        else
-                                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                                                        label = "indicatorColor"
-                                                    )
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .padding(horizontal = 4.dp)
-                                                            .clip(RoundedCornerShape(3.dp))
-                                                            .background(color)
-                                                            .size(width = width, height = 6.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
+                                    SpeedDialSection(items = items, availableWidth = speedDialAvailableWidth, modifier = Modifier.animateItem())
                                 }
                             }
                         }
+
                         HomeSection.QuickPicks -> {
                             quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->
                                 item(key = "quick_picks_title") {
@@ -1433,8 +1470,8 @@ fun HomeScreen(
                                 item(key = "quick_picks_list") {
                                     val distinctQuickPicks = picks.distinctBy { it.id }
                                     LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
+                                        horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                         modifier = Modifier.animateItem()
                                     ) {
                                         items(distinctQuickPicks, key = { it.id }) { originalSong ->
@@ -1478,7 +1515,7 @@ fun HomeScreen(
 
                                 item(key = "community_playlists_content") {
                                     LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
                                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                                         modifier = Modifier.animateItem()
                                     ) {
@@ -1527,7 +1564,7 @@ fun HomeScreen(
                                 }
                                 item(key = "daily_discover_content") {
                                     LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                         contentPadding = PaddingValues(horizontal = 16.dp)
                                     ) {
                                         items(discoverList) { item ->
@@ -1566,8 +1603,8 @@ fun HomeScreen(
                                     LazyHorizontalGrid(
                                         state = rememberLazyGridState(),
                                         rows = GridCells.Fixed(rows),
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
+                                        horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                         verticalArrangement = Arrangement.spacedBy(8.dp),
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1624,8 +1661,8 @@ fun HomeScreen(
 
                                 item(key = "account_playlists_list") {
                                     LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
+                                        horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                         modifier = Modifier.animateItem()
                                     ) {
                                         items(
@@ -1662,8 +1699,8 @@ fun HomeScreen(
                                     LazyHorizontalGrid(
                                         state = forgottenFavoritesLazyGridState,
                                         rows = GridCells.Fixed(rows),
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
+                                        horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                         verticalArrangement = Arrangement.spacedBy(8.dp),
                                         flingBehavior = rememberSnapFlingBehavior(
                                             forgottenFavoritesSnapLayoutInfoProvider
@@ -1772,8 +1809,8 @@ fun HomeScreen(
 
                                 item(key = "similar_to_list_${section.index}") {
                                     LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
+                                        horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                         modifier = Modifier.animateItem()
                                     ) {
                                         items(recommendation.items, key = { it.id }) { item ->
@@ -1844,8 +1881,8 @@ fun HomeScreen(
                                         LazyHorizontalGrid(
                                             state = rememberLazyGridState(),
                                             rows = GridCells.Fixed(4),
-                                            contentPadding = PaddingValues(horizontal = 16.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
+                                            horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                             verticalArrangement = Arrangement.spacedBy(8.dp),
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -1911,8 +1948,8 @@ fun HomeScreen(
                                     
                                     item(key = "home_section_list_${section.index}") {
                                         LazyRow(
-                                            contentPadding = PaddingValues(horizontal = 16.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
+                                            horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                             modifier = Modifier.animateItem()
                                         ) {
                                             items(sectionData.items, key = { it.id }) { item ->
@@ -1974,8 +2011,8 @@ fun HomeScreen(
                                         .width(250.dp),
                                 )
                                 LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    contentPadding = PaddingValues(horizontal = JUNOSpacing.md),
+                                    horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                 ) {
                                     items(4) {
                                         GridItemPlaceHolder()
@@ -2010,8 +2047,62 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(36.dp))
                 }
             }
-
         }
+    }
+
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopStart
+    ) {
+        if (maxWidth < 600.dp) {
+            HomeLazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                showGreeting = true,
+                filterSections = { true },
+                speedDialAvailableWidth = maxWidth - JUNOSpacing.xl
+            )
+        } else {
+            Row(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .width(360.dp)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(
+                            start = JUNOSpacing.md,
+                            end = JUNOSpacing.sm,
+                            top = LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateTopPadding(),
+                            bottom = LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateBottomPadding()
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(JUNOSpacing.md)
+                ) {
+                    AmbientSceneHost(
+                        displayName = displayName,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (showSpeedDial && speedDialItems.isNotEmpty()) {
+                        NavigationTitle(
+                            title = stringResource(R.string.speed_dial),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = JUNOSpacing.xxs)
+                        )
+                        SpeedDialSection(items = speedDialItems, availableWidth = 360.dp - (JUNOSpacing.md + JUNOSpacing.sm), pagerPadding = 0.dp)
+                    }
+                }
+
+                HomeLazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    showGreeting = false,
+                    filterSections = { it != HomeSection.SpeedDial },
+                    speedDialAvailableWidth = 0.dp
+                )
+            }
+        }
+    }
     }
 }
 

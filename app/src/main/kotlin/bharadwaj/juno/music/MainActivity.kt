@@ -577,7 +577,7 @@ class MainActivity : ComponentActivity() {
 
                 val isLandscape = configuration.containerDpSize.width > configuration.containerDpSize.height
 
-                val showRail = isLandscape && !inSearchScreen
+                val showRail = configuration.containerDpSize.width >= 600.dp && !inSearchScreen
 
                 val navPadding = if (shouldShowNavigationBar && !showRail) {
                     NavigationBarHeight + FloatingToolbarBottomPadding

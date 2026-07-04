@@ -52,6 +52,10 @@ object YTPlayerUtils {
     private var hasShownLosslessToast = false
     private var hasShownSaavnToast = false
 
+    suspend fun refreshVisitorData(): Result<String> {
+        return YouTube.refreshVisitorData()
+    }
+
     private val httpClient: OkHttpClient = OkHttpClient.Builder()
         .dns(object : Dns {
             override fun lookup(hostname: String): List<InetAddress> {
@@ -406,9 +410,7 @@ object YTPlayerUtils {
         Timber.tag(logTag).d("Fetching player response for videoId: $videoId, playlistId: $playlistId")
         PlaybackLogManager.log(PlaybackLogLevel.INFO, "Resolving playback data", "Video: $videoId")
         
-        
-        println("[PLAYBACK_DEBUG] playerResponseForPlayback called: videoId=$videoId, playlistId=$playlistId")
-        
+
         val isUploadedTrack = playlistId == "MLPT" || playlistId?.contains("MLPT") == true
 
         val isLoggedIn = YouTube.cookie != null
@@ -422,7 +424,6 @@ object YTPlayerUtils {
         var poToken: PoTokenResult? = null
         val sessionId = if (isLoggedIn) YouTube.dataSyncId else YouTube.visitorData
         if (MAIN_CLIENT.useWebPoTokens && sessionId != null) {
-            Timber.tag(logTag).d("Generating PoToken for MAIN_CLIENT with sessionId")
             try {
                 poToken = poTokenGenerator.getWebClientPoToken(videoId, sessionId)
                 if (poToken != null) {
@@ -466,15 +467,9 @@ object YTPlayerUtils {
         }
 
         
-        if (isUploadedTrack || playlistId?.contains("MLPT") == true) {
-            println("[PLAYBACK_DEBUG] Main player response status: ${mainPlayerResponse.playabilityStatus.status}")
-            println("[PLAYBACK_DEBUG] Playability reason: ${mainPlayerResponse.playabilityStatus.reason}")
-            println("[PLAYBACK_DEBUG] Video details: title=${mainPlayerResponse.videoDetails?.title}, videoId=${mainPlayerResponse.videoDetails?.videoId}")
-            println("[PLAYBACK_DEBUG] Streaming data null? ${mainPlayerResponse.streamingData == null}")
-            println("[PLAYBACK_DEBUG] Adaptive formats count: ${mainPlayerResponse.streamingData?.adaptiveFormats?.size ?: 0}")
-        }
 
         var usedAgeRestrictedClient: YouTubeClient? = null
+
         val wasOriginallyAgeRestricted: Boolean
 
         
@@ -567,9 +562,11 @@ object YTPlayerUtils {
 
                 
                 if (client.useWebPoTokens && poToken == null && sessionId != null) {
-                    Timber.tag(logTag).d("Lazily generating PoToken for fallback web client: ${client.clientName}")
                     try {
                         poToken = poTokenGenerator.getWebClientPoToken(videoId, sessionId)
+                        if (poToken != null) {
+                            Timber.tag(logTag).d("Lazy PoToken generated successfully")
+                        }
                     } catch (e: Exception) {
                         Timber.tag(logTag).e(e, "Lazy PoToken generation failed")
                     }
@@ -673,7 +670,6 @@ object YTPlayerUtils {
                     
                     if (isPrivatelyOwned) {
                         Timber.tag(logTag).d("Skipping validation for privately owned track: ${currentClient.clientName}")
-                        println("[PLAYBACK_DEBUG] Using stream without validation for PRIVATELY_OWNED_TRACK")
                     } else {
                         Timber.tag(logTag).d("Using last fallback client without validation: ${STREAM_FALLBACK_CLIENTS[clientIndex].clientName}")
                     }
@@ -728,18 +724,12 @@ object YTPlayerUtils {
 
         if (streamPlayerResponse == null) {
             Timber.tag(logTag).e("Bad stream player response - all clients failed")
-            if (isUploadedTrack) {
-                println("[PLAYBACK_DEBUG] FAILURE: All clients failed for uploaded track videoId=$videoId")
-            }
             throw Exception("Bad stream player response")
         }
 
         if (streamPlayerResponse.playabilityStatus.status != "OK") {
             val errorReason = streamPlayerResponse.playabilityStatus.reason
             Timber.tag(logTag).e("Playability status not OK: $errorReason")
-            if (isUploadedTrack) {
-                println("[PLAYBACK_DEBUG] FAILURE: Playability not OK for uploaded track - status=${streamPlayerResponse.playabilityStatus.status}, reason=$errorReason")
-            }
             throw PlaybackException(
                 errorReason,
                 null,
@@ -763,9 +753,6 @@ object YTPlayerUtils {
         }
 
         Timber.tag(logTag).d("Successfully obtained playback data with format: ${format.mimeType}, bitrate: ${format.bitrate}")
-        if (isUploadedTrack) {
-            println("[PLAYBACK_DEBUG] SUCCESS: Got playback data for uploaded track - format=${format.mimeType}, streamUrl=${streamUrl.take(100)}...")
-        }
         PlaybackData(
             audioConfig,
             videoDetails,
@@ -777,10 +764,6 @@ object YTPlayerUtils {
     }.onFailure { e ->
         Timber.tag(logTag).e(e, "Playback resolution failed")
         PlaybackLogManager.log(PlaybackLogLevel.ERROR, "Playback failed", "${e::class.simpleName}: ${e.message}")
-        
-        
-        println("[PLAYBACK_DEBUG] EXCEPTION during playback for videoId=$videoId: ${e::class.simpleName}: ${e.message}")
-        e.printStackTrace()
     }
     
     suspend fun playerResponseForMetadata(

@@ -32,8 +32,8 @@ android {
         applicationId = "bharadwaj.juno.music"
         minSdk = 26
         targetSdk = 36
-        versionCode = 411
-        versionName = "4.1.1"
+        versionCode = 454
+        versionName = "4.5.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -142,6 +142,13 @@ android {
             applicationIdSuffix = ""
             matchingFallbacks += listOf("debug")
         }
+        create("beta") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
+            matchingFallbacks += listOf("release")
+        }
     }
 
     compileOptions {
@@ -195,6 +202,9 @@ android {
             excludes += "META-INF/INDEX.LIST"
             excludes += "META-INF/io.netty.versions.properties"
             excludes += "META-INF/DEPENDENCIES"
+        }
+        testOptions {
+            unitTests.isReturnDefaultValues = true
         }
     }
 }
@@ -316,4 +326,7 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.ffmpeg.kit.full)
     implementation(libs.bundles.youtubedlAndroid)
+    testImplementation(libs.junit)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation(project(":innertube"))
 }

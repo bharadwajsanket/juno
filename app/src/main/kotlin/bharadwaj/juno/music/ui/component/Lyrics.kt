@@ -39,8 +39,10 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
@@ -96,6 +98,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -670,15 +674,18 @@ fun Lyrics(
                 )
             }
         } else {
+            val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
             LazyColumn(
-            state = lazyListState,
-            contentPadding = WindowInsets.systemBars
-                .only(WindowInsetsSides.Top)
-                .add(WindowInsets(top = maxHeight / 3, bottom = maxHeight / 2))
-                .asPaddingValues(),
-            modifier = Modifier
-                .fadingEdge(vertical = 64.dp)
-                .nestedScroll(remember {
+                state = lazyListState,
+                contentPadding = WindowInsets.systemBars
+                    .only(WindowInsetsSides.Top)
+                    .add(WindowInsets(top = maxHeight / 3, bottom = maxHeight / 2))
+                    .asPaddingValues(),
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .then(if (isLandscape) Modifier.widthIn(max = 520.dp) else Modifier.fillMaxWidth())
+                    .fadingEdge(vertical = 64.dp)
+                    .nestedScroll(remember {
                     object : NestedScrollConnection {
                         override fun onPostScroll(
                             consumed: Offset,

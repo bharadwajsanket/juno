@@ -2,6 +2,8 @@
 
 package bharadwaj.juno.music.ui.player
 
+import bharadwaj.juno.music.ui.theme.JUNOSpacing
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
@@ -133,7 +135,12 @@ private fun calculateThumbnailDimensions(
 ): ThumbnailDimensions {
     
     val effectiveSize = if (isLandscape) {
-        minOf(containerWidth, containerHeight) - (horizontalPadding * 2)
+        val isTablet = containerWidth >= 800.dp || containerHeight >= 600.dp
+        val scaleFactor = if (isTablet) 0.90f else 0.82f
+        val maxArtworkSize = if (isTablet) 320.dp else 260.dp
+        (minOf(containerWidth, containerHeight) * scaleFactor)
+            .coerceAtMost(containerWidth - JUNOSpacing.xl)
+            .coerceAtMost(maxArtworkSize)
     } else {
         containerWidth - (horizontalPadding * 2)
     }

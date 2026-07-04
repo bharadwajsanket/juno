@@ -26,6 +26,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import bharadwaj.juno.music.ui.screens.Screens
+import bharadwaj.juno.music.ui.theme.JUNOSpacing
+import androidx.compose.foundation.layout.height
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
@@ -67,7 +69,10 @@ fun AppNavigationRail(
     ) {
         Spacer(modifier = Modifier.weight(1f))
         
-        navigationItems.items.forEach { screen ->
+        navigationItems.items.forEachIndexed { index, screen ->
+            if (index > 0) {
+                Spacer(modifier = Modifier.height(JUNOSpacing.md))
+            }
             val isSelected = remember(currentRoute, screen.route) {
                 isRouteSelected(currentRoute, screen.route, navigationItems.items)
             }
@@ -121,7 +126,16 @@ fun AppNavigationRail(
                         painter = painterResource(id = iconRes),
                         contentDescription = stringResource(screen.titleId)
                     )
-                }
+                },
+                label = {
+                    Text(
+                        text = stringResource(screen.titleId),
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                alwaysShowLabel = false
             )
         }
         

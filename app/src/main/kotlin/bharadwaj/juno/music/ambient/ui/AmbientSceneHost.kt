@@ -114,7 +114,7 @@ fun AmbientSceneHost(
 ) {
     if (previewScene != null) {
         // ── Preview / debug override path ─────────────────────────────────────
-        val previewGreeting = remember(previewScene, displayName) {
+        val previewGreeting = remember(previewScene, displayName, java.time.LocalTime.now().hour) {
             AmbientSceneGreeting.resolve(previewScene, displayName)
         }
         AmbientSceneCard(
@@ -182,7 +182,7 @@ fun AmbientSceneHost(
         }
     }
 
-    val greeting = remember(scene, displayName) {
+    val greeting = remember(scene, displayName, java.time.LocalTime.now().hour) {
         AmbientSceneGreeting.resolve(scene, displayName)
     }
 

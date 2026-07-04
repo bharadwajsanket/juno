@@ -13,7 +13,7 @@
   <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin"></a>
   <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Compose-1.7.5-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/bharadwajsanket/juno?style=for-the-badge&color=28a745" alt="License"></a>
-  <a href="https://github.com/bharadwajsanket/juno/releases"><img src="https://img.shields.io/badge/Release-v4.1.1-blue?style=for-the-badge" alt="Release"></a>
+  <a href="https://github.com/bharadwajsanket/juno/releases"><img src="https://img.shields.io/badge/Release-v4.5.4-blue?style=for-the-badge" alt="Release"></a>
 </p>
 
 <br>
@@ -34,18 +34,22 @@ It plays your local library, streams when you want it to, downloads for offline 
 
 The headline feature of the v4.0 series is **Living Sky & Living Environment** — a procedural rendering engine that mirrors the real sky and weather outside your window, turning the now-playing screen into something closer to a window than a control panel.
 
-> **Current status:** v4.1.1 — Stable, feature-complete.
+> **Current status:** v4.5.4 — Stable. Adaptive Layout Engine release.
 
-### What's New in v4.1.1
+### What's New in v4.5.4
 
-- **OTA Overhaul:** Upgraded updater system with complete repository migration from the old `JUNO-Music` to the new `juno` repository.
-- **Semantic Versioning:** Replaced lexicographical checks with a robust unlimited-segment semantic version comparison algorithm.
-- **Robust Update Detection:** Added proper draft/pre-release checks, with dynamic APK selection matching the current ABI and GMS/FOSS build flavor.
-- **Resumable Downloads:** Implemented HTTP range-based resuming of interrupted downloads and socket connection timeouts.
-- **Installation Security:** Added APK signature/integrity check via Android's package manager and restricted installation paths to avoid traversal exploits.
-- **Installer Recovery Fallback:** Added a manual APK share/install action option if default installation fails.
-- **12-Hour Stale Cache & Offline Recovery:** Added stale cache expiration and fallback update details under offline mode with warning banners.
-- **Enhanced Markdown Parser:** Upgraded markdown rendering to strip redundant bullets and parse multi-line headers and links cleanly.
+- **Adaptive Layout Engine (Phase 1–3):** JUNO now renders intentionally across all screen sizes — phones, landscape phones, foldables, tablets, and ChromeOS — without maintaining separate UIs.
+- **Two-Column Home Screen:** On displays ≥ 600 dp wide, the Home screen shows a sticky left sidebar (greeting, Speed Dial) alongside the full feed column.
+- **Landscape Player — Two-Pane Layout:** The full-screen player splits into an artwork pane (left) and a centered controls pane (right) in landscape orientation.
+- **Quick Action Row:** Lyrics, Sleep Timer, Equalizer, Fullscreen, and Repeat controls are grouped directly under the artwork in landscape for easy one-hand reach.
+- **Integrated Overflow Menu:** The three-dot overflow button is embedded inside the playback controls row in landscape mode — no more floating button.
+- **Artwork Proportion Control:** Landscape artwork is constrained to 260–320 dp to prevent it dominating the screen and to give controls room to breathe.
+- **Widescreen Queue Sheet:** The expanded queue and collapsed control bar are width-constrained to 600 dp and centered on wide screens.
+- **Widescreen Lyrics View:** The lyrics scrolling container is constrained to 520 dp in landscape.
+- **Speed Dial Grid Engine:** Speed Dial computes card count and size mathematically from available width. Cards are always uniform. Columns never stretch.
+- **Speed Dial Sidebar Alignment:** In wide layout, Speed Dial cards align precisely to the same 16 dp left margin as section headers and greeting text.
+- **Spacing System:** All hardcoded layout spacer values replaced with `JUNOSpacing` design tokens throughout the adaptive code paths.
+- **Navigation Rail:** On wide screens the bottom navigation bar transitions to a navigation rail with icon labels.
 
 <br>
 

@@ -48,6 +48,15 @@ fun AmbientSun(
     val floatY by AmbientMotion.float(label = "sun_float", periodMs = 8_000, amplitude = 3f)
     val glowScale by AmbientMotion.breathe(label = "sun_glow", periodMs = 7_000, maxScale = 1.05f)
 
+    val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = atmosphere.solarProgress,
+        animationSpec = androidx.compose.animation.core.tween(
+            durationMillis = 1500,
+            easing = androidx.compose.animation.core.EaseInOutSine
+        ),
+        label = "sun_progress"
+    )
+
     Canvas(modifier = modifier) {
         // Dim sun under cloud cover (completely hidden when overcast > 0.8)
         val visibility = (1f - (atmosphere.cloudDensity * 1.25f)).coerceIn(0f, 1f)
@@ -55,13 +64,13 @@ fun AmbientSun(
 
         val w = size.width
         val h = size.height
-        val p = atmosphere.solarProgress
+        val p = animatedProgress
 
-        // ── Orbital position ─────────────────────────────────────────────────
-        val cx = lerp(w * 0.18f, w * 0.88f, p)
+        // ── Orbital position (semi-ellipse) ──────────────────────────────────
+        val cx = w * 0.53f - w * 0.35f * kotlin.math.cos(p * kotlin.math.PI.toFloat())
 
-        // Inverted parabola: peaks at p=0.5
-        val arcFactor = 4f * p * (1f - p)
+        // Elliptical arc factor: peaks at p=0.5
+        val arcFactor = kotlin.math.sin(p * kotlin.math.PI.toFloat())
         val cyRaw = lerp(h * 0.90f, h * 0.16f, arcFactor)
         val cy = cyRaw + floatY
 

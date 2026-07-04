@@ -45,6 +45,15 @@ fun AmbientMoon(
     val floatY by AmbientMotion.float(label = "moon_float", periodMs = 9_000, amplitude = 4f)
     val glowScale by AmbientMotion.breathe(label = "moon_glow", periodMs = 8_000, maxScale = 1.05f)
 
+    val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = atmosphere.lunarProgress,
+        animationSpec = androidx.compose.animation.core.tween(
+            durationMillis = 1500,
+            easing = androidx.compose.animation.core.EaseInOutSine
+        ),
+        label = "moon_progress"
+    )
+
     Canvas(modifier = modifier) {
         // Dim/hide moon under cloud cover (completely hidden during storms > 0.8)
         val visibility = (1f - (atmosphere.cloudDensity * 1.25f)).coerceIn(0f, 1f)
@@ -52,13 +61,13 @@ fun AmbientMoon(
 
         val w = size.width
         val h = size.height
-        val p = atmosphere.lunarProgress
+        val p = animatedProgress
 
-        // ── Orbital position (right → left arc) ───────────────────────────────
-        val cx = lerp(w * 0.84f, w * 0.16f, p)
+        // ── Orbital position (semi-ellipse right → left) ──────────────────────
+        val cx = w * 0.50f + w * 0.34f * kotlin.math.cos(p * kotlin.math.PI.toFloat())
 
-        // Inverted parabola: peaks at p=0.5 (midnight)
-        val arcFactor = 4f * p * (1f - p)
+        // Elliptical arc factor: peaks at p=0.5
+        val arcFactor = kotlin.math.sin(p * kotlin.math.PI.toFloat())
         val cyRaw = lerp(h * 0.88f, h * 0.18f, arcFactor)
         val cy = cyRaw + floatY
 

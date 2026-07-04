@@ -47,45 +47,62 @@ object AmbientAtmosphereCalculator {
         state: AmbientState,
         nowMs: Long = System.currentTimeMillis(),
     ): AmbientAtmosphere {
+        val zoneId = try {
+            if (state is AmbientState.Active) {
+                java.time.ZoneId.of(state.timeData.timezoneId)
+            } else {
+                java.time.ZoneId.systemDefault()
+            }
+        } catch (e: Exception) {
+            java.time.ZoneId.systemDefault()
+        }
+
+        val sunrise = if (state is AmbientState.Active && state.timeData.sunriseEpochMs > 0L) {
+            state.timeData.sunriseEpochMs
+        } else {
+            val localDate = java.time.Instant.ofEpochMilli(nowMs).atZone(zoneId).toLocalDate()
+            localDate.atTime(6, 0).atZone(zoneId).toInstant().toEpochMilli()
+        }
+
+        val sunset = if (state is AmbientState.Active && state.timeData.sunsetEpochMs > 0L) {
+            state.timeData.sunsetEpochMs
+        } else {
+            val localDate = java.time.Instant.ofEpochMilli(nowMs).atZone(zoneId).toLocalDate()
+            localDate.atTime(18, 0).atZone(zoneId).toInstant().toEpochMilli()
+        }
+
+        val isSunVisible = nowMs in sunrise..sunset
+        val isMoonVisible = !isSunVisible
+
+        val solarProgress: Float
+        val lunarProgress: Float
+
+        if (isSunVisible) {
+            solarProgress = ((nowMs - sunrise).toFloat() / (sunset - sunrise).coerceAtLeast(1L)).coerceIn(0f, 1f)
+            lunarProgress = 0.5f
+        } else {
+            solarProgress = 0.5f
+            val nextSunrise = sunrise + 24L * 60L * 60L * 1000L
+            val yesterdaySunset = sunset - 24L * 60L * 60L * 1000L
+            val (nightStart, nightEnd) = if (nowMs < sunrise) {
+                yesterdaySunset to sunrise
+            } else {
+                sunset to nextSunrise
+            }
+            lunarProgress = ((nowMs - nightStart).toFloat() / (nightEnd - nightStart).coerceAtLeast(1L)).coerceIn(0f, 1f)
+        }
+
+        val glowIntensity = if (isSunVisible) {
+            abs(2f * solarProgress - 1f)
+        } else {
+            0.08f
+        }
+
         if (state !is AmbientState.Active) {
-            // Fallback: Use current device local time to approximate day/night
-            val calendar = java.util.Calendar.getInstance().apply { timeInMillis = nowMs }
-            val hour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
-            val minute = calendar.get(java.util.Calendar.MINUTE)
-
-            // Assume day is roughly 6 AM to 6 PM (6:00 to 18:00)
-            val isSunVisible = hour in 6..17
-            val isMoonVisible = !isSunVisible
-
-            val solarProgress: Float
-            val lunarProgress: Float
-
-            if (isSunVisible) {
-                // Day duration: 12 hours (720 minutes). Starts at 6 AM.
-                val minutesSinceDawn = (hour - 6) * 60 + minute
-                solarProgress = (minutesSinceDawn.toFloat() / 720f).coerceIn(0f, 1f)
-                lunarProgress = 0.5f
-            } else {
-                // Night duration: 12 hours (720 minutes). Starts at 6 PM.
-                val minutesSinceDusk = if (hour >= 18) {
-                    (hour - 18) * 60 + minute
-                } else {
-                    (hour + 6) * 60 + minute
-                }
-                solarProgress = 0.5f
-                lunarProgress = (minutesSinceDusk.toFloat() / 720f).coerceIn(0f, 1f)
-            }
-
-            val glowIntensity = if (isSunVisible) {
-                abs(2f * solarProgress - 1f)
-            } else {
-                0.08f
-            }
-
             return AmbientAtmosphere(
                 solarProgress = solarProgress,
                 lunarProgress = lunarProgress,
-                cloudDensity = 0.04f, // Clear sky for beautiful fallback rendering
+                cloudDensity = 0.04f,
                 starVisibility = if (isMoonVisible) 1.0f else 0.0f,
                 glowIntensity = glowIntensity,
                 isSunVisible = isSunVisible,
@@ -99,40 +116,6 @@ object AmbientAtmosphereCalculator {
         }
 
         val timeData = state.timeData
-        val dawn  = timeData.civilTwilightStartMs
-        val dusk  = timeData.civilTwilightEndMs
-        val dayspan = (dusk - dawn).coerceAtLeast(1L)
-
-        // ── Solar progress (0 = dawn, 1 = dusk) ──────────────────────────────
-        val solarProgress = ((nowMs - dawn).toFloat() / dayspan).coerceIn(0f, 1f)
-        val isSunVisible  = nowMs in dawn..dusk
-
-        // ── Lunar progress (0 = dusk, 1 = next dawn) ─────────────────────────
-        // Night spans from civil dusk today → civil dawn tomorrow.
-        // If it's before dawn, we are in the tail of last night — offset backward by one day.
-        val nightStart = dusk
-        val nightEnd   = dawn + DAY_MS  // next day's civil dawn
-        val nightspan  = (nightEnd - nightStart).coerceAtLeast(1L)
-
-        val lunarProgress: Float
-        val isMoonVisible: Boolean
-
-        if (!isSunVisible) {
-            val nowInNight = if (nowMs < dawn) {
-                // Early morning — we are in the tail of last night.
-                // Recalculate relative to yesterday's dusk.
-                val yesterdayDusk = dusk - DAY_MS
-                nowMs - yesterdayDusk
-            } else {
-                // After dusk — beginning of tonight's night.
-                nowMs - nightStart
-            }
-            lunarProgress = (nowInNight.toFloat() / nightspan).coerceIn(0f, 1f)
-            isMoonVisible = true
-        } else {
-            lunarProgress = 0.50f
-            isMoonVisible = false
-        }
 
         // ── Cloud density from weather condition & cloudCoverPercent ──────────
         val baseCloudDensity = cloudDensityFor(state.weather.condition)
@@ -180,15 +163,7 @@ object AmbientAtmosphereCalculator {
         // ── Wind Speed ──
         val windSpeed = state.weather.windSpeedKmh.toFloat()
 
-        // ── Glow intensity (U-shaped, peaks at dawn/dusk) ─────────────────────
-        // At noon (solarProgress=0.5): glow=0. At dawn/dusk (0.0 or 1.0): glow=1.
-        // Use |2*p - 1| which maps 0→1, 0.5→0, 1→1.
-        val glowIntensity = if (isSunVisible) {
-            abs(2f * solarProgress - 1f)
-        } else {
-            // Deep night — no glow from sun. A faint fixed ambient keeps depth.
-            0.08f
-        }
+
 
         return AmbientAtmosphere(
             solarProgress  = solarProgress,

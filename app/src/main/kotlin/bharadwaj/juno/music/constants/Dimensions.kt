@@ -1,5 +1,3 @@
-
-
 package bharadwaj.juno.music.constants
 
 import androidx.compose.animation.core.Spring
@@ -19,7 +17,7 @@ val FloatingToolbarHorizontalPadding = 16.dp
 val FloatingToolbarBottomPadding = 12.dp
 val NavigationBarHeight = FloatingToolbarHeight
 val SlimNavBarHeight = 64.dp
-val MiniPlayerHeight = 56.dp
+val MiniPlayerHeight = 52.dp
 val MinMiniPlayerHeight = 16.dp
 val MiniPlayerBottomSpacing = 8.dp 
 val QueuePeekHeight = 64.dp
