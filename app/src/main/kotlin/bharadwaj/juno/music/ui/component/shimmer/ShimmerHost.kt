@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import com.valentinilk.shimmer.defaultShimmerTheme
 import com.valentinilk.shimmer.shimmer
+import com.valentinilk.shimmer.rememberShimmer
+import com.valentinilk.shimmer.ShimmerBounds
 
 @Composable
 fun ShimmerHost(
@@ -27,12 +29,13 @@ fun ShimmerHost(
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val shimmer = rememberShimmer(shimmerBounds = ShimmerBounds.View, theme = ShimmerTheme)
     Column(
         horizontalAlignment = horizontalAlignment,
         verticalArrangement = verticalArrangement,
         modifier =
         modifier
-            .shimmer()
+            .shimmer(shimmer)
             .graphicsLayer(alpha = 0.99f)
             .drawWithContent {
                 drawContent()
@@ -51,16 +54,16 @@ val ShimmerTheme =
         infiniteRepeatable(
             animation =
             tween(
-                durationMillis = 800,
+                durationMillis = 1200,
                 easing = LinearEasing,
-                delayMillis = 250,
+                delayMillis = 400,
             ),
             repeatMode = RepeatMode.Restart,
         ),
         shaderColors =
         listOf(
-            Color.Unspecified.copy(alpha = 0.25f),
-            Color.Unspecified.copy(alpha = 0.50f),
-            Color.Unspecified.copy(alpha = 0.25f),
+            Color.Unspecified.copy(alpha = 0.12f),
+            Color.Unspecified.copy(alpha = 0.28f),
+            Color.Unspecified.copy(alpha = 0.12f),
         ),
     )

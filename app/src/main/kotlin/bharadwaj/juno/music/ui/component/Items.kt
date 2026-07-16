@@ -2,6 +2,8 @@
 
 package bharadwaj.juno.music.ui.component
 
+import bharadwaj.juno.music.ui.theme.JUNOCorners
+
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animate
@@ -174,7 +176,7 @@ inline fun ListItem(
                         .align(Alignment.Center)
                         .background(
                             Color.Black.copy(alpha = 0.25f),
-                            RoundedCornerShape(ThumbnailCornerRadius)
+                            JUNOCorners.xl
                         )
                 ) {
                     Icon(
@@ -460,7 +462,7 @@ fun SongListItem(
                     isSelected = isSelected,
                     isActive = isActive,
                     isPlaying = isPlaying,
-                    shape = RoundedCornerShape(ThumbnailCornerRadius),
+                    shape = JUNOCorners.xl,
                     modifier = Modifier.size(ListThumbnailSize)
                 )
             },
@@ -539,7 +541,7 @@ fun SongGridItem(
             thumbnailUrl = song.song.thumbnailUrl,
             isActive = isActive,
             isPlaying = isPlaying,
-            shape = RoundedCornerShape(ThumbnailCornerRadius),
+            shape = JUNOCorners.xl,
             modifier = Modifier.size(gridHeight)
         )
         if (!isActive) {
@@ -690,7 +692,7 @@ fun AlbumListItem(
             thumbnailUrl = album.album.thumbnailUrl,
             isActive = isActive,
             isPlaying = isPlaying,
-            shape = RoundedCornerShape(ThumbnailCornerRadius),
+            shape = JUNOCorners.xl,
             modifier = Modifier.size(ListThumbnailSize)
         )
     },
@@ -771,7 +773,7 @@ fun AlbumGridItem(
             thumbnailUrl = album.album.thumbnailUrl,
             isActive = isActive,
             isPlaying = isPlaying,
-            shape = RoundedCornerShape(ThumbnailCornerRadius),
+            shape = JUNOCorners.xl,
         )
 
         AlbumPlayButton(
@@ -868,7 +870,7 @@ fun PlaylistListItem(
                     modifier = Modifier.size(ListThumbnailSize / 2)
                 )
             },
-            shape = RoundedCornerShape(ThumbnailCornerRadius)
+            shape = JUNOCorners.xl
         )
     },
     trailingContent = trailingContent,
@@ -975,7 +977,7 @@ fun PlaylistGridItem(
                     )
                 }
             },
-            shape = RoundedCornerShape(ThumbnailCornerRadius)
+            shape = JUNOCorners.xl
         )
     },
     fillMaxWidth = fillMaxWidth,
@@ -1022,7 +1024,7 @@ fun MediaMetadataListItem(
                 isSelected = isSelected,
                 isActive = isActive,
                 isPlaying = isPlaying,
-                shape = RoundedCornerShape(ThumbnailCornerRadius),
+                shape = JUNOCorners.xl,
                 modifier = Modifier.size(ListThumbnailSize)
             )
         },
@@ -1089,7 +1091,7 @@ fun YouTubeListItem(
                     isSelected = isSelected,
                     isActive = isActive,
                     isPlaying = isPlaying,
-                    shape = if (item is ArtistItem) CircleShape else RoundedCornerShape(ThumbnailCornerRadius),
+                    shape = if (item is ArtistItem) CircleShape else JUNOCorners.xl,
                     modifier = Modifier.size(ListThumbnailSize)
                 )
             },
@@ -1184,7 +1186,7 @@ fun YouTubeGridItem(
             thumbnailUrl = item.thumbnail,
             isActive = isActive,
             isPlaying = isPlaying,
-            shape = if (item is ArtistItem) CircleShape else RoundedCornerShape(ThumbnailCornerRadius),
+            shape = if (item is ArtistItem) CircleShape else JUNOCorners.xl,
         )
 
         if (item is SongItem && !isActive) {
@@ -1237,7 +1239,7 @@ fun LocalSongsGrid(
             thumbnailUrl = thumbnailUrl,
             isActive = isActive,
             isPlaying = isPlaying,
-            shape = RoundedCornerShape(ThumbnailCornerRadius),
+            shape = JUNOCorners.xl,
             modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
             showCenterPlay = true,
             playButtonVisible = false
@@ -1295,7 +1297,7 @@ fun LocalAlbumsGrid(
             thumbnailUrl = thumbnailUrl,
             isActive = isActive,
             isPlaying = isPlaying,
-            shape = RoundedCornerShape(ThumbnailCornerRadius),
+            shape = JUNOCorners.xl,
             modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
             showCenterPlay = false,
             playButtonVisible = true

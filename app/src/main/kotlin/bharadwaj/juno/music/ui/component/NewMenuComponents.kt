@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -84,7 +85,7 @@ fun NewActionButton(
         colors = CardDefaults.cardColors(
             containerColor = animatedBackground
         ),
-        shape = RoundedCornerShape(16.dp),
+        shape = JUNOCorners.lg,
         elevation = CardDefaults.cardElevation(
         )
     ) {

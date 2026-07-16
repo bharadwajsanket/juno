@@ -1,5 +1,6 @@
 package bharadwaj.juno.music.ui.screens
 
+import bharadwaj.juno.music.extensions.bounceClick
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -39,6 +40,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -125,7 +127,6 @@ import bharadwaj.juno.music.constants.ShowSpeedDialKey
 import bharadwaj.juno.music.constants.SmallGridThumbnailHeight
 import bharadwaj.juno.music.constants.ThumbnailCornerRadius
 import androidx.compose.ui.unit.Dp
-import bharadwaj.juno.music.ui.theme.JUNOCorners
 import bharadwaj.juno.music.ui.theme.JUNOSpacing
 import bharadwaj.juno.music.db.entities.Album
 import bharadwaj.juno.music.db.entities.Artist
@@ -244,7 +245,7 @@ fun CommunityPlaylistCard(
                 Box(
                     modifier = Modifier
                         .size(100.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(JUNOCorners.md)
                 ) {
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(modifier = Modifier.weight(1f)) {
@@ -317,7 +318,7 @@ fun CommunityPlaylistCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(JUNOCorners.md)
                             .bounceClick(onClick = { onSongClick(song) }),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -327,7 +328,7 @@ fun CommunityPlaylistCard(
                             contentDescription = null,
                             modifier = Modifier
                                 .size(56.dp)
-                                .clip(RoundedCornerShape(12.dp)),
+                                .clip(JUNOCorners.md),
                             contentScale = ContentScale.Crop
                         )
                         Column(modifier = Modifier.weight(1f)) {
@@ -1128,7 +1129,7 @@ fun HomeScreen(
                             Box(
                                 modifier = Modifier
                                     .padding(horizontal = JUNOSpacing.xxs)
-                                    .clip(RoundedCornerShape(3.dp))
+                                    .clip(CircleShape)
                                     .background(color)
                                     .size(width = width, height = 6.dp)
                             )
@@ -1151,6 +1152,7 @@ fun HomeScreen(
             ) {
             val horizontalLazyGridItemWidthFactor = if (maxWidth * 0.475f >= 320.dp) 0.475f else 0.9f
             val horizontalLazyGridItemWidth = maxWidth * horizontalLazyGridItemWidthFactor
+            val thumbnailShape = JUNOCorners.xl
             val quickPicksSnapLayoutInfoProvider = remember(quickPicksLazyGridState) {
                 SnapLayoutInfoProvider(
                     lazyGridState = quickPicksLazyGridState,
@@ -1202,7 +1204,7 @@ fun HomeScreen(
                                         modifier = Modifier.animateItem()
                                     ) {
                                         items(items, key = { it.id }) { item ->
-                                            val clShape = RoundedCornerShape(26.dp)
+                                            val clShape = thumbnailShape
                                             Box(
                                                 modifier = Modifier
                                                     .width(232.dp)
@@ -1567,7 +1569,7 @@ fun HomeScreen(
                                         horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.sm),
                                         contentPadding = PaddingValues(horizontal = 16.dp)
                                     ) {
-                                        items(discoverList) { item ->
+                                        items(discoverList, key = { "${it.seed.id}_${it.recommendation.id}" }) { item ->
                                             DailyDiscoverCard(
                                                 dailyDiscover = item,
                                                 onClick = {
@@ -1782,10 +1784,7 @@ fun HomeScreen(
                                         title = recommendation.title.title,
                                         thumbnail = recommendation.title.thumbnailUrl?.let { thumbnailUrl ->
                                             {
-                                                val shape =
-                                                    if (recommendation.title is Artist) CircleShape else RoundedCornerShape(
-                                                        ThumbnailCornerRadius
-                                                    )
+                                                val shape = if (recommendation.title is Artist) CircleShape else thumbnailShape
                                                 AsyncImage(
                                                     model = thumbnailUrl,
                                                     contentDescription = null,
@@ -1836,10 +1835,7 @@ fun HomeScreen(
                                         label = sectionData.label,
                                         thumbnail = sectionData.thumbnail?.let { thumbnailUrl ->
                                             {
-                                                val shape =
-                                                    if (sectionData.endpoint?.isArtistEndpoint == true) CircleShape else RoundedCornerShape(
-                                                        ThumbnailCornerRadius
-                                                    )
+                                                val shape = if (sectionData.endpoint?.isArtistEndpoint == true) CircleShape else thumbnailShape
                                                 AsyncImage(
                                                     model = thumbnailUrl,
                                                     contentDescription = null,
@@ -2031,7 +2027,7 @@ fun HomeScreen(
                                     repeat(2) {
                                         TextPlaceholder(
                                             height = MoodAndGenresButtonHeight,
-                                            shape = RoundedCornerShape(6.dp),
+                                            shape = JUNOCorners.sm,
                                             modifier = Modifier
                                                 .padding(horizontal = 12.dp)
                                                 .width(200.dp)
@@ -2104,33 +2100,4 @@ fun HomeScreen(
         }
     }
     }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun Modifier.bounceClick(
-    onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null
-): Modifier {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "bounceScale"
-    )
-    return this
-        .graphicsLayer {
-            scaleX = scale
-            scaleY = scale
-        }
-        .combinedClickable(
-            interactionSource = interactionSource,
-            indication = null,
-            onClick = onClick,
-            onLongClick = onLongClick
-        )
 }

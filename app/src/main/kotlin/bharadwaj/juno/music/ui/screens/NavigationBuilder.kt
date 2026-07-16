@@ -18,6 +18,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
+import bharadwaj.juno.music.ui.theme.JUNOMotion
 import androidx.navigation.compose.dialog
 import androidx.navigation.navArgument
 import bharadwaj.juno.music.constants.DarkModeKey
@@ -143,24 +144,24 @@ fun NavGraphBuilder.navigationBuilder(
             },
         ),
         enterTransition = {
-            fadeIn(tween(250))
+            fadeIn(tween(JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate))
         },
         exitTransition = {
             if (targetState.destination.route?.startsWith("search/") == true) {
-                fadeOut(tween(200))
+                fadeOut(tween(JUNOMotion.DurationFast, easing = JUNOMotion.EmphasizedDecelerate))
             } else {
-                fadeOut(tween(200)) + slideOutHorizontally { -it / 2 }
+                fadeOut(tween(JUNOMotion.DurationFast, easing = JUNOMotion.EmphasizedDecelerate)) + slideOutHorizontally { -it / 2 }
             }
         },
         popEnterTransition = {
             if (initialState.destination.route?.startsWith("search/") == true) {
-                fadeIn(tween(250))
+                fadeIn(tween(JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate))
             } else {
-                fadeIn(tween(250)) + slideInHorizontally { -it / 2 }
+                fadeIn(tween(JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) + slideInHorizontally { -it / 2 }
             }
         },
         popExitTransition = {
-            fadeOut(tween(200))
+            fadeOut(tween(JUNOMotion.DurationFast, easing = JUNOMotion.EmphasizedDecelerate))
         },
     ) {
         OnlineSearchResult(navController)

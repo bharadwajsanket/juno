@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import bharadwaj.juno.music.constants.PureBlackKey
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 import bharadwaj.juno.music.utils.rememberPreference
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,7 +66,7 @@ fun Material3SettingsGroup(
             modifier = Modifier
                 .fillMaxWidth()
                 .animateContentSize(),
-            shape = RoundedCornerShape(16.dp),
+            shape = JUNOCorners.lg,
             colors = CardDefaults.cardColors(
                 containerColor = if (isSystemInDarkTheme()) {
                     if (pureBlackEnabled) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.06f)
@@ -116,7 +117,7 @@ private fun Material3SettingsItemRow(
             Box(
                 modifier = Modifier
                     .size(if (compact) 34.dp else 40.dp)
-                    .clip(item.iconShape ?: RoundedCornerShape(12.dp))
+                    .clip(item.iconShape ?: JUNOCorners.md)
                     .background(
                         if (item.tintIcon) {
                             MaterialTheme.colorScheme.primary.copy(

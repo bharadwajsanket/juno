@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -381,7 +382,7 @@ private fun RecognitionHistoryItem(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(ThumbnailCornerRadius),
+        shape = JUNOCorners.xl,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         )
@@ -398,7 +399,7 @@ private fun RecognitionHistoryItem(
                 contentDescription = null,
                 modifier = Modifier
                     .size(60.dp)
-                    .clip(RoundedCornerShape(ThumbnailCornerRadius)),
+                    .clip(JUNOCorners.xl),
                 contentScale = ContentScale.Crop
             )
 

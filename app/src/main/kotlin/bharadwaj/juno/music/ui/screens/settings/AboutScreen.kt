@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.ripple
+import bharadwaj.juno.music.ui.theme.JUNOMotion
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -244,7 +245,7 @@ private fun AboutActionRow(
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessHigh),
+        animationSpec = JUNOMotion.TouchSpring,
         label = "rowScale",
     )
     val tint = MaterialTheme.colorScheme.primary

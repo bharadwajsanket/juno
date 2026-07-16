@@ -202,6 +202,7 @@ import bharadwaj.juno.music.ui.component.VolumeSlider
 import bharadwaj.juno.music.ui.screens.settings.DarkMode
 import bharadwaj.juno.music.ui.theme.PlayerColorExtractor
 import bharadwaj.juno.music.ui.theme.PlayerSliderColors
+import bharadwaj.juno.music.ui.theme.JUNOMotion
 import bharadwaj.juno.music.ui.theme.JUNOSpacing
 import bharadwaj.juno.music.ui.utils.ShowMediaInfo
 import bharadwaj.juno.music.ui.utils.ShowOffsetDialog
@@ -845,7 +846,7 @@ fun BottomSheetPlayer(
                         AnimatedContent(
                             targetState = mediaMetadata?.thumbnailUrl,
                             transitionSpec = {
-                                fadeIn(tween(800)).togetherWith(fadeOut(tween(800)))
+                                fadeIn(animationSpec = JUNOMotion.SlowFloatSpec).togetherWith(fadeOut(animationSpec = JUNOMotion.SlowFloatSpec))
                             },
                             label = "blurBackground"
                         ) { thumbnailUrl ->
@@ -879,7 +880,7 @@ fun BottomSheetPlayer(
                         AnimatedContent(
                             targetState = gradientColors,
                             transitionSpec = {
-                                fadeIn(tween(800)).togetherWith(fadeOut(tween(800)))
+                                fadeIn(animationSpec = JUNOMotion.SlowFloatSpec).togetherWith(fadeOut(animationSpec = JUNOMotion.SlowFloatSpec))
                             },
                             label = "gradientBackground"
                         ) { colors ->
@@ -911,7 +912,7 @@ fun BottomSheetPlayer(
                         AnimatedContent(
                             targetState = gradientColors,
                             transitionSpec = {
-                                fadeIn(tween(1200)) togetherWith fadeOut(tween(1200))
+                                fadeIn(animationSpec = JUNOMotion.SlowFloatSpec) togetherWith fadeOut(animationSpec = JUNOMotion.SlowFloatSpec)
                             },
                             label = "GlowAnimatedContent"
                         ) { colors ->
@@ -1071,7 +1072,7 @@ fun BottomSheetPlayer(
                         AnimatedContent(
                             targetState = mediaMetadata?.thumbnailUrl,
                             transitionSpec = {
-                                fadeIn(tween(1200)).togetherWith(fadeOut(tween(1200)))
+                                fadeIn(animationSpec = JUNOMotion.SlowFloatSpec).togetherWith(fadeOut(animationSpec = JUNOMotion.SlowFloatSpec))
                             },
                             label = "appleMusicBackground"
                         ) { thumbnailUrl ->
@@ -1102,7 +1103,7 @@ fun BottomSheetPlayer(
                                     
                                     val clearArtworkAlpha by animateFloatAsState(
                                         targetValue = if (showInlineLyrics) 0f else 1f,
-                                        animationSpec = tween(500),
+                                         animationSpec = tween(durationMillis = JUNOMotion.DurationSlow, easing = JUNOMotion.EmphasizedDecelerate),
                                         label = "clearArtworkAlpha"
                                     )
                                     
@@ -1212,7 +1213,7 @@ fun BottomSheetPlayer(
                         AnimatedContent(
                             targetState = mediaMetadata?.thumbnailUrl,
                             transitionSpec = {
-                                fadeIn(tween(1500)).togetherWith(fadeOut(tween(1500)))
+                                fadeIn(animationSpec = JUNOMotion.SlowFloatSpec).togetherWith(fadeOut(animationSpec = JUNOMotion.SlowFloatSpec))
                             },
                             label = "liveMeshBackground"
                         ) { thumbnailUrl ->
@@ -1334,7 +1335,7 @@ fun BottomSheetPlayer(
         val controlsContent: @Composable ColumnScope.(MediaMetadata) -> Unit = { mediaMetadata ->
             val playPauseRoundness by animateDpAsState(
                 targetValue = if (isPlaying) 24.dp else 36.dp,
-                animationSpec = tween(durationMillis = 90, easing = LinearEasing),
+                animationSpec = JUNOMotion.CrispSpringDp,
                 label = "playPauseRoundness",
             )
 
@@ -1888,28 +1889,19 @@ fun BottomSheetPlayer(
 
                             val playPauseWeight by animateFloatAsState(
                                 targetValue = if (isPlayPausePressed) 1.9f else if (isBackPressed || isNextPressed) 1.1f else 1.3f,
-                                animationSpec = spring(
-                                    dampingRatio = 0.6f,
-                                    stiffness = 500f
-                                ),
+                                animationSpec = JUNOMotion.MorphSpring,
                                 label = "playPauseWeight"
                             )
 
                             val backButtonWeight by animateFloatAsState(
                                 targetValue = if (isBackPressed) 0.65f else if (isPlayPausePressed) 0.35f else 0.45f,
-                                animationSpec = spring(
-                                    dampingRatio = 0.6f,
-                                    stiffness = 500f
-                                ),
+                                animationSpec = JUNOMotion.MorphSpring,
                                 label = "backButtonWeight"
                             )
 
                             val nextButtonWeight by animateFloatAsState(
                                 targetValue = if (isNextPressed) 0.65f else if (isPlayPausePressed) 0.35f else 0.45f,
-                                animationSpec = spring(
-                                    dampingRatio = 0.6f,
-                                    stiffness = 500f
-                                ),
+                                animationSpec = JUNOMotion.MorphSpring,
                                 label = "nextButtonWeight"
                             )
 
@@ -1972,21 +1964,29 @@ fun BottomSheetPlayer(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
-                                    Icon(
-                                        painter = painterResource(
-                                            if (isListenTogetherGuest) {
-                                                if (isMuted) R.drawable.volume_off else R.drawable.volume_up
-                                            } else {
-                                                if (effectiveIsPlaying) R.drawable.pause else R.drawable.play
-                                            }
-                                        ),
-                                        contentDescription = if (isListenTogetherGuest) {
-                                            if (isMuted) stringResource(R.string.unmute) else stringResource(R.string.mute)
-                                        } else {
-                                            if (effectiveIsPlaying) stringResource(R.string.pause) else stringResource(R.string.play)
+                                    val iconRes = if (isListenTogetherGuest) {
+                                        if (isMuted) R.drawable.volume_off else R.drawable.volume_up
+                                    } else {
+                                        if (effectiveIsPlaying) R.drawable.pause else R.drawable.play
+                                    }
+                                    val iconDesc = if (isListenTogetherGuest) {
+                                        if (isMuted) stringResource(R.string.unmute) else stringResource(R.string.mute)
+                                    } else {
+                                        if (effectiveIsPlaying) stringResource(R.string.pause) else stringResource(R.string.play)
+                                    }
+                                    AnimatedContent(
+                                        targetState = iconRes,
+                                        transitionSpec = {
+                                            fadeIn(animationSpec = JUNOMotion.FastFloatSpec) togetherWith fadeOut(animationSpec = JUNOMotion.FastFloatSpec)
                                         },
-                                        modifier = Modifier.size(32.dp)
-                                    )
+                                        label = "PlayPauseIconTransition"
+                                    ) { targetIcon ->
+                                        Icon(
+                                            painter = painterResource(targetIcon),
+                                            contentDescription = iconDesc,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                    }
                                 }
                             }
 
@@ -2201,7 +2201,7 @@ fun BottomSheetPlayer(
                                 
                                 val animatedSystemVolume by animateFloatAsState(
                                     targetValue = systemVolume,
-                                    animationSpec = tween(150, easing = LinearOutSlowInEasing),
+                                     animationSpec = tween(durationMillis = JUNOMotion.DurationFast, easing = JUNOMotion.EmphasizedDecelerate),
                                     label = "animatedSystemVolume"
                                 )
                                 
@@ -2211,19 +2211,13 @@ fun BottomSheetPlayer(
                                 
                                 val volumeTrackHeight by animateDpAsState(
                                     targetValue = if (isVolumeActive) 16.dp else 10.dp,
-                                    animationSpec = spring(
-                                        dampingRatio = 0.7f, 
-                                        stiffness = 600f 
-                                    ),
+                                    animationSpec = JUNOMotion.CrispSpringDp,
                                     label = "volumeTrackHeight"
                                 )
 
                                 val volumeIconScale by animateFloatAsState(
                                     targetValue = if (isVolumeActive) 1.15f else 1f,
-                                    animationSpec = spring(
-                                        dampingRatio = 0.7f,
-                                        stiffness = 600f
-                                    ),
+                                    animationSpec = JUNOMotion.CrispSpring,
                                     label = "volumeIconScale"
                                 )
 
@@ -2308,8 +2302,8 @@ fun BottomSheetPlayer(
 
                         AnimatedVisibility(
                             visible = !useNewPlayerDesign && bluetoothDeviceName != null,
-                            enter = fadeIn(tween(400)) + expandVertically(tween(400)),
-                            exit = fadeOut(tween(400)) + shrinkVertically(tween(400)),
+                            enter = fadeIn(tween(durationMillis = JUNOMotion.DurationSlow, easing = JUNOMotion.EmphasizedDecelerate)) + expandVertically(tween(durationMillis = JUNOMotion.DurationSlow, easing = JUNOMotion.EmphasizedDecelerate)),
+                            exit = fadeOut(tween(durationMillis = JUNOMotion.DurationSlow, easing = JUNOMotion.EmphasizedDecelerate)) + shrinkVertically(tween(durationMillis = JUNOMotion.DurationSlow, easing = JUNOMotion.EmphasizedDecelerate)),
                             label = "BluetoothInfoVisibility"
                         ) {
                             val nameToShow = bluetoothDeviceName ?: lastNonNullName
@@ -2883,7 +2877,7 @@ private fun BackgroundVideoView(
 
     val alpha by animateFloatAsState(
         targetValue = if (isVideoReady) 1f else 0f,
-        animationSpec = tween(800),
+        animationSpec = tween(800, easing = JUNOMotion.EmphasizedDecelerate),
         label = "videoAlpha"
     )
 
@@ -3100,10 +3094,7 @@ private fun PlaybackProgressBlock(
 
             val trackHeight by animateDpAsState(
                 targetValue = if (isTrackActive) 16.dp else 10.dp,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                ),
+                animationSpec = JUNOMotion.CrispSpringDp,
                 label = "trackHeight"
             )
 
@@ -3208,8 +3199,8 @@ private fun PlaybackProgressBlock(
                     AnimatedContent(
                         targetState = sleepTimerEnabled,
                         transitionSpec = {
-                            fadeIn(animationSpec = tween(300)) togetherWith
-                                    fadeOut(animationSpec = tween(300))
+                            fadeIn(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) togetherWith
+                                    fadeOut(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate))
                         },
                         label = "QualityTimerSwitcher"
                     ) { isTimerActive ->

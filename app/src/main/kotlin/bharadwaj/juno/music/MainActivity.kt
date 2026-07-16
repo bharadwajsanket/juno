@@ -29,6 +29,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -198,6 +199,7 @@ import bharadwaj.juno.music.ui.screens.settings.DarkMode
 import bharadwaj.juno.music.ui.screens.settings.NavigationTab
 import bharadwaj.juno.music.ui.theme.ColorSaver
 import bharadwaj.juno.music.ui.theme.DefaultThemeColor
+import bharadwaj.juno.music.ui.theme.JUNOMotion
 import bharadwaj.juno.music.ui.theme.junoMusicTheme
 import bharadwaj.juno.music.ui.theme.extractThemeColor
 import bharadwaj.juno.music.ui.utils.appBarScrollBehavior
@@ -1010,60 +1012,60 @@ class MainActivity : ComponentActivity() {
                                     }.route,
                                     
                                     enterTransition = {
-                                        val currentRouteIndex = navigationItems.items.indexOfFirst {
-                                            it.route == targetState.destination.route
-                                        }
-                                        val previousRouteIndex = navigationItems.items.indexOfFirst {
-                                            it.route == initialState.destination.route
-                                        }
+                                         val currentRouteIndex = navigationItems.items.indexOfFirst {
+                                             it.route == targetState.destination.route
+                                         }
+                                         val previousRouteIndex = navigationItems.items.indexOfFirst {
+                                             it.route == initialState.destination.route
+                                         }
 
-                                        if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex)
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(200))
-                                        else
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(200))
-                                    },
-                                    
-                                    exitTransition = {
-                                        val currentRouteIndex = navigationItems.items.indexOfFirst {
-                                            it.route == initialState.destination.route
-                                        }
-                                        val targetRouteIndex = navigationItems.items.indexOfFirst {
-                                            it.route == targetState.destination.route
-                                        }
+                                         if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex)
+                                             slideInHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) { it / 8 } + fadeIn(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
+                                         else
+                                             slideInHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) { -it / 8 } + fadeIn(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
+                                     },
+                                     
+                                     exitTransition = {
+                                         val currentRouteIndex = navigationItems.items.indexOfFirst {
+                                             it.route == initialState.destination.route
+                                         }
+                                         val targetRouteIndex = navigationItems.items.indexOfFirst {
+                                             it.route == targetState.destination.route
+                                         }
 
-                                        if (targetRouteIndex == -1 || targetRouteIndex > currentRouteIndex)
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(200))
-                                        else
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(200))
-                                    },
-                                    
-                                    popEnterTransition = {
-                                        val currentRouteIndex = navigationItems.items.indexOfFirst {
-                                            it.route == targetState.destination.route
-                                        }
-                                        val previousRouteIndex = navigationItems.items.indexOfFirst {
-                                            it.route == initialState.destination.route
-                                        }
+                                         if (targetRouteIndex == -1 || targetRouteIndex > currentRouteIndex)
+                                             slideOutHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedAccelerate)) { -it / 8 } + fadeOut(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
+                                         else
+                                             slideOutHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedAccelerate)) { it / 8 } + fadeOut(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
+                                     },
+                                     
+                                     popEnterTransition = {
+                                         val currentRouteIndex = navigationItems.items.indexOfFirst {
+                                             it.route == targetState.destination.route
+                                         }
+                                         val previousRouteIndex = navigationItems.items.indexOfFirst {
+                                             it.route == initialState.destination.route
+                                         }
 
-                                        if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex)
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(200))
-                                        else
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(200))
-                                    },
-                                    
-                                    popExitTransition = {
-                                        val currentRouteIndex = navigationItems.items.indexOfFirst {
-                                            it.route == initialState.destination.route
-                                        }
-                                        val targetRouteIndex = navigationItems.items.indexOfFirst {
-                                            it.route == targetState.destination.route
-                                        }
+                                         if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex)
+                                             slideInHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) { it / 8 } + fadeIn(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
+                                         else
+                                             slideInHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) { -it / 8 } + fadeIn(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
+                                     },
+                                     
+                                     popExitTransition = {
+                                         val currentRouteIndex = navigationItems.items.indexOfFirst {
+                                             it.route == initialState.destination.route
+                                         }
+                                         val targetRouteIndex = navigationItems.items.indexOfFirst {
+                                             it.route == targetState.destination.route
+                                         }
 
-                                        if (currentRouteIndex != -1 && currentRouteIndex < targetRouteIndex)
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(200))
-                                        else
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(200))
-                                    },
+                                         if (currentRouteIndex != -1 && currentRouteIndex < targetRouteIndex)
+                                             slideOutHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedAccelerate)) { -it / 8 } + fadeOut(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
+                                         else
+                                             slideOutHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedAccelerate)) { it / 8 } + fadeOut(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
+                                     },
                                     modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
                                 ) {
                                     navigationBuilder(

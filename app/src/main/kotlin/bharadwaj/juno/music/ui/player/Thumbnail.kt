@@ -10,6 +10,9 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -482,7 +485,8 @@ fun Thumbnail(
                                 isLandscape = isLandscape,
                                 currentMediaId = mediaMetadata?.id,
                                 currentMediaThumbnail = mediaMetadata?.thumbnailUrl,
-                                playerBackground = playerBackground
+                                playerBackground = playerBackground,
+                                modifier = Modifier.animateItem()
                             )
                         }
                     }
@@ -651,11 +655,22 @@ private fun ThumbnailItem(
             },
         contentAlignment = Alignment.Center
     ) {
+        val artworkScale by animateFloatAsState(
+            targetValue = if (isPlaying && isCurrentItem) 1.0f else 0.94f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow
+            ),
+            label = "ArtworkScale"
+        )
+
         Box(
             modifier = Modifier
                 .size(dimensions.thumbnailSize)
                 .graphicsLayer {
                     rotationZ = rotation
+                    scaleX = artworkScale
+                    scaleY = artworkScale
                 }
                 .clip(
                     if (rotatingThumbnail) {

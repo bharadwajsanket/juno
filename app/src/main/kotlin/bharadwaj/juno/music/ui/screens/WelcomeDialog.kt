@@ -37,6 +37,8 @@ import bharadwaj.juno.music.R
 import bharadwaj.juno.music.constants.LocalProfileNameKey
 import bharadwaj.juno.music.constants.OnboardingCompletedKey
 import bharadwaj.juno.music.utils.rememberPreference
+import bharadwaj.juno.music.ui.theme.JUNOCorners
+import bharadwaj.juno.music.ui.theme.JUNOMotion
 
 @Composable
 fun WelcomeDialog(
@@ -121,7 +123,7 @@ fun WelcomeDialog(
             AnimatedContent(
                 targetState = currentStep,
                 transitionSpec = {
-                    fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+                    fadeIn(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) togetherWith fadeOut(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate))
                 },
                 label = "step_transition"
             ) { step ->
@@ -163,7 +165,7 @@ fun WelcomeDialog(
                             label = { Text("Name") },
                             placeholder = { Text("Enter your name") },
                             singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = JUNOCorners.lg,
                             keyboardOptions = KeyboardOptions(
                                 capitalization = KeyboardCapitalization.Words,
                                 imeAction = ImeAction.Done
@@ -180,7 +182,7 @@ fun WelcomeDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(50.dp),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = JUNOCorners.lg,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -266,7 +268,7 @@ fun WelcomeDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(50.dp),
-                                shape = RoundedCornerShape(16.dp),
+                                shape = JUNOCorners.lg,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (permissionsGranted) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
                                     contentColor = if (permissionsGranted) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onPrimary
@@ -287,7 +289,7 @@ fun WelcomeDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(50.dp),
-                                shape = RoundedCornerShape(16.dp),
+                                shape = JUNOCorners.lg,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -312,7 +314,7 @@ private fun PermissionItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(JUNOCorners.lg)
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -321,7 +323,7 @@ private fun PermissionItem(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(JUNOCorners.md)
                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
         ) {

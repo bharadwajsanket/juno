@@ -74,6 +74,7 @@ import bharadwaj.juno.music.extensions.toMediaItem
 import bharadwaj.juno.music.models.MediaMetadata
 import bharadwaj.juno.music.models.toMediaMetadata
 import bharadwaj.juno.music.ui.component.ShareStoryDialog
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 import bharadwaj.juno.music.playback.ExoDownloadService
 import bharadwaj.juno.music.playback.queues.YouTubeQueue
 import bharadwaj.juno.music.ui.component.ListDialog
@@ -227,14 +228,14 @@ fun YouTubeSongMenu(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(ListThumbnailSize)
-                    .clip(RoundedCornerShape(ThumbnailCornerRadius))
+                    .clip(JUNOCorners.xl)
             ) {
                 AsyncImage(
                     model = song.thumbnail,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(ThumbnailCornerRadius))
+                        .clip(JUNOCorners.xl)
                 )
             }
         },

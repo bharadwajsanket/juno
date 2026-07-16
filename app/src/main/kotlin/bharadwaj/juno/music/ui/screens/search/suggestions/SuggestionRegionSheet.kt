@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import bharadwaj.juno.music.constants.SuggestionRegionSlugToName
+import bharadwaj.juno.music.ui.theme.JUNOMotion
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -177,6 +178,7 @@ fun RegionListItem(
             if (items == 1 || index == 0) 20.dp
             else 4.dp
         },
+        animationSpec = JUNOMotion.TouchSpringDp,
         label = "top"
     )
     val bottom by animateDpAsState(
@@ -185,6 +187,7 @@ fun RegionListItem(
             if (items == 1 || index == items - 1) 20.dp
             else 4.dp
         },
+        animationSpec = JUNOMotion.TouchSpringDp,
         label = "bottom"
     )
 

@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import bharadwaj.juno.music.constants.NavigationBarAnimationSpec
+import bharadwaj.juno.music.utils.rememberPreference
+import bharadwaj.juno.music.constants.ThumbnailCornerRadiusKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.pow
@@ -60,6 +62,7 @@ fun BottomSheet(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val density = LocalDensity.current
+    val radiusFloat by rememberPreference(ThumbnailCornerRadiusKey, defaultValue = 16f)
     
     Box(
         modifier = modifier
@@ -101,7 +104,7 @@ fun BottomSheet(
                 )
             }
             .graphicsLayer {
-                val cornerRadius = if (!state.isExpanded) 16.dp.toPx() else 0f
+                val cornerRadius = if (!state.isExpanded) radiusFloat.dp.toPx() else 0f
                 shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius)
                 clip = true
             }

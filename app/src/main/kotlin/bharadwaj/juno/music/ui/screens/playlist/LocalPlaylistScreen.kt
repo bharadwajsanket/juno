@@ -36,6 +36,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -1034,7 +1035,7 @@ fun LocalPlaylistHeader(
                 .padding(bottom = 24.dp)
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(JUNOCorners.xl)
         ) {
             when (playlist.thumbnails.size) {
                 0 -> Surface(
@@ -1413,7 +1414,7 @@ private fun MetadataChip(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
+        shape = JUNOCorners.full,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
     ) {
         Row(

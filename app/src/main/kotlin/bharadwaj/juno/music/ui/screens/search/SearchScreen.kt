@@ -29,6 +29,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import bharadwaj.juno.music.ui.theme.JUNOMotion
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -151,12 +153,12 @@ fun SearchScreen(
 
     val searchBarHorizontalPadding by animateDpAsState(
         targetValue = if (searchActive) 0.dp else 16.dp,
-        animationSpec = tween(durationMillis = 245, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate),
         label = "SearchBarHorizontalPadding"
     )
     val searchBarTopPadding by animateDpAsState(
         targetValue = if (searchActive) 0.dp else 8.dp,
-        animationSpec = tween(durationMillis = 245, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate),
         label = "SearchBarTopPadding"
     )
 
@@ -302,7 +304,7 @@ fun SearchScreen(
                             }
                         }
                     },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = JUNOCorners.lg,
                     colors = SearchBarDefaults.colors(
                         containerColor = if (pureBlack) Color.White.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceContainer
                     ),
@@ -336,8 +338,8 @@ fun SearchScreen(
 
                 AnimatedVisibility(
                     visible = !searchActive,
-                    enter = expandVertically(animationSpec = tween(durationMillis = 245, easing = FastOutSlowInEasing)) + fadeIn(),
-                    exit = shrinkVertically(animationSpec = tween(durationMillis = 245, easing = FastOutSlowInEasing)) + fadeOut()
+                    enter = expandVertically(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) + fadeIn(),
+                    exit = shrinkVertically(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) + fadeOut()
                 ) {
                     Column {
                         Spacer(modifier = Modifier.height(8.dp))

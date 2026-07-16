@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -453,7 +454,7 @@ private fun SuccessState(
             modifier = Modifier
                 .size(180.dp)
                 .aspectRatio(1f),
-            shape = RoundedCornerShape(bharadwaj.juno.music.constants.ThumbnailCornerRadius),
+            shape = JUNOCorners.xl,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             AsyncImage(

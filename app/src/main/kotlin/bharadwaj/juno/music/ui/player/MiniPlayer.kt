@@ -2,6 +2,8 @@
 
 package bharadwaj.juno.music.ui.player
 
+import bharadwaj.juno.music.ui.theme.JUNOMotion
+
 import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
@@ -176,24 +178,18 @@ fun Modifier.physicalClickable(
     val scale by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (isPressed && enabled) 0.965f else 1.0f,
         animationSpec = if (isPressed) {
-            androidx.compose.animation.core.tween(durationMillis = 110, easing = androidx.compose.animation.core.EaseOutSine)
+            JUNOMotion.FastFloatSpec
         } else {
-            androidx.compose.animation.core.spring(
-                dampingRatio = androidx.compose.animation.core.Spring.DampingRatioNoBouncy,
-                stiffness = androidx.compose.animation.core.Spring.StiffnessLow
-            )
+            JUNOMotion.EmphasizedSpring
         },
         label = "click_scale"
     )
     val opacity by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (isPressed && enabled) 0.92f else 1.0f,
         animationSpec = if (isPressed) {
-            androidx.compose.animation.core.tween(durationMillis = 110, easing = androidx.compose.animation.core.EaseOutSine)
+            JUNOMotion.FastFloatSpec
         } else {
-            androidx.compose.animation.core.spring(
-                dampingRatio = androidx.compose.animation.core.Spring.DampingRatioNoBouncy,
-                stiffness = androidx.compose.animation.core.Spring.StiffnessLow
-            )
+            JUNOMotion.EmphasizedSpring
         },
         label = "click_opacity"
     )
@@ -584,7 +580,7 @@ private fun NewMiniPlayerThumbnail(
     AnimatedContent(
         targetState = mediaMetadata?.thumbnailUrl,
         transitionSpec = {
-            fadeIn(animationSpec = tween(220)) togetherWith fadeOut(animationSpec = tween(220))
+            fadeIn(animationSpec = JUNOMotion.NormalFloatSpec) togetherWith fadeOut(animationSpec = JUNOMotion.NormalFloatSpec)
         },
         label = "thumbnail_transition"
     ) { url ->
@@ -635,8 +631,8 @@ private fun NewMiniPlayerSongInfo(
         AnimatedContent(
             targetState = mediaMetadata,
             transitionSpec = {
-                (slideInVertically(animationSpec = tween(220)) { slideDistancePx } + fadeIn(animationSpec = tween(220)))
-                    .togetherWith(slideOutVertically(animationSpec = tween(220)) { -slideDistancePx } + fadeOut(animationSpec = tween(220)))
+                (slideInVertically(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) { slideDistancePx } + fadeIn(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal)))
+                    .togetherWith(slideOutVertically(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedAccelerate)) { -slideDistancePx } + fadeOut(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal)))
             },
             label = "song_info_transition"
         ) { metadata ->

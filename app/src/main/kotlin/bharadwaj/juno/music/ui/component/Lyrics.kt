@@ -9,6 +9,7 @@ import android.text.Layout
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import bharadwaj.juno.music.ui.theme.JUNOMotion
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -591,7 +592,7 @@ fun Lyrics(
         }
     }
 
-    suspend fun performSmoothPageScroll(targetIndex: Int, duration: Int = 1500) {
+    suspend fun performSmoothPageScroll(targetIndex: Int, duration: Int = 600) {
         if (isAnimating) return 
         isAnimating = true
         try {
@@ -606,7 +607,7 @@ fun Lyrics(
                 if (kotlin.math.abs(offset) > 10) {
                     lazyListState.animateScrollBy(
                         value = offset.toFloat(),
-                        animationSpec = tween(durationMillis = duration)
+                        animationSpec = JUNOMotion.LyricsScrollSpec
                     )
                 }
             } else {
@@ -823,7 +824,7 @@ fun Lyrics(
                                             if (kotlin.math.abs(offset) > 10) {
                                                 lazyListState.animateScrollBy(
                                                     value = offset.toFloat(),
-                                                    animationSpec = tween(durationMillis = 1500)
+                                                    animationSpec = JUNOMotion.LyricsScrollSpec
                                                 )
                                             }
                                         }
@@ -902,7 +903,7 @@ fun Lyrics(
                                             if (kotlin.math.abs(offset) > 10) {
                                                 lazyListState.animateScrollBy(
                                                     value = offset.toFloat(),
-                                                    animationSpec = tween(durationMillis = 1500)
+                                                    animationSpec = JUNOMotion.LyricsScrollSpec
                                                 )
                                             }
                                         }
@@ -967,7 +968,7 @@ fun Lyrics(
                                             if (kotlin.math.abs(offset) > 10) { 
                                                 lazyListState.animateScrollBy(
                                                     value = offset.toFloat(),
-                                                    animationSpec = tween(durationMillis = 1500) 
+                                                    animationSpec = JUNOMotion.LyricsScrollSpec
                                                 )
                                             }
                                         }
@@ -1005,18 +1006,18 @@ fun Lyrics(
                     val isActiveByIndex = index == displayedCurrentLineIndex
                     val isActiveByTime = isLineAtSameTime && displayedCurrentLineIndex >= 0
                     
-                    val alpha by animateFloatAsState(
-                        targetValue = when {
-                            !isSynced || (isSelectionModeActive && isSelected) -> 1f
-                            isActiveByIndex || isActiveByTime -> 1f
-                            else -> 0.5f
-                        },
-                        animationSpec = tween(durationMillis = 400)
-                    )
-                    val scale by animateFloatAsState(
-                        targetValue = if (isActiveByIndex || isActiveByTime) 1.05f else 1f,
-                        animationSpec = tween(durationMillis = 400)
-                    )
+                     val alpha by animateFloatAsState(
+                         targetValue = when {
+                             !isSynced || (isSelectionModeActive && isSelected) -> 1f
+                             isActiveByIndex || isActiveByTime -> 1f
+                             else -> 0.5f
+                         },
+                         animationSpec = JUNOMotion.NormalFloatSpec
+                     )
+                     val scale by animateFloatAsState(
+                         targetValue = if (isActiveByIndex || isActiveByTime) 1.05f else 1f,
+                         animationSpec = JUNOMotion.NormalFloatSpec
+                     )
 
                     
                     
@@ -1033,11 +1034,11 @@ fun Lyrics(
                         }
                     }
 
-                    val blurRadius by animateFloatAsState(
-                        targetValue = targetBlur,
-                        animationSpec = tween(durationMillis = 1000),
-                        label = "standard_blur"
-                    )
+                     val blurRadius by animateFloatAsState(
+                         targetValue = targetBlur,
+                         animationSpec = JUNOMotion.SlowFloatSpec,
+                         label = "standard_blur"
+                     )
 
                     
                     val agentAlignment = when {

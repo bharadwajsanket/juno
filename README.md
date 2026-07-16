@@ -13,7 +13,7 @@
   <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin"></a>
   <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Compose-1.7.5-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/bharadwajsanket/juno?style=for-the-badge&color=28a745" alt="License"></a>
-  <a href="https://github.com/bharadwajsanket/juno/releases"><img src="https://img.shields.io/badge/Release-v4.5.4-blue?style=for-the-badge" alt="Release"></a>
+  <a href="https://github.com/bharadwajsanket/juno/releases"><img src="https://img.shields.io/badge/Release-v5.5.4-blue?style=for-the-badge" alt="Release"></a>
 </p>
 
 <br>
@@ -34,22 +34,17 @@ It plays your local library, streams when you want it to, downloads for offline 
 
 The headline feature of the v4.0 series is **Living Sky & Living Environment** — a procedural rendering engine that mirrors the real sky and weather outside your window, turning the now-playing screen into something closer to a window than a control panel.
 
-> **Current status:** v4.5.4 — Stable. Adaptive Layout Engine release.
+> **Current status:** v5.5.4 — Stable. Motion & Polish release.
 
-### What's New in v4.5.4
+### What's New in v5.5.4
 
-- **Adaptive Layout Engine (Phase 1–3):** JUNO now renders intentionally across all screen sizes — phones, landscape phones, foldables, tablets, and ChromeOS — without maintaining separate UIs.
-- **Two-Column Home Screen:** On displays ≥ 600 dp wide, the Home screen shows a sticky left sidebar (greeting, Speed Dial) alongside the full feed column.
-- **Landscape Player — Two-Pane Layout:** The full-screen player splits into an artwork pane (left) and a centered controls pane (right) in landscape orientation.
-- **Quick Action Row:** Lyrics, Sleep Timer, Equalizer, Fullscreen, and Repeat controls are grouped directly under the artwork in landscape for easy one-hand reach.
-- **Integrated Overflow Menu:** The three-dot overflow button is embedded inside the playback controls row in landscape mode — no more floating button.
-- **Artwork Proportion Control:** Landscape artwork is constrained to 260–320 dp to prevent it dominating the screen and to give controls room to breathe.
-- **Widescreen Queue Sheet:** The expanded queue and collapsed control bar are width-constrained to 600 dp and centered on wide screens.
-- **Widescreen Lyrics View:** The lyrics scrolling container is constrained to 520 dp in landscape.
-- **Speed Dial Grid Engine:** Speed Dial computes card count and size mathematically from available width. Cards are always uniform. Columns never stretch.
-- **Speed Dial Sidebar Alignment:** In wide layout, Speed Dial cards align precisely to the same 16 dp left margin as section headers and greeting text.
-- **Spacing System:** All hardcoded layout spacer values replaced with `JUNOSpacing` design tokens throughout the adaptive code paths.
-- **Navigation Rail:** On wide screens the bottom navigation bar transitions to a navigation rail with icon labels.
+- **Unified Motion System:** All animation durations, spring parameters, and easing curves are now defined in a single `JUNOMotion` design token system — no more ad-hoc tweens scattered across the codebase.
+- **Premium Player Animations:** The Mini Player and full Player view use spring-based artwork crossfades, organic button press scaling, and intentional deceleration curves for a fluid, tactile feel.
+- **Tactile Interactions:** Song rows, album cards, playlist tiles, and FABs now respond to touch with consistent bounce-spring press animations via a unified `.bounceClick` modifier.
+- **UI Consistency:** Corner shapes, spacing tokens, shimmer loading states, and bottom sheet styling are unified across all screens so no part of the app feels out of place.
+- **Navigation Polish:** Screen enter/exit transitions are standardized. Shared element motion is smoother. Navigation feels continuous rather than abrupt.
+- **Scrolling Performance:** Lazy list recomposition during fast scrolling is optimized — shape lookups and preference reads are now scoped at the container level, not per-item.
+- **Version Cleanup:** Internal versioning updated to v5.5.4 throughout the build system.
 
 <br>
 
@@ -164,7 +159,7 @@ State flows down, events flow up — each layer depends only on the one beneath 
 ## Installation
 
 1. Visit the [Releases](https://github.com/bharadwajsanket/juno/releases) page.
-2. Download the latest `JUNO-4.1.1-Universal.apk` (or the GMS variant).
+2. Download the latest `JUNO-5.5.4-Universal.apk` (or the GMS variant).
 3. Install on your device, enabling installation from unknown sources if prompted.
 
 <br>

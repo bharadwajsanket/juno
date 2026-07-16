@@ -52,6 +52,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -620,7 +621,7 @@ private fun OnlinePlaylistHeader(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(JUNOCorners.xl),
                     contentScale = ContentScale.Crop
                 )
             }
@@ -799,7 +800,7 @@ private fun OnlinePlaylistHeader(
             
             if (hasExplicitContent) {
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
+                    shape = JUNOCorners.sm,
                     color = MaterialTheme.colorScheme.surfaceVariant
                 ) {
                     Row(
@@ -828,7 +829,7 @@ private fun OnlinePlaylistHeader(
             
             val totalDuration = songs.sumOf { it.duration ?: 0 }
             Surface(
-                shape = RoundedCornerShape(6.dp),
+                shape = JUNOCorners.sm,
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.padding(horizontal = 32.dp)
             ) {

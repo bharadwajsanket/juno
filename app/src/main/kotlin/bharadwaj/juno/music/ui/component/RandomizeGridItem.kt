@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import bharadwaj.juno.music.constants.ThumbnailCornerRadius
+import bharadwaj.juno.music.extensions.bounceClick
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -38,16 +39,7 @@ fun RandomizeGridItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "bounceScale"
-    )
+
     
     val dotOffsetMultiplier by animateFloatAsState(
         targetValue = if (isLoading) 0f else 1f,
@@ -66,10 +58,7 @@ fun RandomizeGridItem(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
+
             .shadow(
                 elevation = 4.dp,
                 shape = shape,
@@ -87,11 +76,7 @@ fun RandomizeGridItem(
                 shape = shape
             )
             .clip(shape)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            ),
+            .bounceClick(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         

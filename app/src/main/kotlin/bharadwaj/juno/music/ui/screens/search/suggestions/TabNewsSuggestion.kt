@@ -28,6 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import bharadwaj.juno.music.ui.theme.JUNOMotion
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -251,7 +252,7 @@ fun TrendingAppleMusicSection(
         HorizontalPager(
             state = pagerState,
             verticalAlignment = Alignment.Top,
-            modifier = Modifier.fillMaxWidth().animateContentSize(tween(300, easing = FastOutSlowInEasing))
+            modifier = Modifier.fillMaxWidth().animateContentSize(tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate))
         ) { page ->
             Column(
                 verticalArrangement = Arrangement.spacedBy(2.dp),

@@ -69,6 +69,7 @@ import bharadwaj.juno.music.db.entities.PlaylistSongMap
 import bharadwaj.juno.music.extensions.toMediaItem
 import bharadwaj.juno.music.models.MediaMetadata
 import bharadwaj.juno.music.models.toMediaMetadata
+import bharadwaj.juno.music.ui.theme.JUNOCorners
 import bharadwaj.juno.music.playback.ExoDownloadService
 import bharadwaj.juno.music.playback.queues.YouTubeQueue
 import bharadwaj.juno.music.ui.component.DefaultDialog
@@ -306,7 +307,7 @@ fun YouTubePlaylistMenu(
                                 contentDescription = null,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(RoundedCornerShape(ThumbnailCornerRadius)),
+                                    .clip(JUNOCorners.xl),
                             )
                         }
                     },
