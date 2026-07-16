@@ -1,31 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- Background Circle -->
+
+    <!--
+        JUNO 24dp in-app icon — Singularity × Halo × Orbit (simplified)
+        Readable at small sizes: single ring stroke + satellite dot.
+        No glow layers at this size — they are not perceptible below 48dp.
+    -->
+
+    <!-- Singularity — dark inner fill -->
     <path
-        android:pathData="M 12,2 A 10,10 0 1,0 12,22 A 10,10 0 1,0 12,2 Z"
-        android:fillColor="#090909" />
-    <!-- Left Ring -->
+        android:fillColor="#0D0B12"
+        android:pathData="M 12,3 A 9,9 0 1,0 12,21 A 9,9 0 1,0 12,3 Z" />
+
+    <!-- Halo ring -->
     <path
-        android:pathData="M 10,6.5 A 5.5,5.5 0 1,0 10,17.5 A 5.5,5.5 0 1,0 10,6.5"
-        android:strokeColor="#FFFFFF"
+        android:fillColor="#00000000"
+        android:strokeColor="#9F86C0"
         android:strokeWidth="1.2"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
-    <!-- Right Ring -->
+        android:pathData="M 12,3 A 9,9 0 1,0 12,21 A 9,9 0 1,0 12,3 Z" />
+
+    <!-- Orbit satellite dot at ~1 o'clock
+         x = 12 + 9*cos(30°) = 12 + 7.79 = 19.79
+         y = 12 - 9*sin(30°) = 12 - 4.5 = 7.5
+    -->
     <path
-        android:pathData="M 14,6.5 A 5.5,5.5 0 1,0 14,17.5 A 5.5,5.5 0 1,0 14,6.5"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="1.2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
-    <!-- Floating Crossbar -->
-    <path
-        android:pathData="M 9.5,13 L 14.5,13"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="1.2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M 19.79,6.25 A 1.25,1.25 0 1,0 19.79,8.75 A 1.25,1.25 0 1,0 19.79,6.25 Z" />
+
 </vector>

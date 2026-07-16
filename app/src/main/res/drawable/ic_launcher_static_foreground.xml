@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!--
+        JUNO Brand Identity — Light App Icon Foreground
+        Used by the Static launcher icon option on a white background.
+        
+        To prevent the satellite dot from blending into the white background,
+        the dot is colored using the dark brand tone (#0D0B12).
+    -->
+
+    <!-- Centre coordinates: 54, 54. Ring radius: 22dp. -->
+
+    <!-- 1. Singularity — filled inner dark circle -->
+    <path
+        android:fillColor="#0D0B12"
+        android:pathData="M 54,32 A 22,22 0 1,0 54,76 A 22,22 0 1,0 54,32 Z" />
+
+    <!-- 2. Halo outer glow — wide faint aura -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#7B5EA7"
+        android:strokeWidth="5.5"
+        android:strokeAlpha="0.15"
+        android:strokeLineCap="round"
+        android:pathData="M 54,30 A 24,24 0 1,0 54,78 A 24,24 0 1,0 54,30 Z" />
+
+    <!-- 3. Halo main ring — primary purple stroke -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#9F86C0"
+        android:strokeWidth="2.2"
+        android:strokeAlpha="0.95"
+        android:strokeLineCap="round"
+        android:pathData="M 54,32 A 22,22 0 1,0 54,76 A 22,22 0 1,0 54,32 Z" />
+
+    <!-- 4. Halo inner highlight — thin bright inner rim -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#C5B0E8"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.50"
+        android:strokeLineCap="round"
+        android:pathData="M 54,33.5 A 20.5,20.5 0 1,0 54,74.5 A 20.5,20.5 0 1,0 54,33.5 Z" />
+
+    <!-- 5. Orbit satellite — Dark dot (#0D0B12) so it is clearly defined and
+         visible against the white launcher icon background. -->
+    <path
+        android:fillColor="#0D0B12"
+        android:pathData="M 73.05,40.7 A 3.0,3.0 0 1,0 73.05,46.7 A 3.0,3.0 0 1,0 73.05,40.7 Z" />
+
+</vector>

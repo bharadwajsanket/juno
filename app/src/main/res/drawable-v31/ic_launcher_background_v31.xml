@@ -1,7 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    JUNO Adaptive Icon Background — API 31+
+    Fixed deep-black brand background (#090909). The previous system-accent gradient
+    conflicted with the fixed purple-on-black brand identity and produced inconsistent
+    results across wallpaper colours. Replaced with a solid colour to match the brand sheet.
+-->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <gradient
-        android:angle="45.0"
-        android:endColor="@android:color/system_accent2_400"
-        android:startColor="@android:color/system_accent1_800"
-        android:type="linear" />
+    <solid android:color="#090909" />
 </shape>

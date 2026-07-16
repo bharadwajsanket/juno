@@ -89,4 +89,30 @@ object JUNOMotion {
 
     val ScaleIn: EnterTransition = scaleIn(animationSpec = tween(durationMillis = DurationNormal, easing = EmphasizedDecelerate), initialScale = 0.95f)
     val ScaleOut: ExitTransition = scaleOut(animationSpec = tween(durationMillis = DurationNormal, easing = EmphasizedAccelerate), targetScale = 0.95f)
+
+    // Navigation Depth Transitions
+    // Replace horizontal slide with pure scale+fade to simulate depth rather than
+    // lateral movement. The screen gently settles into place (forward) or recedes
+    // back (pop). No horizontal translation at any point.
+    //
+    // Forward enter: scale 0.97→1.0 + fade in — destination rises from slightly behind
+    // Forward exit:  scale 1.0→0.97 + fade out — outgoing screen recedes slightly
+    // Pop enter:     scale 1.03→1.0 + fade in — previous screen expands as it returns
+    // Pop exit:      scale 1.0→1.03 + fade out — current screen expands as it leaves
+
+    val NavEnter: EnterTransition =
+        fadeIn(animationSpec = tween(durationMillis = DurationNormal, easing = LinearEasing)) +
+        scaleIn(animationSpec = tween(durationMillis = DurationNormal, easing = EmphasizedDecelerate), initialScale = 0.97f)
+
+    val NavExit: ExitTransition =
+        fadeOut(animationSpec = tween(durationMillis = DurationFast, easing = LinearEasing)) +
+        scaleOut(animationSpec = tween(durationMillis = DurationFast, easing = EmphasizedAccelerate), targetScale = 0.97f)
+
+    val NavPopEnter: EnterTransition =
+        fadeIn(animationSpec = tween(durationMillis = DurationNormal, easing = LinearEasing)) +
+        scaleIn(animationSpec = tween(durationMillis = DurationNormal, easing = EmphasizedDecelerate), initialScale = 1.03f)
+
+    val NavPopExit: ExitTransition =
+        fadeOut(animationSpec = tween(durationMillis = DurationFast, easing = LinearEasing)) +
+        scaleOut(animationSpec = tween(durationMillis = DurationFast, easing = EmphasizedAccelerate), targetScale = 1.03f)
 }

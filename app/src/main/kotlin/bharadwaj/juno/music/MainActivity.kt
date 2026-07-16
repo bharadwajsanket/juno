@@ -26,14 +26,7 @@ import android.view.View
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -95,10 +88,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.animateLottieCompositionAsState
-import com.airbnb.lottie.compose.rememberLottieComposition
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -1012,60 +1001,20 @@ class MainActivity : ComponentActivity() {
                                     }.route,
                                     
                                     enterTransition = {
-                                         val currentRouteIndex = navigationItems.items.indexOfFirst {
-                                             it.route == targetState.destination.route
-                                         }
-                                         val previousRouteIndex = navigationItems.items.indexOfFirst {
-                                             it.route == initialState.destination.route
-                                         }
-
-                                         if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex)
-                                             slideInHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) { it / 8 } + fadeIn(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
-                                         else
-                                             slideInHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) { -it / 8 } + fadeIn(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
-                                     },
-                                     
-                                     exitTransition = {
-                                         val currentRouteIndex = navigationItems.items.indexOfFirst {
-                                             it.route == initialState.destination.route
-                                         }
-                                         val targetRouteIndex = navigationItems.items.indexOfFirst {
-                                             it.route == targetState.destination.route
-                                         }
-
-                                         if (targetRouteIndex == -1 || targetRouteIndex > currentRouteIndex)
-                                             slideOutHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedAccelerate)) { -it / 8 } + fadeOut(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
-                                         else
-                                             slideOutHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedAccelerate)) { it / 8 } + fadeOut(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
-                                     },
-                                     
-                                     popEnterTransition = {
-                                         val currentRouteIndex = navigationItems.items.indexOfFirst {
-                                             it.route == targetState.destination.route
-                                         }
-                                         val previousRouteIndex = navigationItems.items.indexOfFirst {
-                                             it.route == initialState.destination.route
-                                         }
-
-                                         if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex)
-                                             slideInHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) { it / 8 } + fadeIn(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
-                                         else
-                                             slideInHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedDecelerate)) { -it / 8 } + fadeIn(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
-                                     },
-                                     
-                                     popExitTransition = {
-                                         val currentRouteIndex = navigationItems.items.indexOfFirst {
-                                             it.route == initialState.destination.route
-                                         }
-                                         val targetRouteIndex = navigationItems.items.indexOfFirst {
-                                             it.route == targetState.destination.route
-                                         }
-
-                                         if (currentRouteIndex != -1 && currentRouteIndex < targetRouteIndex)
-                                             slideOutHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedAccelerate)) { -it / 8 } + fadeOut(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
-                                         else
-                                             slideOutHorizontally(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = JUNOMotion.EmphasizedAccelerate)) { it / 8 } + fadeOut(animationSpec = tween(durationMillis = JUNOMotion.DurationNormal, easing = LinearEasing))
-                                     },
+                                        JUNOMotion.NavEnter
+                                    },
+                                    
+                                    exitTransition = {
+                                        JUNOMotion.NavExit
+                                    },
+                                    
+                                    popEnterTransition = {
+                                        JUNOMotion.NavPopEnter
+                                    },
+                                    
+                                    popExitTransition = {
+                                        JUNOMotion.NavPopExit
+                                    },
                                     modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
                                 ) {
                                     navigationBuilder(

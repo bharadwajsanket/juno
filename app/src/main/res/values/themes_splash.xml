@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        JUNO Splash Screen Theme
+        Extends Theme.SplashScreen (from androidx.core:core-splashscreen).
+        Applied to MainActivity so the splash screen API can intercept the cold start.
+
+        postSplashScreenTheme: restores Theme.junomusic after installSplashScreen() completes.
+        The icon is rendered at 1/3 of the window's smallest dimension by the system.
+        windowSplashScreenAnimationDuration is a hint for the exit animation timing.
+    -->
+    <style name="Theme.Juno.Splash" parent="Theme.SplashScreen">
+        <!-- Brand background — must match ic_launcher_background colour -->
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <!-- Animated icon: scale 0.96→1.0 + opacity 0→1 over 350ms -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_animated</item>
+        <!-- Duration hint for system exit animation scheduling -->
+        <item name="windowSplashScreenAnimationDuration">350</item>
+        <!-- Theme restored after installSplashScreen() in MainActivity.onCreate() -->
+        <item name="postSplashScreenTheme">@style/Theme.junomusic</item>
+    </style>
+</resources>

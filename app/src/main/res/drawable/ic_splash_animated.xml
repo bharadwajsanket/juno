@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    JUNO Splash Animated Icon
+    Used by the Android 12+ splash screen API via windowSplashScreenAnimatedIcon.
+    
+    Motion: opacity 0→1 and scale 0.96→1.0 over 350ms using an emphasized-decelerate curve.
+    The animation plays once during the splash transition.
+    No bounce. No repeat. Calm and intentional.
+    
+    The path interpolator below approximates the Material 3 EmphasizedDecelerate curve
+    (cubic-bezier 0.05, 0.7, 0.1, 1.0) in XML using a <pathInterpolator>.
+-->
+<animated-vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:drawable="@drawable/ic_launcher_foreground">
+
+    <!-- Animate the root group: scale from 0.96 → 1.0 centred on the viewport (54, 54) -->
+    <target
+        android:name="splash_group">
+        <aapt:attr name="android:animation">
+            <set xmlns:android="http://schemas.android.com/apk/res/android"
+                android:ordering="together">
+                <!-- Scale X: 0.96 → 1.0 -->
+                <objectAnimator
+                    android:propertyName="scaleX"
+                    android:valueFrom="0.96"
+                    android:valueTo="1.0"
+                    android:duration="350"
+                    android:startOffset="0"
+                    android:interpolator="@interpolator/juno_splash_interpolator" />
+                <!-- Scale Y: 0.96 → 1.0 -->
+                <objectAnimator
+                    android:propertyName="scaleY"
+                    android:valueFrom="0.96"
+                    android:valueTo="1.0"
+                    android:duration="350"
+                    android:startOffset="0"
+                    android:interpolator="@interpolator/juno_splash_interpolator" />
+                <!-- Alpha: 0 → 1 -->
+                <objectAnimator
+                    android:propertyName="alpha"
+                    android:valueFrom="0.0"
+                    android:valueTo="1.0"
+                    android:duration="350"
+                    android:startOffset="0"
+                    android:interpolator="@interpolator/juno_splash_interpolator" />
+            </set>
+        </aapt:attr>
+    </target>
+
+</animated-vector>
