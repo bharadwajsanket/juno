@@ -474,7 +474,7 @@ fun Queue(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.more_vert),
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.details),
                             modifier = Modifier.size(iconSize),
                             tint = iconButtonColor
                         )
@@ -784,7 +784,7 @@ fun Queue(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.shuffle),
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.shuffle),
                             modifier = Modifier.size(22.dp)
                         )
                         Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
@@ -822,7 +822,7 @@ fun Queue(
                                     else -> R.drawable.repeat
                                 }
                             ),
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.repeat),
                             modifier = Modifier.size(22.dp)
                         )
                         Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
@@ -855,7 +855,7 @@ fun Queue(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 painter = painterResource(R.drawable.radio),
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.radio),
                                 modifier = Modifier.size(22.dp)
                             )
                             Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
@@ -1103,7 +1103,7 @@ fun Queue(
                                                     ) {
                                                         Icon(
                                                             painter = painterResource(R.drawable.more_vert),
-                                                            contentDescription = null,
+                                                            contentDescription = stringResource(R.string.details),
                                                         )
                                                     }
                                                 }
@@ -1114,7 +1114,7 @@ fun Queue(
                                                     ) {
                                                         Icon(
                                                             painter = painterResource(R.drawable.drag_handle),
-                                                            contentDescription = null,
+                                                            contentDescription = "Reorder",
                                                         )
                                                     }
                                                 }
@@ -1220,7 +1220,7 @@ fun Queue(
                                             ) {
                                                 Icon(
                                                     painter = painterResource(R.drawable.playlist_play),
-                                                    contentDescription = null,
+                                                    contentDescription = "Play Next",
                                                 )
                                             }
                                             IconButton(
@@ -1233,7 +1233,7 @@ fun Queue(
                                             ) {
                                                 Icon(
                                                     painter = painterResource(R.drawable.queue_music),
-                                                    contentDescription = null,
+                                                    contentDescription = "Add to Queue",
                                                 )
                                             }
                                         }

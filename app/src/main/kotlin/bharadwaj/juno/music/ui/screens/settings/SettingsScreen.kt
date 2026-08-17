@@ -52,319 +52,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SettingsScreen(
-    navController: NavController,
-    scrollBehavior: TopAppBarScrollBehavior,
-) {
-    val scrollState = rememberScrollState()
-    
-    val context = LocalContext.current
-    val homeViewModel: HomeViewModel = hiltViewModel()
-    val (innerTubeCookie, _) = rememberPreference(InnerTubeCookieKey, "")
-    val isLoggedIn = remember(innerTubeCookie) {
-        innerTubeCookie.isNotEmpty() && "SAPISID" in parseCookieString(innerTubeCookie)
-    }
-    val (accountEmail, _) = rememberPreference(AccountEmailKey, "")
-    val accountName by homeViewModel.accountName.collectAsState()
-    val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
-
-    val (useLoginForBrowse, onUseLoginForBrowseChange) = rememberPreference(UseLoginForBrowse, true)
-    val (ytmSync, onYtmSyncChange) = rememberPreference(YtmSyncKey, true)
-    val (localProfileName, onLocalProfileNameChange) = rememberPreference(LocalProfileNameKey, "")
-    var showProfileNameDialog by remember { mutableStateOf(false) }
-
-    var searchQuery by remember { mutableStateOf("") }
-
-    val filteredResults = remember(searchQuery) {
-        if (searchQuery.isBlank()) {
-            emptyList()
-        } else {
-            val q = searchQuery.trim()
-            settingsSearchItems.filter { item ->
-                item.title.contains(q, ignoreCase = true) ||
-                item.subtitle.contains(q, ignoreCase = true) ||
-                item.category.contains(q, ignoreCase = true) ||
-                item.keywords.any { it.contains(q, ignoreCase = true) } ||
-                item.title.containsSubsequence(q) ||
-                item.keywords.any { it.containsSubsequence(q) }
-            }
-        }
-    }
-
-    Column(
-        Modifier
-            .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
-            .verticalScroll(scrollState)
-            .padding(horizontal = 16.dp)
-    ) {
-        Spacer(
-            Modifier.windowInsetsPadding(
-                LocalPlayerAwareWindowInsets.current.only(
-                    WindowInsetsSides.Top
-                )
-            )
-        )
-        Text(
-            text = stringResource(R.string.settings),
-            style = MaterialTheme.typography.displaySmall.copy(
-                fontWeight = FontWeight.SemiBold
-            ),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 8.dp, top = 24.dp, bottom = 8.dp)
-        )
-
-        // Settings Search Bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = { Text("Search settings") },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.search),
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-            },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { searchQuery = "" }) {
-                        Icon(
-                            painter = painterResource(R.drawable.close),
-                            contentDescription = "Clear search",
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(28.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                focusedBorderColor = Color.Transparent,
-                unfocusedBorderColor = Color.Transparent
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp)
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (searchQuery.isNotEmpty()) {
-            if (filteredResults.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 48.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No results found",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            } else {
-                Material3SettingsGroup(
-                    title = "Search Results",
-                    items = filteredResults.map { result ->
-                        Material3SettingsItem(
-                            title = { Text(result.title) },
-                            description = { Text(result.subtitle) },
-                            icon = when (result.category) {
-                                "Playback" -> painterResource(R.drawable.play)
-                                "Downloads" -> painterResource(R.drawable.download)
-                                "Appearance" -> painterResource(R.drawable.palette)
-                                "Lyrics" -> painterResource(R.drawable.lyrics)
-                                "Storage" -> painterResource(R.drawable.storage)
-                                "Haptics" -> painterResource(R.drawable.graphic_eq)
-                                "Updates" -> painterResource(R.drawable.deployed_app_update)
-                                "About" -> painterResource(R.drawable.info)
-                                "Account" -> painterResource(R.drawable.account)
-                                else -> painterResource(R.drawable.settings)
-                            },
-                            onClick = {
-                                navController.navigate(result.route)
-                            }
-                        )
-                    }
-                )
-            }
-        } else {
-            Material3SettingsGroup(
-                title = "Account & Sync",
-                items = listOf(
-                    Material3SettingsItem(
-                        title = { Text(if (isLoggedIn) accountName else "Anonymous") },
-                        description = { Text(if (isLoggedIn) accountEmail.ifEmpty { "Logged In" } else "Not Logged In") },
-                        icon = painterResource(R.drawable.account),
-                        trailingContent = if (isLoggedIn && !accountImageUrl.isNullOrBlank()) {
-                            {
-                                AsyncImage(
-                                    model = accountImageUrl,
-                                    contentDescription = "Profile Photo",
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(CircleShape)
-                                )
-                            }
-                        } else null,
-                        onClick = { if (isLoggedIn) navController.navigate("settings/account") else navController.navigate("login") }
-                    ),
-                    if (isLoggedIn) {
-                        Material3SettingsItem(
-                            title = { Text("Use Account for Browsing") },
-                            icon = painterResource(R.drawable.add_circle),
-                            trailingContent = {
-                                Switch(
-                                    checked = useLoginForBrowse,
-                                    onCheckedChange = {
-                                        com.music.innertube.YouTube.useLoginForBrowse = it
-                                        onUseLoginForBrowseChange(it)
-                                    },
-                                    modifier = Modifier.scale(0.8f)
-                                )
-                            },
-                            onClick = {
-                                val newVal = !useLoginForBrowse
-                                com.music.innertube.YouTube.useLoginForBrowse = newVal
-                                onUseLoginForBrowseChange(newVal)
-                            }
-                        )
-                    } else null,
-                    if (isLoggedIn) {
-                        Material3SettingsItem(
-                            title = { Text("YouTube Music Sync") },
-                            icon = painterResource(R.drawable.cached),
-                            trailingContent = {
-                                Switch(
-                                    checked = ytmSync,
-                                    onCheckedChange = onYtmSyncChange,
-                                    modifier = Modifier.scale(0.8f)
-                                )
-                            },
-                            onClick = { onYtmSyncChange(!ytmSync) }
-                        )
-                    } else null
-                ).filterNotNull()
-            )
-
-            Material3SettingsGroup(
-                title = "Personalization",
-                items = listOf(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.person),
-                        title = { Text(stringResource(R.string.display_name)) },
-                        description = {
-                            Text(
-                                if (localProfileName.isNotEmpty()) localProfileName
-                                else stringResource(R.string.display_name_desc)
-                            )
-                        },
-                        onClick = { showProfileNameDialog = true }
-                    )
-                )
-            )
-
-            Material3SettingsGroup(
-                title = "JUNO Settings",
-                items = listOf(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.play),
-                        title = { Text("Playback") },
-                        description = { Text("Audio quality, normalization, equalizer, and player behavior") },
-                        onClick = { navController.navigate("settings/player") }
-                    ),
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.download),
-                        title = { Text("Downloads") },
-                        description = { Text("Download quality, auto-download on like, and storage management") },
-                        onClick = { navController.navigate("settings/downloads") }
-                    ),
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.palette),
-                        title = { Text("Appearance") },
-                        description = { Text("Dark mode, player themes, and visual settings") },
-                        onClick = { navController.navigate("settings/appearance") }
-                    ),
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.graphic_eq),
-                        title = { Text("Haptics") },
-                        description = { Text("Touch feedback and vibration settings") },
-                        onClick = { navController.navigate("settings/haptics") }
-                    ),
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.storage),
-                        title = { Text("Storage") },
-                        description = { Text("Song cache size, image cache size, and data settings") },
-                        onClick = { navController.navigate("settings/storage") }
-                    ),
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.deployed_app_update),
-                        title = { Text("Updates") },
-                        description = { Text("Check for updates and settings") },
-                        onClick = { navController.navigate("settings/update") }
-                    ),
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.info),
-                        title = { Text("About") },
-                        description = { Text("App version, changelog, and legal details") },
-                        onClick = { navController.navigate("settings/about") }
-                    )
-                ).filterNotNull()
-            )
-        }
-        
-        if (showProfileNameDialog) {
-            TextFieldDialog(
-                title = { Text(stringResource(R.string.display_name)) },
-                icon = { Icon(painterResource(R.drawable.person), null) },
-                initialTextFieldValue = TextFieldValue(text = localProfileName),
-                onDone = {
-                    onLocalProfileNameChange(it.trim())
-                    showProfileNameDialog = false
-                },
-                onDismiss = { showProfileNameDialog = false },
-                isInputValid = { true }
-            )
-        }
-    }
-
-    TopAppBar(
-        title = {
-            androidx.compose.animation.AnimatedVisibility(
-                visible = scrollState.value > 100,
-                enter = androidx.compose.animation.fadeIn(),
-                exit = androidx.compose.animation.fadeOut()
-            ) {
-                Text(
-                    text = stringResource(R.string.settings),
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-        },
-        navigationIcon = {
-            IconButton(
-                onClick = navController::navigateUp,
-                onLongClick = navController::backToMain
-            ) {
-                Icon(
-                    painterResource(R.drawable.arrow_back),
-                    contentDescription = null
-                )
-            }
-        }
-    )
-}
 
 private data class SettingsSearchItem(
     val title: String,
@@ -388,7 +81,20 @@ private fun String.containsSubsequence(query: String): Boolean {
     return false
 }
 
-private val settingsSearchItems = listOf(
+private fun getCategoryIconRes(category: String): Int = when (category) {
+    "Playback" -> R.drawable.play
+    "Downloads" -> R.drawable.download
+    "Appearance" -> R.drawable.palette
+    "Lyrics" -> R.drawable.lyrics
+    "Storage" -> R.drawable.storage
+    "Haptics" -> R.drawable.graphic_eq
+    "Updates" -> R.drawable.deployed_app_update
+    "About" -> R.drawable.info
+    "Account" -> R.drawable.account
+    else -> R.drawable.settings
+}
+
+private val settingsSearchItems: List<SettingsSearchItem> = listOf(
     SettingsSearchItem(
         title = "Playback",
         subtitle = "Audio quality, normalization, equalizer, and player behavior",
@@ -440,23 +146,16 @@ private val settingsSearchItems = listOf(
     ),
     SettingsSearchItem(
         title = "Display Name",
-        subtitle = "Set your local display name for personalized greetings",
+        subtitle = "Set custom local profile name",
         category = "Personalization",
-        keywords = listOf("display name", "personalization", "name", "nickname", "greeting"),
+        keywords = listOf("name", "profile", "display", "user", "personalization"),
         route = "settings"
     ),
     SettingsSearchItem(
-        title = "Romanization",
-        subtitle = "Romanize non-Latin song titles and lyrics",
-        category = "Lyrics",
-        keywords = listOf("romanization", "romanize", "lyrics", "content", "language"),
-        route = "settings/content/romanization"
-    ),
-    SettingsSearchItem(
         title = "Storage",
-        subtitle = "Song cache size, image cache size, and data settings",
+        subtitle = "Cache size, download locations, and storage cleanup",
         category = "Storage",
-        keywords = listOf("storage", "stor", "cache", "data", "clear", "size", "disk"),
+        keywords = listOf("storage", "cache", "downloads", "clear", "disk", "space"),
         route = "settings/storage"
     ),
     SettingsSearchItem(
@@ -523,3 +222,316 @@ private val settingsSearchItems = listOf(
         route = "settings/spotify_import"
     )
 )
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    navController: NavController,
+    scrollBehavior: TopAppBarScrollBehavior,
+) {
+    val scrollState = rememberScrollState()
+    
+    val context = LocalContext.current
+    val homeViewModel: HomeViewModel = hiltViewModel()
+    val (innerTubeCookie, _) = rememberPreference(InnerTubeCookieKey, "")
+    val isLoggedIn = remember(innerTubeCookie) {
+        innerTubeCookie.isNotEmpty() && "SAPISID" in parseCookieString(innerTubeCookie)
+    }
+    val (accountEmail, _) = rememberPreference(AccountEmailKey, "")
+    val accountName by homeViewModel.accountName.collectAsState()
+    val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
+
+    val (useLoginForBrowse, onUseLoginForBrowseChange) = rememberPreference(UseLoginForBrowse, true)
+    val (ytmSync, onYtmSyncChange) = rememberPreference(YtmSyncKey, true)
+    val (localProfileName, onLocalProfileNameChange) = rememberPreference(LocalProfileNameKey, "")
+    var showProfileNameDialog by remember { mutableStateOf(false) }
+
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredResults = remember(searchQuery) {
+        if (searchQuery.isBlank()) {
+            emptyList()
+        } else {
+            val q = searchQuery.trim()
+            settingsSearchItems.filter { item ->
+                item.title.contains(q, ignoreCase = true) ||
+                item.subtitle.contains(q, ignoreCase = true) ||
+                item.category.contains(q, ignoreCase = true) ||
+                item.keywords.any { it.contains(q, ignoreCase = true) } ||
+                item.title.containsSubsequence(q) ||
+                item.keywords.any { it.containsSubsequence(q) }
+            }
+        }
+    }
+
+    val windowInfo = bharadwaj.juno.music.ui.adaptive.theme.AdaptiveTheme.windowInfo
+    val isWideScreen = windowInfo.isTablet || windowInfo.isExpandedWidth || windowInfo.isLandscape
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = if (isWideScreen) Alignment.TopCenter else Alignment.TopStart
+    ) {
+        Column(
+            Modifier
+                .widthIn(max = bharadwaj.juno.music.ui.adaptive.tokens.ContentWidthTokens.MaxSingleColumnWidth)
+                .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
+                .verticalScroll(scrollState)
+                .padding(horizontal = if (isWideScreen) 32.dp else 16.dp)
+        ) {
+            Spacer(
+                Modifier.windowInsetsPadding(
+                    LocalPlayerAwareWindowInsets.current.only(
+                        WindowInsetsSides.Top
+                    )
+                )
+            )
+            Text(
+                text = stringResource(R.string.settings),
+                style = MaterialTheme.typography.displaySmall.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(start = 8.dp, top = 24.dp, bottom = 8.dp)
+            )
+
+            // Settings Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search settings") },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.search),
+                        contentDescription = stringResource(R.string.search),
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(
+                                painter = painterResource(R.drawable.close),
+                                contentDescription = "Clear search",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(28.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (searchQuery.isNotEmpty()) {
+                if (filteredResults.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No results found",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                } else {
+                    Material3SettingsGroup(
+                        title = "Search Results",
+                        items = filteredResults.map { result ->
+                            Material3SettingsItem(
+                                title = { Text(result.title) },
+                                description = { Text(result.subtitle) },
+                                icon = painterResource(getCategoryIconRes(result.category)),
+                                onClick = {
+                                    navController.navigate(result.route)
+                                }
+                            )
+                        }
+                    )
+                }
+            } else {
+                Material3SettingsGroup(
+                    title = "Account & Sync",
+                    items = listOf(
+                        Material3SettingsItem(
+                            title = { Text(if (isLoggedIn) accountName else "Anonymous") },
+                            description = { Text(if (isLoggedIn) accountEmail.ifEmpty { "Logged In" } else "Not Logged In") },
+                            icon = painterResource(R.drawable.account),
+                            trailingContent = if (isLoggedIn && !accountImageUrl.isNullOrBlank()) {
+                                {
+                                    AsyncImage(
+                                        model = accountImageUrl,
+                                        contentDescription = "Profile Photo",
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                    )
+                                }
+                            } else null,
+                            onClick = { if (isLoggedIn) navController.navigate("settings/account") else navController.navigate("login") }
+                        ),
+                        if (isLoggedIn) {
+                            Material3SettingsItem(
+                                title = { Text("Use Account for Browsing") },
+                                icon = painterResource(R.drawable.add_circle),
+                                trailingContent = {
+                                    Switch(
+                                        checked = useLoginForBrowse,
+                                        onCheckedChange = {
+                                            com.music.innertube.YouTube.useLoginForBrowse = it
+                                            onUseLoginForBrowseChange(it)
+                                        },
+                                        modifier = Modifier.scale(0.8f)
+                                    )
+                                },
+                                onClick = {
+                                    val newVal = !useLoginForBrowse
+                                    com.music.innertube.YouTube.useLoginForBrowse = newVal
+                                    onUseLoginForBrowseChange(newVal)
+                                }
+                            )
+                        } else null,
+                        if (isLoggedIn) {
+                            Material3SettingsItem(
+                                title = { Text("YouTube Music Sync") },
+                                icon = painterResource(R.drawable.cached),
+                                trailingContent = {
+                                    Switch(
+                                        checked = ytmSync,
+                                        onCheckedChange = onYtmSyncChange,
+                                        modifier = Modifier.scale(0.8f)
+                                    )
+                                },
+                                onClick = { onYtmSyncChange(!ytmSync) }
+                            )
+                        } else null
+                    ).filterNotNull()
+                )
+
+                Material3SettingsGroup(
+                    title = "Personalization",
+                    items = listOf(
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.person),
+                            title = { Text(stringResource(R.string.display_name)) },
+                            description = {
+                                Text(
+                                    if (localProfileName.isNotEmpty()) localProfileName
+                                    else stringResource(R.string.display_name_desc)
+                                )
+                            },
+                            onClick = { showProfileNameDialog = true }
+                        )
+                    )
+                )
+
+                Material3SettingsGroup(
+                    title = "JUNO Settings",
+                    items = listOf(
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.play),
+                            title = { Text("Playback") },
+                            description = { Text("Audio quality, normalization, equalizer, and player behavior") },
+                            onClick = { navController.navigate("settings/player") }
+                        ),
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.download),
+                            title = { Text("Downloads") },
+                            description = { Text("Download quality, auto-download on like, and storage management") },
+                            onClick = { navController.navigate("settings/downloads") }
+                        ),
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.palette),
+                            title = { Text("Appearance") },
+                            description = { Text("Dark mode, player themes, and visual settings") },
+                            onClick = { navController.navigate("settings/appearance") }
+                        ),
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.graphic_eq),
+                            title = { Text("Haptics") },
+                            description = { Text("Haptic feedback intensity and vibration controls") },
+                            onClick = { navController.navigate("settings/haptics") }
+                        ),
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.storage),
+                            title = { Text("Storage & Cache") },
+                            description = { Text("Manage downloaded songs, image cache, and storage usage") },
+                            onClick = { navController.navigate("settings/storage") }
+                        ),
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.backup),
+                            title = { Text("Backup & Restore") },
+                            description = { Text("Backup your settings and library, or restore from a file") },
+                            onClick = { navController.navigate("settings/backup_restore") }
+                        ),
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.deployed_app_update),
+                            title = { Text("Updates") },
+                            description = { Text("Check for app updates and release channels") },
+                            onClick = { navController.navigate("settings/update") }
+                        ),
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.info),
+                            title = { Text("About") },
+                            description = { Text("App version, changelog, and open-source credits") },
+                            onClick = { navController.navigate("settings/about") }
+                        )
+                    )
+                )
+            }
+
+            if (showProfileNameDialog) {
+                TextFieldDialog(
+                    title = { Text(stringResource(R.string.display_name)) },
+                    icon = { Icon(painterResource(R.drawable.person), null) },
+                    initialTextFieldValue = TextFieldValue(text = localProfileName),
+                    onDone = {
+                        onLocalProfileNameChange(it.trim())
+                        showProfileNameDialog = false
+                    },
+                    onDismiss = { showProfileNameDialog = false },
+                    isInputValid = { true }
+                )
+            }
+        }
+    }
+
+    TopAppBar(
+        title = {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = scrollState.value > 100,
+                enter = androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.fadeOut()
+            ) {
+                Text(
+                    text = stringResource(R.string.settings),
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+        },
+        navigationIcon = {
+            IconButton(
+                onClick = navController::navigateUp,
+                onLongClick = navController::backToMain
+            ) {
+                Icon(
+                    painterResource(R.drawable.arrow_back),
+                    contentDescription = stringResource(R.string.back)
+                )
+            }
+        }
+    )
+}

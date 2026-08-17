@@ -684,7 +684,7 @@ fun Lyrics(
                     .asPaddingValues(),
                 modifier = Modifier
                     .fillMaxHeight()
-                    .then(if (isLandscape) Modifier.widthIn(max = 520.dp) else Modifier.fillMaxWidth())
+                    .then(Modifier.widthIn(max = bharadwaj.juno.music.ui.adaptive.tokens.ContentWidthTokens.MaxReadableWidth))
                     .fadingEdge(vertical = 64.dp)
                     .nestedScroll(remember {
                     object : NestedScrollConnection {

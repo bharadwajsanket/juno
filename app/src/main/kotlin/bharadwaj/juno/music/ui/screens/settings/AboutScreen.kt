@@ -97,7 +97,10 @@ fun AboutScreen(
                         onClick = { onBack?.invoke() ?: navController.navigateUp() },
                         onLongClick = navController::backToMain,
                     ) {
-                        Icon(painterResource(R.drawable.arrow_back), contentDescription = null)
+                        Icon(
+                            painter = painterResource(R.drawable.arrow_back),
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 },
                 windowInsets = TopAppBarDefaults.windowInsets,
@@ -109,22 +112,30 @@ fun AboutScreen(
             )
         },
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(
-                    LocalPlayerAwareWindowInsets.current.only(
-                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
-                    ),
-                ),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                top = innerPadding.calculateTopPadding() + 8.dp,
-                end = 16.dp,
-                bottom = 32.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+        val windowInfo = bharadwaj.juno.music.ui.adaptive.theme.AdaptiveTheme.windowInfo
+        val isWideScreen = windowInfo.isTablet || windowInfo.isExpandedWidth || windowInfo.isLandscape
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = if (isWideScreen) Alignment.TopCenter else Alignment.TopStart
         ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = bharadwaj.juno.music.ui.adaptive.tokens.ContentWidthTokens.MaxReadableWidth)
+                    .windowInsetsPadding(
+                        LocalPlayerAwareWindowInsets.current.only(
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                        ),
+                    ),
+                contentPadding = PaddingValues(
+                    start = if (isWideScreen) 32.dp else 16.dp,
+                    top = innerPadding.calculateTopPadding() + 8.dp,
+                    end = if (isWideScreen) 32.dp else 16.dp,
+                    bottom = 32.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
             item { AboutAppCard() }
 
             item {
@@ -146,6 +157,7 @@ fun AboutScreen(
             }
         }
     }
+}
 }
 
 @Composable

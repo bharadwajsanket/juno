@@ -2060,26 +2060,6 @@ fun BottomSheetPlayer(
                                 .then(if (isLandscape) Modifier.width(320.dp) else Modifier.fillMaxWidth())
                                 .padding(horizontal = if (isLandscape) 0.dp else PlayerHorizontalPadding),
                         ) {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                             Box(modifier = Modifier.weight(1f)) {
                                 ResizableIconButton(
                                     icon = R.drawable.apple_skip_previous,
@@ -2419,8 +2399,8 @@ fun BottomSheetPlayer(
                                 horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.md, Alignment.CenterHorizontally),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                val buttonSize = 40.dp
-                                val iconSize = 20.dp
+                                val buttonSize = 48.dp
+                                val iconSize = 22.dp
                                 val activeColor = textButtonColor
                                 val inactiveColor = textButtonColor.copy(alpha = 0.5f)
 
@@ -2435,7 +2415,7 @@ fun BottomSheetPlayer(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.lyrics),
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.lyrics),
                                         tint = if (showInlineLyrics) activeColor else inactiveColor,
                                         modifier = Modifier.size(iconSize)
                                     )
@@ -2458,7 +2438,7 @@ fun BottomSheetPlayer(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.sleep_timer),
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.sleep_timer),
                                         tint = if (sleepTimerEnabled) activeColor else inactiveColor,
                                         modifier = Modifier.size(iconSize)
                                     )
@@ -2475,7 +2455,7 @@ fun BottomSheetPlayer(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.equalizer),
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.equalizer),
                                         tint = inactiveColor,
                                         modifier = Modifier.size(iconSize)
                                     )
@@ -2492,7 +2472,7 @@ fun BottomSheetPlayer(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.fullscreen),
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.fullscreen),
                                         tint = if (isFullScreen) activeColor else inactiveColor,
                                         modifier = Modifier.size(iconSize)
                                     )
@@ -2515,7 +2495,7 @@ fun BottomSheetPlayer(
                                                 else -> R.drawable.repeat
                                             }
                                         ),
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.repeat),
                                         tint = if (isRepeatActive) activeColor else inactiveColor,
                                         modifier = Modifier.size(iconSize)
                                     )

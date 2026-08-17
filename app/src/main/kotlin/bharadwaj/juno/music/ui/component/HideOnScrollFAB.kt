@@ -76,7 +76,7 @@ fun BoxScope.HideOnScrollFAB(
             ) {
                 Icon(
                     painter = painterResource(icon),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.shuffle),
                 )
             }
         }
@@ -127,7 +127,7 @@ fun BoxScope.HideOnScrollFAB(
             ) {
                 Icon(
                     painter = painterResource(icon),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.shuffle),
                 )
             }
         }
@@ -178,7 +178,7 @@ fun BoxScope.HideOnScrollFAB(
             ) {
                 Icon(
                     painter = painterResource(icon),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.shuffle),
                 )
             }
         }

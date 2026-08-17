@@ -424,4 +424,8 @@
     <string name="display_name">Display Name</string>
     <string name="display_name_desc">Set your local display name for personalized greetings</string>
     <string name="library_feed">Library Feed</string>
+    <string name="back">Back</string>
+    <string name="skip_next">Skip Next</string>
+    <string name="skip_previous">Skip Previous</string>
+    <string name="fullscreen">Fullscreen</string>
 </resources>

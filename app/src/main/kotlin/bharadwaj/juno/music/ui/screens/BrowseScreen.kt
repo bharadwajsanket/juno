@@ -17,8 +17,13 @@ package bharadwaj.juno.music.ui.screens
  import androidx.compose.runtime.collectAsState
  import androidx.compose.runtime.getValue
  import androidx.compose.runtime.rememberCoroutineScope
+ import androidx.compose.foundation.layout.Box
+ import androidx.compose.foundation.layout.fillMaxSize
+ import androidx.compose.foundation.layout.widthIn
+ import androidx.compose.ui.Alignment
  import androidx.compose.ui.Modifier
  import androidx.compose.ui.res.painterResource
+ import androidx.compose.ui.res.stringResource
  import androidx.compose.ui.unit.dp
  import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
  import androidx.navigation.NavController
@@ -62,71 +67,82 @@ package bharadwaj.juno.music.ui.screens
      val coroutineScope = rememberCoroutineScope()
      val gridItemSize by rememberEnumPreference(GridItemsSizeKey, GridItemSize.BIG)
  
-     LazyVerticalGrid(
-         columns = GridCells.Adaptive(minSize = GridThumbnailHeight + if (gridItemSize == GridItemSize.BIG) 24.dp else (-24).dp),
-         contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues()
+     val windowInfo = bharadwaj.juno.music.ui.adaptive.theme.AdaptiveTheme.windowInfo
+     val isWideScreen = windowInfo.isTablet || windowInfo.isExpandedWidth || windowInfo.isLandscape
+
+     Box(
+         modifier = Modifier.fillMaxSize(),
+         contentAlignment = if (isWideScreen) Alignment.TopCenter else Alignment.TopStart
      ) {
-         items?.let { items ->
-             items(
-                 items = items.distinctBy { it.id },
-                 key = { it.id }
-             ) { item ->
-                 YouTubeGridItem(
-                     item = item,
-                     isPlaying = isPlaying,
-                     fillMaxWidth = true,
-                     coroutineScope = coroutineScope,
-                     modifier = Modifier
-                         .combinedClickable(
-                             onClick = {
-                                 when (item) {
-                                     is AlbumItem -> navController.navigate("album/${item.id}")
-                                     is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
-                                     is ArtistItem -> navController.navigate("artist/${item.id}")
-                                     else -> {
-                                         
-                                     }
-                                 }
-                             },
-                             onLongClick = {
-                                 menuState.show {
+         LazyVerticalGrid(
+             columns = GridCells.Adaptive(minSize = GridThumbnailHeight + if (gridItemSize == GridItemSize.BIG) 24.dp else (-24).dp),
+             contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+             modifier = Modifier
+                 .fillMaxSize()
+                 .widthIn(max = bharadwaj.juno.music.ui.adaptive.tokens.ContentWidthTokens.MaxSingleColumnWidth)
+         ) {
+             items?.let { items ->
+                 items(
+                     items = items.distinctBy { it.id },
+                     key = { it.id }
+                 ) { item ->
+                     YouTubeGridItem(
+                         item = item,
+                         isPlaying = isPlaying,
+                         fillMaxWidth = true,
+                         coroutineScope = coroutineScope,
+                         modifier = Modifier
+                             .combinedClickable(
+                                 onClick = {
                                      when (item) {
-                                         is AlbumItem ->
-                                             YouTubeAlbumMenu(
-                                                 albumItem = item,
-                                                 navController = navController,
-                                                 onDismiss = menuState::dismiss
-                                             )
- 
-                                         is PlaylistItem -> {
-                                             YouTubePlaylistMenu(
-                                                 playlist = item,
-                                                 coroutineScope = coroutineScope,
-                                                 onDismiss = menuState::dismiss
-                                             )
-                                         }
- 
-                                         is ArtistItem -> {
-                                             YouTubeArtistMenu(
-                                                 artist = item,
-                                                 onDismiss = menuState::dismiss
-                                             )
-                                         }
- 
+                                         is AlbumItem -> navController.navigate("album/${item.id}")
+                                         is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
+                                         is ArtistItem -> navController.navigate("artist/${item.id}")
                                          else -> {
                                              
                                          }
                                      }
-                                 }
-                             }
-                         )
-                 )
-             }
+                                 },
+                                 onLongClick = {
+                                     menuState.show {
+                                         when (item) {
+                                             is AlbumItem ->
+                                                 YouTubeAlbumMenu(
+                                                     albumItem = item,
+                                                     navController = navController,
+                                                     onDismiss = menuState::dismiss
+                                                 )
  
-             if (items.isEmpty()) {
-                 items(8) {
-                     ShimmerHost {
-                         GridItemPlaceHolder(fillMaxWidth = true)
+                                             is PlaylistItem -> {
+                                                 YouTubePlaylistMenu(
+                                                     playlist = item,
+                                                     coroutineScope = coroutineScope,
+                                                     onDismiss = menuState::dismiss
+                                                 )
+                                             }
+ 
+                                             is ArtistItem -> {
+                                                 YouTubeArtistMenu(
+                                                     artist = item,
+                                                     onDismiss = menuState::dismiss
+                                                 )
+                                             }
+ 
+                                             else -> {
+                                                 
+                                             }
+                                         }
+                                     }
+                                 }
+                             )
+                     )
+                 }
+ 
+                 if (items.isEmpty()) {
+                     items(8) {
+                         ShimmerHost {
+                             GridItemPlaceHolder(fillMaxWidth = true)
+                         }
                      }
                  }
              }
@@ -142,7 +158,7 @@ package bharadwaj.juno.music.ui.screens
              ) {
                  Icon(
                      painterResource(R.drawable.arrow_back),
-                     contentDescription = null
+                     contentDescription = stringResource(R.string.back)
                  )
              }
          }

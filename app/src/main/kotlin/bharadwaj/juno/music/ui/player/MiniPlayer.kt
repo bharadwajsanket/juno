@@ -459,7 +459,7 @@ private fun NewMiniPlayer(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(48.dp)
                         .physicalClickable(
                             enabled = canSkipPrevious && !isListenTogetherGuest,
                             hapticType = HapticType.LIGHT,
@@ -468,13 +468,13 @@ private fun NewMiniPlayer(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.skip_previous),
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.skip_previous),
                         tint = if (canSkipPrevious && !isListenTogetherGuest) onSurfaceColor else onSurfaceColor.copy(alpha = 0.38f),
                         modifier = Modifier.size(16.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(2.dp))
 
                 val isPlaying by playerConnection.isPlaying.collectAsState()
                 val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
@@ -484,7 +484,7 @@ private fun NewMiniPlayer(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(48.dp)
                         .physicalClickable(
                             hapticType = HapticType.MEDIUM,
                             onClick = {
@@ -510,18 +510,18 @@ private fun NewMiniPlayer(
                                 else -> R.drawable.play
                             }
                         ),
-                        contentDescription = null,
+                        contentDescription = if (effectiveIsPlaying) stringResource(R.string.pause) else stringResource(R.string.play),
                         tint = onSurfaceColor,
                         modifier = Modifier.size(18.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(2.dp))
 
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(48.dp)
                         .physicalClickable(
                             enabled = canSkipNext && !isListenTogetherGuest,
                             hapticType = HapticType.LIGHT,
@@ -530,7 +530,7 @@ private fun NewMiniPlayer(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.skip_next),
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.skip_next),
                         tint = if (canSkipNext && !isListenTogetherGuest) onSurfaceColor else onSurfaceColor.copy(alpha = 0.38f),
                         modifier = Modifier.size(16.dp)
                     )

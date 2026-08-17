@@ -94,7 +94,7 @@ fun AppNavigationRail(
                                 isLongClick = false
                                 delay(viewConfiguration.longPressTimeoutMillis)
                                 isLongClick = true
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                bharadwaj.juno.music.utils.HapticManager.getInstance(context).performHaptic(bharadwaj.juno.music.utils.HapticType.MEDIUM)
                                 onSearchLongClick.invoke()
                             }
                             is PressInteraction.Release -> {
@@ -185,7 +185,7 @@ fun AppNavigationBar(
                                 isLongClick = false
                                 delay(viewConfiguration.longPressTimeoutMillis)
                                 isLongClick = true
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                bharadwaj.juno.music.utils.HapticManager.getInstance(context).performHaptic(bharadwaj.juno.music.utils.HapticType.MEDIUM)
                                 onSearchLongClick.invoke()
                             }
                             is PressInteraction.Release -> {

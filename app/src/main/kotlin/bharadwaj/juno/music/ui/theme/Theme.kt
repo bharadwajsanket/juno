@@ -53,9 +53,12 @@ fun junoMusicTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = AppTypography, 
-        content = content
-    )
+        typography = AppTypography
+    ) {
+        bharadwaj.juno.music.ui.adaptive.theme.AdaptiveTheme(
+            content = content
+        )
+    }
 }
 
 fun Bitmap.extractThemeColor(): Color {

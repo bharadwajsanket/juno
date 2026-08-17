@@ -1,0 +1,24 @@
+# Gradle files
+.gradle/
+build/
+**/build/
+
+# IDE files
+.idea/
+*.iml
+.navigation/
+
+# Built outputs
+*.apk
+*.aar
+*.ap_
+
+# Local configuration
+local.properties
+keystore.properties
+
+# Log files
+*.log
+
+# OS files
+.DS_Store

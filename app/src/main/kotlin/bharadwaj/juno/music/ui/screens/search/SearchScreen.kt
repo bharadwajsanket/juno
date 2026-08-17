@@ -269,7 +269,7 @@ fun SearchScreen(
                         }) {
                             Icon(
                                 painter = painterResource(if (searchActive) R.drawable.arrow_back else R.drawable.search),
-                                contentDescription = if (searchActive) stringResource(R.string.dismiss) else null,
+                                contentDescription = if (searchActive) stringResource(R.string.dismiss) else stringResource(R.string.search),
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -280,7 +280,7 @@ fun SearchScreen(
                                 IconButton(onClick = { query = TextFieldValue("") }) {
                                     Icon(
                                         painter = painterResource(R.drawable.close),
-                                        contentDescription = null,
+                                        contentDescription = "Clear search",
                                         tint = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
@@ -298,7 +298,7 @@ fun SearchScreen(
                                             SearchSource.ONLINE -> R.drawable.globe_search
                                         }
                                     ),
-                                    contentDescription = null,
+                                    contentDescription = "Search source",
                                     tint = MaterialTheme.colorScheme.onSurface
                                 )
                             }

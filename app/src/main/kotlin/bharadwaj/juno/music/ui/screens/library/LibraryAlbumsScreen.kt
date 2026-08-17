@@ -114,7 +114,7 @@ fun LibraryAlbumsScreen(
                 onClick = onDeselect,
                 shape = RoundedCornerShape(16.dp),
                 leadingIcon = {
-                    Icon(painter = painterResource(R.drawable.close), contentDescription = "")
+                    Icon(painter = painterResource(R.drawable.close), contentDescription = "Clear filter")
                 },
                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
             )
@@ -214,7 +214,7 @@ fun LibraryAlbumsScreen(
                                     LibraryViewType.GRID -> R.drawable.grid_view
                                 }
                             ),
-                            contentDescription = null,
+                            contentDescription = if (type == LibraryViewType.LIST) "List view" else "Grid view",
                         )
                     }
                 }
