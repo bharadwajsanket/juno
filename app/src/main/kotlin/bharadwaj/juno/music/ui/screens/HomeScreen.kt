@@ -654,8 +654,16 @@ fun HomeScreen(
     val scrollToTop =
         backStackEntry?.savedStateHandle?.getStateFlow("scrollToTop", false)?.collectAsState()
 
-
     var randomSeed by rememberSaveable { mutableLongStateOf(System.currentTimeMillis()) }
+
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntry?.savedStateHandle?.getStateFlow("homeRefresh", false)?.collect { refresh ->
+            if (refresh) {
+                viewModel.refresh()
+                navController.currentBackStackEntry?.savedStateHandle?.set("homeRefresh", false)
+            }
+        }
+    }
 
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {

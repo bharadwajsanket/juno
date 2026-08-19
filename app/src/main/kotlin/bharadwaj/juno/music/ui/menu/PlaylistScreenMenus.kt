@@ -154,7 +154,7 @@ fun LocalPlaylistMenu(
                 },
                 onClick = {
                     val shareText = if (isYouTubePlaylist) {
-                        "https://share.junomusic.fun/playlist?list=${playlist.playlist.browseId}"
+                        "https://juno.music/playlist?list=${playlist.playlist.browseId}"
                     } else {
                         songs.joinToString("\n") { it.song.song.title }
                     }

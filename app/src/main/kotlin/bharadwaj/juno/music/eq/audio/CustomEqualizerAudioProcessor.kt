@@ -46,7 +46,10 @@ class CustomEqualizerAudioProcessor : AudioProcessor {
         }
 
         
-        preampGain = 10.0.pow(parametricEQ.preamp / 20.0)
+        val maxPositiveGain = parametricEQ.bands.filter { it.enabled && it.gain > 0.0 }.maxOfOrNull { it.gain } ?: 0.0
+        val safetyMarginDb = 1.5 // 1.5 dB extra headroom for filter resonance
+        val safePreampDb = parametricEQ.preamp - maxPositiveGain - safetyMarginDb
+        preampGain = 10.0.pow(safePreampDb / 20.0)
 
         createFilters(parametricEQ.bands)
         equalizerEnabled = true
@@ -103,20 +106,24 @@ class CustomEqualizerAudioProcessor : AudioProcessor {
         Timber.tag(TAG)
             .d("Configured: sampleRate=$sampleRate, channels=$channelCount, encoding=$encoding")
 
-        
+        // Validate audio format FIRST before applying any pending profile.
+        // If we throw here after partially initializing, ExoPlayer lands in a broken state.
+        if (encoding != C.ENCODING_PCM_16BIT || channelCount > 2) {
+            isActive = false
+            throw AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)
+        }
+
+        // Format is acceptable — now apply any pending profile that was queued before configure().
         pendingProfile?.let { profile ->
-            preampGain = 10.0.pow(profile.preamp / 20.0)
+            val maxPositiveGain = profile.bands.filter { it.enabled && it.gain > 0.0 }.maxOfOrNull { it.gain } ?: 0.0
+            val safetyMarginDb = 1.5 // 1.5 dB extra headroom for filter resonance
+            val safePreampDb = profile.preamp - maxPositiveGain - safetyMarginDb
+            preampGain = 10.0.pow(safePreampDb / 20.0)
             createFilters(profile.bands)
             equalizerEnabled = true
             pendingProfile = null
             Timber.tag(TAG)
                 .d("Applied pending profile with ${filters.size} bands and ${profile.preamp} dB preamp")
-        }
-
-        
-        if (encoding != C.ENCODING_PCM_16BIT || channelCount > 2) {
-            val exception = AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)
-            throw exception 
         }
 
         isActive = true

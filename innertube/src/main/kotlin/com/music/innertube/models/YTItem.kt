@@ -41,7 +41,7 @@ data class SongItem(
         get() = musicVideoType != null && musicVideoType != MUSIC_VIDEO_TYPE_ATV
 
     override val shareLink: String
-        get() = "https://share.junomusic.fun/watch?v=$id"
+        get() = "https://juno.music/watch?v=$id"
 }
 
 data class AlbumItem(
@@ -56,7 +56,7 @@ data class AlbumItem(
     val description: String? = null,
 ) : YTItem() {
     override val shareLink: String
-        get() = "https://share.junomusic.fun/playlist?list=$playlistId"
+        get() = "https://juno.music/playlist?list=$playlistId"
 }
 
 data class PlaylistItem(
@@ -73,7 +73,7 @@ data class PlaylistItem(
     override val explicit: Boolean
         get() = false
     override val shareLink: String
-        get() = "https://share.junomusic.fun/playlist?list=$id"
+        get() = "https://juno.music/playlist?list=$id"
 }
 
 data class ArtistItem(
@@ -88,7 +88,7 @@ data class ArtistItem(
     override val explicit: Boolean
         get() = false
     override val shareLink: String
-        get() = "https://share.junomusic.fun/channel/$id"
+        get() = "https://juno.music/channel/$id"
 }
 
 fun <T : YTItem> List<T>.filterExplicit(enabled: Boolean = true) =

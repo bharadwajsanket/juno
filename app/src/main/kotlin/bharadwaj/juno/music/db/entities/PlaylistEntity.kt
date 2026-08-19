@@ -44,7 +44,7 @@ data class PlaylistEntity(
     val shareLink: String?
         get() {
             return if (browseId != null)
-                "https://share.junomusic.fun/playlist?list=$browseId"
+                "https://juno.music/playlist?list=$browseId"
             else null
         }
 

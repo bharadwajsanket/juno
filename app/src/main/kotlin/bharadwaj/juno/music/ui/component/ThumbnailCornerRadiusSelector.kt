@@ -101,7 +101,7 @@ fun ThumbnailCornerRadiusModal(
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
-                                painter = painterResource(R.drawable.weeknd),
+                                painter = painterResource(R.drawable.ic_launcher_nobg),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier

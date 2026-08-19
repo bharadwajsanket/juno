@@ -21,6 +21,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -548,100 +549,190 @@ fun Queue(
             }
         },
     ) {
-        val queueTitle by playerConnection.queueTitle.collectAsState()
-        val queueWindows by playerConnection.queueWindows.collectAsState()
-        val automix by playerConnection.service.automixItems.collectAsState()
-        val mutableQueueWindows = remember { mutableStateListOf<Timeline.Window>() }
-        val queueLength =
-            remember(queueWindows) {
-                queueWindows.sumOf { it.mediaItem.metadata!!.duration }
-            }
+        QueueContent(
+            navController = navController,
+            background = background,
+            onBackgroundColor = onBackgroundColor,
+            TextBackgroundColor = TextBackgroundColor,
+            textButtonColor = textButtonColor,
+            iconButtonColor = iconButtonColor,
+            pureBlack = pureBlack,
+            playerBottomSheetState = playerBottomSheetState,
+            isPanel = false,
+            showCommentSheet = showCommentSheet,
+            onShowCommentSheetChange = { showCommentSheet = it }
+        )
+    }
 
-        val coroutineScope = rememberCoroutineScope()
+    if (showCommentSheet) {
+        CommentSheet(
+            videoId = mediaMetadata?.id ?: "",
+            onDismiss = { showCommentSheet = false }
+        )
+    }
+}
 
-        val headerItems = 1
-        val lazyListState = rememberLazyListState()
-        var dragInfo by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun QueueContent(
+    navController: NavController,
+    background: Color,
+    onBackgroundColor: Color,
+    TextBackgroundColor: Color,
+    textButtonColor: Color,
+    iconButtonColor: Color,
+    pureBlack: Boolean,
+    playerBottomSheetState: BottomSheetState,
+    isPanel: Boolean = false,
+    onCloseClick: (() -> Unit)? = null,
+    showCommentSheet: Boolean = false,
+    onShowCommentSheetChange: (Boolean) -> Unit = {}
+) {
+    val context = LocalContext.current
+    val hapticManager = remember { HapticManager.getInstance(context) }
+    val haptic = LocalHapticFeedback.current
+    val menuState = LocalMenuState.current
+    val bottomSheetPageState = LocalBottomSheetPageState.current
 
-        val currentPlayingUid = remember(currentWindowIndex, queueWindows) {
-            if (currentWindowIndex in queueWindows.indices) {
-                queueWindows[currentWindowIndex].uid
-            } else null
+    val playerConnection = LocalPlayerConnection.current ?: return
+    val isPlaying by playerConnection.isEffectivelyPlaying.collectAsState()
+    val repeatMode by playerConnection.repeatMode.collectAsState()
+
+    val currentWindowIndex by playerConnection.currentWindowIndex.collectAsState()
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+    val currentSong by playerConnection.currentSong.collectAsState(initial = null)
+    val shuffleModeEnabled by playerConnection.shuffleModeEnabled.collectAsState()
+
+    val isListenTogetherGuest = false
+
+    val castHandler = remember(playerConnection) {
+        try {
+            playerConnection.service.castConnectionHandler
+        } catch (e: Exception) {
+            null
+        }
+    }
+    val isCasting by castHandler?.isCasting?.collectAsState() ?: remember { mutableStateOf(false) }
+    val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
+
+    var inSelectMode by rememberSaveable { mutableStateOf(false) }
+    val selection = rememberSaveable(
+        saver = listSaver<MutableList<String>, String>(
+            save = { it.toList() },
+            restore = { it.toMutableStateList() }
+        )
+    ) { mutableStateListOf() }
+    val onExitSelectionMode = {
+        inSelectMode = false
+        selection.clear()
+    }
+    if (inSelectMode) {
+        BackHandler(onBack = onExitSelectionMode)
+    }
+
+    var locked by rememberPreference(QueueEditLockKey, defaultValue = false)
+
+    val (showCommentButton) = rememberPreference(
+        ShowCommentButtonKey,
+        defaultValue = false
+    )
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    var dismissJob: Job? by remember { mutableStateOf(null) }
+
+    val queueTitle by playerConnection.queueTitle.collectAsState()
+    val queueWindows by playerConnection.queueWindows.collectAsState()
+    val automix by playerConnection.service.automixItems.collectAsState()
+    val mutableQueueWindows = remember { mutableStateListOf<Timeline.Window>() }
+    val queueLength =
+        remember(queueWindows) {
+            queueWindows.sumOf { it.mediaItem.metadata!!.duration }
         }
 
-        val reorderableState = rememberReorderableLazyListState(
-            lazyListState = lazyListState,
-            scrollThresholdPadding = WindowInsets.systemBars.add(
-                WindowInsets(
-                    top = ListItemHeight,
-                    bottom = ListItemHeight
-                )
-            ).asPaddingValues()
-        ) { from, to ->
-            val currentDragInfo = dragInfo
-            dragInfo = if (currentDragInfo == null) {
-                from.index to to.index
-            } else {
-                currentDragInfo.first to to.index
-            }
+    val coroutineScope = rememberCoroutineScope()
 
-            val safeFrom = (from.index - headerItems).coerceIn(0, mutableQueueWindows.lastIndex)
-            val safeTo = (to.index - headerItems).coerceIn(0, mutableQueueWindows.lastIndex)
+    val headerItems = 1
+    val lazyListState = rememberLazyListState()
+    var dragInfo by remember { mutableStateOf<Pair<Int, Int>?>(null) }
 
-            mutableQueueWindows.move(safeFrom, safeTo)
+    val currentPlayingUid = remember(currentWindowIndex, queueWindows) {
+        if (currentWindowIndex in queueWindows.indices) {
+            queueWindows[currentWindowIndex].uid
+        } else null
+    }
+
+    val reorderableState = rememberReorderableLazyListState(
+        lazyListState = lazyListState,
+        scrollThresholdPadding = WindowInsets.systemBars.add(
+            WindowInsets(
+                top = ListItemHeight,
+                bottom = ListItemHeight
+            )
+        ).asPaddingValues()
+    ) { from, to ->
+        val currentDragInfo = dragInfo
+        dragInfo = if (currentDragInfo == null) {
+            from.index to to.index
+        } else {
+            currentDragInfo.first to to.index
         }
 
-        LaunchedEffect(reorderableState.isAnyItemDragging) {
-            if (!reorderableState.isAnyItemDragging) {
-                dragInfo?.let { (from, to) ->
-                    val safeFrom = (from - headerItems).coerceIn(0, queueWindows.lastIndex)
-                    val safeTo = (to - headerItems).coerceIn(0, queueWindows.lastIndex)
+        val safeFrom = (from.index - headerItems).coerceIn(0, mutableQueueWindows.lastIndex)
+        val safeTo = (to.index - headerItems).coerceIn(0, mutableQueueWindows.lastIndex)
 
-                    if (!playerConnection.player.shuffleModeEnabled) {
-                        playerConnection.player.moveMediaItem(safeFrom, safeTo)
-                    } else {
-                        playerConnection.player.setShuffleOrder(
-                            DefaultShuffleOrder(
-                                queueWindows.map { it.firstPeriodIndex }
-                                    .toMutableList()
-                                    .move(safeFrom, safeTo)
-                                    .toIntArray(),
-                                System.currentTimeMillis()
-                            )
+        mutableQueueWindows.move(safeFrom, safeTo)
+    }
+
+    LaunchedEffect(reorderableState.isAnyItemDragging) {
+        if (!reorderableState.isAnyItemDragging) {
+            dragInfo?.let { (from, to) ->
+                val safeFrom = (from - headerItems).coerceIn(0, queueWindows.lastIndex)
+                val safeTo = (to - headerItems).coerceIn(0, queueWindows.lastIndex)
+
+                if (!playerConnection.player.shuffleModeEnabled) {
+                    playerConnection.player.moveMediaItem(safeFrom, safeTo)
+                } else {
+                    playerConnection.player.setShuffleOrder(
+                        DefaultShuffleOrder(
+                            queueWindows.map { it.firstPeriodIndex }
+                                .toMutableList()
+                                .move(safeFrom, safeTo)
+                                .toIntArray(),
+                            System.currentTimeMillis()
                         )
-                    }
-                    dragInfo = null
+                    )
                 }
+                dragInfo = null
             }
         }
+    }
 
-        LaunchedEffect(queueWindows) {
-            mutableQueueWindows.apply {
-                clear()
-                addAll(queueWindows)
-            }
+    LaunchedEffect(queueWindows) {
+        mutableQueueWindows.apply {
+            clear()
+            addAll(queueWindows)
         }
+    }
 
-        LaunchedEffect(mutableQueueWindows) {
-            if (currentWindowIndex != -1) {
-                lazyListState.scrollToItem(currentWindowIndex)
-            }
+    LaunchedEffect(mutableQueueWindows) {
+        if (currentWindowIndex != -1) {
+            lazyListState.scrollToItem(currentWindowIndex)
         }
+    }
 
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(background),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
         Column(
-            modifier =
-            Modifier
-                .fillMaxSize()
-                .background(background),
+            modifier = Modifier
+                .fillMaxHeight()
+                .then(if (isLandscape && !isPanel) Modifier.widthIn(max = 600.dp) else Modifier.fillMaxWidth()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .then(if (isLandscape) Modifier.widthIn(max = 600.dp) else Modifier.fillMaxWidth()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
             Column(
                 modifier =
                 Modifier
@@ -649,10 +740,13 @@ fun Queue(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
                     ) { }
-                    .windowInsetsPadding(
-                        WindowInsets.systemBars
-                            .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
-                    ),
+                    .then(
+                        if (isPanel) Modifier.padding(top = JUNOSpacing.xs)
+                        else Modifier.windowInsetsPadding(
+                            WindowInsets.systemBars
+                                .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+                        )
+                    )
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -699,61 +793,54 @@ fun Queue(
                         ) {
                             Icon(
                                 painter = painterResource(
-                                    if (currentSong?.song?.liked == true) R.drawable.favorite
+                                    if (currentSong?.song?.liked == true)
+                                        R.drawable.favorite
                                     else R.drawable.favorite_border
                                 ),
                                 contentDescription = likeDescription,
-                                tint = if (currentSong?.song?.liked == true) MaterialTheme.colorScheme.error else LocalContentColor.current
                             )
                         }
                     }
 
-                    val lockDescription = if (locked) stringResource(R.string.unlock_queue) else stringResource(R.string.lock_queue)
-                    TooltipBox(
-                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-                        tooltip = { PlainTooltip { Text(lockDescription) } },
-                        state = rememberTooltipState(),
-                    ) {
-                        FilledTonalIconButton(
-                            onClick = { locked = !locked },
-                            modifier = Modifier.padding(end = 8.dp)
-                        ) {
+                    if (isPanel && onCloseClick != null) {
+                        IconButton(onClick = onCloseClick) {
                             Icon(
-                                painter = painterResource(if (locked) R.drawable.lock else R.drawable.lock_open),
-                                contentDescription = lockDescription,
+                                painter = painterResource(R.drawable.close),
+                                contentDescription = "Close Queue",
+                                tint = onBackgroundColor
                             )
                         }
-                    }
-
-                    val moreDescription = stringResource(R.string.more_options)
-                    TooltipBox(
-                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-                        tooltip = { PlainTooltip { Text(moreDescription) } },
-                        state = rememberTooltipState(),
-                    ) {
-                        FilledTonalIconButton(
-                            onClick = {
-                                menuState.show {
-                                    PlayerMenu(
-                                        mediaMetadata = mediaMetadata,
-                                        navController = navController,
-                                        playerBottomSheetState = playerBottomSheetState,
-                                        onShowDetailsDialog = {
-                                            mediaMetadata?.id?.let {
-                                                bottomSheetPageState.show {
-                                                    ShowMediaInfo(it)
+                    } else {
+                        val moreDescription = stringResource(R.string.more_options)
+                        TooltipBox(
+                            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+                            tooltip = { PlainTooltip { Text(moreDescription) } },
+                            state = rememberTooltipState(),
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    menuState.show {
+                                        PlayerMenu(
+                                            mediaMetadata = mediaMetadata,
+                                            navController = navController,
+                                            playerBottomSheetState = playerBottomSheetState,
+                                            onShowDetailsDialog = {
+                                                mediaMetadata?.id?.let {
+                                                    bottomSheetPageState.show {
+                                                        ShowMediaInfo(it)
+                                                    }
                                                 }
-                                            }
-                                        },
-                                        onDismiss = menuState::dismiss
-                                    )
+                                            },
+                                            onDismiss = menuState::dismiss,
+                                        )
+                                    }
                                 }
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.more_vert),
+                                    contentDescription = moreDescription,
+                                )
                             }
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.more_vert),
-                                contentDescription = moreDescription,
-                            )
                         }
                     }
                 }
@@ -869,7 +956,6 @@ fun Queue(
                     }
                 }
 
-
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
@@ -948,33 +1034,32 @@ fun Queue(
                         Checkbox(
                             checked = count == mutableQueueWindows.size && count > 0,
                             onCheckedChange = {
-                                if (count == mutableQueueWindows.size) {
+                                if (it) {
                                     selection.clear()
+                                    selection.addAll(mutableQueueWindows.map { it.mediaItem.mediaId })
                                 } else {
                                     selection.clear()
-                                    mutableQueueWindows.forEach {
-                                        selection.add(it.mediaItem.mediaId)
-                                    }
                                 }
                             }
                         )
                         IconButton(
-                            enabled = count > 0,
                             onClick = {
                                 menuState.show {
                                     SelectionMediaMetadataMenu(
                                         songSelection = selectedSongs,
-                                        onDismiss = menuState::dismiss,
+                                        onDismiss = {
+                                            menuState.dismiss()
+                                            onExitSelectionMode()
+                                        },
                                         clearAction = onExitSelectionMode,
                                         currentItems = selectedItems,
                                     )
                                 }
-                            },
+                            }
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.more_vert),
-                                contentDescription = null,
-                                tint = LocalContentColor.current,
+                                contentDescription = null
                             )
                         }
                     }
@@ -984,7 +1069,12 @@ fun Queue(
             Box(modifier = Modifier.weight(1f)) {
                 LazyColumn(
                     state = lazyListState,
-                    contentPadding =
+                    contentPadding = if (isPanel) {
+                        PaddingValues(
+                            top = JUNOSpacing.xs,
+                            bottom = JUNOSpacing.lg
+                        )
+                    } else {
                         WindowInsets.systemBars
                             .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
                             .add(
@@ -992,10 +1082,14 @@ fun Queue(
                                     top = JUNOSpacing.xs,
                                     bottom = ListItemHeight + JUNOSpacing.xs,
                                 ),
-                            ).asPaddingValues(),
+                            ).asPaddingValues()
+                    },
                     modifier = Modifier
                         .fillMaxSize()
-                        .nestedScroll(state.preUpPostDownNestedScrollConnection)
+                        .then(
+                            if (isPanel) Modifier
+                            else Modifier.nestedScroll(playerBottomSheetState.preUpPostDownNestedScrollConnection)
+                        )
                 ) {
                     item(key = "queue_top_spacer") {
                         Spacer(
@@ -1273,8 +1367,8 @@ fun Queue(
                     modifier =
                     Modifier
                         .padding(
-                            bottom =
-                            ListItemHeight +
+                            bottom = if (isPanel) JUNOSpacing.md
+                            else ListItemHeight +
                                     WindowInsets.systemBars
                                         .asPaddingValues()
                                         .calculateBottomPadding(),
@@ -1282,14 +1376,13 @@ fun Queue(
                         .align(Alignment.BottomCenter),
                 )
             }
-            }
         }
     }
 
     if (showCommentSheet) {
         CommentSheet(
             videoId = mediaMetadata?.id ?: "",
-            onDismiss = { showCommentSheet = false }
+            onDismiss = { onShowCommentSheetChange(false) }
         )
     }
 }

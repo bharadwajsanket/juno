@@ -2,39 +2,47 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Core: Network and notifications -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Background playback and service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Haptic feedback -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Local media access -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+    <!-- Ringtone setting — requires Settings.ACTION_MANAGE_WRITE_SETTINGS on Android 6+ -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
-    <!--    bluetooth connect-->
+
+    <!-- Bluetooth audio device detection and routing -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <!-- For Android 11 (API 30) and below -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
-    <!-- Optional: If you also need to scan for Bluetooth devices -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
-    <!-- Ambient Home: coarse is sufficient for weather; fine is optional for higher accuracy -->
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
-    <!-- Microphone feature for music recognition (not required) -->
-
+    <!-- Music recognition via microphone (requested at runtime, not required at install) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
-<!--    install permission-->
+    <!-- In-app update installation -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
-    <!-- Android TV -->
+    <!-- Live Sky / Ambient weather visuals -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Android TV / Leanback support -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
 
     <queries>
         <intent>
@@ -45,10 +53,9 @@
         android:name="bharadwaj.juno.music.App"
         android:allowBackup="true"
         android:appCategory="audio"
-        android:banner="@mipmap/tv_banner"
+        android:banner="@mipmap/ic_launcher"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
-        android:extractNativeLibs="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -96,7 +103,7 @@
 
                 <data android:scheme="http" />
                 <data android:scheme="https" />
-                <data android:host="share.junomusic.fun" />
+                <data android:host="juno.music" />
                 <data android:pathPrefix="/watch" />
                 <data android:pathPrefix="/playlist" />
                 <data android:pathPrefix="/channel" />

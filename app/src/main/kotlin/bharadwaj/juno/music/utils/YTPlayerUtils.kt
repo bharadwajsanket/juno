@@ -113,6 +113,7 @@ object YTPlayerUtils {
         val streamUrl: String,
         val streamExpiresInSeconds: Int,
         val isSaavnStream: Boolean = false,
+        val userAgent: String? = null,
     )
     
     suspend fun playerResponseForPlayback(
@@ -401,7 +402,7 @@ object YTPlayerUtils {
         return firstAttempt
     }
 
-    private suspend fun resolvePlaybackData(
+    internal suspend fun resolvePlaybackData(
         videoId: String,
         playlistId: String? = null,
         audioQuality: AudioQuality,
@@ -535,6 +536,10 @@ object YTPlayerUtils {
             else -> -1
         }
 
+        Timber.tag(TAG).d("PLAYBACK_START videoId=$videoId MAIN_CLIENT=${MAIN_CLIENT.clientName} startIndex=$startIndex")
+
+        var resolvedClient: YouTubeClient? = null
+
         for (clientIndex in (startIndex until STREAM_FALLBACK_CLIENTS.size)) {
             
             format = null
@@ -555,7 +560,6 @@ object YTPlayerUtils {
                 PlaybackLogManager.log(PlaybackLogLevel.DEBUG, "Trying fallback [${clientIndex + 1}/${STREAM_FALLBACK_CLIENTS.size}]", client.clientName)
 
                 if (client.loginRequired && !isLoggedIn && YouTube.cookie == null) {
-                    
                     Timber.tag(logTag).d("Skipping client ${client.clientName} - requires login but user is not logged in")
                     continue
                 }
@@ -580,6 +584,11 @@ object YTPlayerUtils {
                 streamPlayerResponse =
                     YouTube.player(videoId, playlistId, client, clientSigTimestamp, clientPoToken).getOrNull()
             }
+
+            val status = streamPlayerResponse?.playabilityStatus?.status
+            val reason = streamPlayerResponse?.playabilityStatus?.reason
+            val formatsCount = streamPlayerResponse?.streamingData?.adaptiveFormats?.size ?: 0
+            println("[PLAYBACK_DIAG] DEBUG PLAYBACK videoId=$videoId client=${client.clientName} status=$status reason=$reason formats=$formatsCount")
 
             
             if (streamPlayerResponse?.playabilityStatus?.status == "OK") {
@@ -612,6 +621,8 @@ object YTPlayerUtils {
                 Timber.tag(logTag).d("Format found: ${format.mimeType}, bitrate: ${format.bitrate}")
 
                 streamUrl = findUrlOrNull(format, videoId, responseToUse, skipNewPipe = wasOriginallyAgeRestricted)
+                val hasUrl = !streamUrl.isNullOrEmpty()
+                Timber.tag(logTag).d("DEBUG PLAYBACK videoId=$videoId client=${client.clientName} status=${streamPlayerResponse.playabilityStatus.status} formats=${streamPlayerResponse.streamingData?.adaptiveFormats?.size ?: 0} selectedFormat=${format.mimeType} hasUrl=$hasUrl")
                 if (streamUrl == null) {
                     Timber.tag(logTag).d("Stream URL not found for format")
                     continue
@@ -674,16 +685,18 @@ object YTPlayerUtils {
                         Timber.tag(logTag).d("Using last fallback client without validation: ${STREAM_FALLBACK_CLIENTS[clientIndex].clientName}")
                     }
                     Log.i(TAG, "Playback: client=${currentClient.clientName}, videoId=$videoId, private=$isPrivatelyOwned")
+                    resolvedClient = currentClient
                     break
                 }
 
                 val validationUrl = streamUrl ?: continue
-                if (validateStatus(validationUrl)) {
+                if (validateStatus(validationUrl, currentClient.userAgent)) {
                     
                     Timber.tag(logTag).d("Stream validated successfully with client: ${currentClient.clientName}")
                     PlaybackLogManager.log(PlaybackLogLevel.INFO, "Stream validated", currentClient.clientName)
                     
                     Log.i(TAG, "Playback: client=${currentClient.clientName}, videoId=$videoId")
+                    resolvedClient = currentClient
                     break
                 } else {
                     Timber.tag(logTag).d("Stream validation failed for client: ${currentClient.clientName}")
@@ -694,10 +707,10 @@ object YTPlayerUtils {
 
                         
                         try {
-                            val nTransformed = CipherDeobfuscator.transformNParamInUrl(validationUrl)
+                            val nTransformed = EjsNTransformSolver.transformNParamInUrl(validationUrl)
                             if (nTransformed != streamUrl) {
                                 Timber.tag(logTag).d("CipherDeobfuscator n-transform applied, re-validating...")
-                                if (validateStatus(nTransformed)) {
+                                if (validateStatus(nTransformed, currentClient.userAgent)) {
                                     Timber.tag(logTag).d("N-transformed URL VALIDATED OK!")
                                     streamUrl = nTransformed
                                     nTransformWorked = true
@@ -708,7 +721,10 @@ object YTPlayerUtils {
                             Timber.tag(logTag).e(e, "CipherDeobfuscator n-transform error")
                         }
 
-                        if (nTransformWorked) break
+                        if (nTransformWorked) {
+                            resolvedClient = currentClient
+                            break
+                        }
                     }
                 }
             } else {
@@ -760,6 +776,7 @@ object YTPlayerUtils {
             format,
             streamUrl,
             streamExpiresInSeconds,
+            userAgent = resolvedClient?.userAgent
         )
     }.onFailure { e ->
         Timber.tag(logTag).e(e, "Playback resolution failed")
@@ -810,13 +827,14 @@ object YTPlayerUtils {
         return format
     }
     
-    private fun validateStatus(url: String): Boolean {
+    private fun validateStatus(url: String, userAgent: String = YouTubeClient.USER_AGENT_WEB): Boolean {
         Timber.tag(logTag).d("Validating stream URL status")
         try {
             val requestBuilder = okhttp3.Request.Builder()
-                .head()
+                .get()
                 .url(url)
-                .header("User-Agent", YouTubeClient.USER_AGENT_WEB)
+                .header("User-Agent", userAgent)
+                .header("Range", "bytes=0-0")
 
             
             YouTube.cookie?.let { cookie ->

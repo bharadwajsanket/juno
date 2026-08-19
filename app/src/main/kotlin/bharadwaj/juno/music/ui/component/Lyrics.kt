@@ -1835,7 +1835,7 @@ fun Lyrics(
                                     action = Intent.ACTION_SEND
                                     type = "text/plain"
                                     val songLink =
-                                        "https://share.junomusic.fun/watch?v=${mediaMetadata?.id}"
+                                        "https://juno.music/watch?v=${mediaMetadata?.id}"
                                     
                                     putExtra(
                                         Intent.EXTRA_TEXT,

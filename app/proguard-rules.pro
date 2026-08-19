@@ -173,4 +173,14 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
+# ── JUNO Custom Submodules & Extensions ──────────────────
+# Keep all data models, services, APIs, and serialization helpers
+-keep class com.music.** { *; }
+-keep interface com.music.** { *; }
+
+# Keep NewPipeExtractor classes and dependencies used via reflection / script execution
+-keep class org.schabi.newpipe.extractor.** { *; }
+-keep interface org.schabi.newpipe.extractor.** { *; }
+
+
 

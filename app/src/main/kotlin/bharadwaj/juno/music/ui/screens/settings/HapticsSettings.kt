@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -103,10 +104,32 @@ fun HapticsSettings(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        val currentLevel = remember(enableHaptics, hapticIntensity) {
+            if (!enableHaptics) 0f
+            else {
+                when {
+                    hapticIntensity <= 0.35f -> 1f
+                    hapticIntensity <= 0.65f -> 2f
+                    hapticIntensity <= 0.85f -> 3f
+                    else -> 4f
+                }
+            }
+        }
+
+        val levelName = remember(currentLevel) {
+            when (currentLevel) {
+                0f -> "Off"
+                1f -> "Light"
+                2f -> "Medium"
+                3f -> "Strong"
+                else -> "Immersive"
+            }
+        }
+
         Text(
-            text = "Intensity",
+            text = "Haptic Level: $levelName",
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = if (enableHaptics) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
         )
 
@@ -117,26 +140,55 @@ fun HapticsSettings(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Light",
+                text = "Off",
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (enableHaptics) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Slider(
-                value = hapticIntensity,
-                onValueChange = onHapticIntensityChange,
-                valueRange = 0.2f..1.0f,
-                enabled = enableHaptics,
+                value = currentLevel,
+                onValueChange = { level ->
+                    when (level) {
+                        0f -> {
+                            onEnableHapticsChange(false)
+                            onHapticIntensityChange(0.0f)
+                        }
+                        1f -> {
+                            onEnableHapticsChange(true)
+                            onHapticIntensityChange(0.25f)
+                        }
+                        2f -> {
+                            onEnableHapticsChange(true)
+                            onHapticIntensityChange(0.55f)
+                        }
+                        3f -> {
+                            onEnableHapticsChange(true)
+                            onHapticIntensityChange(0.8f)
+                        }
+                        4f -> {
+                            onEnableHapticsChange(true)
+                            onHapticIntensityChange(1.0f)
+                        }
+                    }
+                },
+                valueRange = 0f..4f,
+                steps = 3,
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 16.dp),
                 onValueChangeFinished = {
-                    HapticManager.getInstance(context).performHaptic(HapticType.MEDIUM)
+                    when (currentLevel) {
+                        0f -> {}
+                        1f -> HapticManager.getInstance(context).performHaptic(HapticType.LIGHT)
+                        2f -> HapticManager.getInstance(context).performHaptic(HapticType.MEDIUM)
+                        3f -> HapticManager.getInstance(context).performHaptic(HapticType.HEAVY)
+                        4f -> HapticManager.getInstance(context).performHaptic(HapticType.BOUNDARY)
+                    }
                 }
             )
             Text(
-                text = "Strong",
+                text = "Immersive",
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (enableHaptics) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

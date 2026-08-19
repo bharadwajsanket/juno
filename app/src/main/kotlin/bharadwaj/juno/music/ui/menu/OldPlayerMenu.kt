@@ -281,7 +281,7 @@ fun OldPlayerMenu(
                                 type = "text/plain"
                                 putExtra(
                                     android.content.Intent.EXTRA_TEXT,
-                                    "https://share.junomusic.fun/watch?v=${mediaMetadata.id}"
+                                    "https://juno.music/watch?v=${mediaMetadata.id}"
                                 )
                             }
                             context.startActivity(android.content.Intent.createChooser(intent, null))

@@ -128,6 +128,17 @@ fun ChangelogScreen(
     fun fetchChangelog(tag: String) {
         isLoading = true
         hasError = false
+        if (tag.contains("6.5.4")) {
+            val localFallback = getLocalFallbackChangelog(tag)
+            changelogSections = localFallback.sections
+            updateImage = localFallback.image
+            updateDescription = localFallback.description
+            updateWarning = localFallback.warning
+            isLoading = false
+            hasError = false
+            showingCached = false
+            return
+        }
         coroutineScope.launch(Dispatchers.IO) {
             try {
                 val cachedData = loadChangelogFromCache(context, tag)
@@ -196,14 +207,27 @@ fun ChangelogScreen(
                         }
                     } else {
                         Log.e("ChangelogScreen", "HTTP Error ${connection.responseCode} for $tag")
-                        withContext(Dispatchers.Main) { hasError = true; isLoading = false }
+                        val localFallback = getLocalFallbackChangelog(tag)
+                        withContext(Dispatchers.Main) {
+                            changelogSections = localFallback.sections
+                            updateImage = localFallback.image
+                            updateDescription = localFallback.description
+                            updateWarning = localFallback.warning
+                            isLoading = false
+                            hasError = false
+                        }
                     }
                 }
             } catch (e: Exception) {
                 Log.e("ChangelogScreen", "Error fetching changelog: ${e.message}")
+                val localFallback = getLocalFallbackChangelog(tag)
                 withContext(Dispatchers.Main) {
-                    hasError = true
+                    changelogSections = localFallback.sections
+                    updateImage = localFallback.image
+                    updateDescription = localFallback.description
+                    updateWarning = localFallback.warning
                     isLoading = false
+                    hasError = false
                 }
             }
         }
@@ -647,5 +671,42 @@ private fun loadReleasesFromCache(context: Context): Pair<Long, String>? {
         Pair(cacheData.getLong("timestamp"), cacheData.getString("response"))
     } catch (e: Exception) {
         null
+    }
+}
+
+private fun getLocalFallbackChangelog(tag: String): CachedChangelogData {
+    return if (tag.contains("6.5.4")) {
+        CachedChangelogData(
+            sections = listOf(
+                ChangelogSection(
+                    title = "What's New",
+                    items = listOf(
+                        "Redesigned landscape player",
+                        "Smoother animations",
+                        "Better one-hand controls",
+                        "Improved audio quality",
+                        "Better stability"
+                    )
+                )
+            ),
+            image = null,
+            description = "Nature Reborn 🌿",
+            warning = null
+        )
+    } else {
+        CachedChangelogData(
+            sections = listOf(
+                ChangelogSection(
+                    title = "What's New",
+                    items = listOf(
+                        "Performance and stability improvements",
+                        "Bug fixes and optimizations"
+                    )
+                )
+            ),
+            image = null,
+            description = "Update release notes",
+            warning = null
+        )
     }
 }

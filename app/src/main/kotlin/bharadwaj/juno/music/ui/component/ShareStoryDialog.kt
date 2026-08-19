@@ -297,7 +297,7 @@ fun ShareStoryDialog(
                                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                             type = "image/png"
                                             putExtra(Intent.EXTRA_STREAM, uri)
-                                            putExtra(Intent.EXTRA_TEXT, "https://share.junomusic.fun/watch?v=${mediaMetadata.id}")
+                                            putExtra(Intent.EXTRA_TEXT, "https://juno.music/watch?v=${mediaMetadata.id}")
                                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                         }
                                         context.startActivity(Intent.createChooser(shareIntent, "Share Story"))
@@ -348,7 +348,7 @@ fun ShareStoryDialog(
                             iconRes = R.drawable.link,
                             label = "Copy Link",
                             onClick = {
-                                val link = "https://share.junomusic.fun/watch?v=${mediaMetadata.id}"
+                                val link = "https://juno.music/watch?v=${mediaMetadata.id}"
                                 clipboardManager.setText(AnnotatedString(link))
                                 Toast.makeText(context, "Link copied to clipboard!", Toast.LENGTH_SHORT).show()
                             }

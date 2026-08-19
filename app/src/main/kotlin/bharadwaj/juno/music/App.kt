@@ -72,7 +72,11 @@ class App : Application(), SingletonImageLoader.Factory {
         
         CipherDeobfuscator.initialize(this)
 
-        Timber.plant(Timber.DebugTree())
+        // Only plant debug logging in debug builds — release builds must not leak
+        // internal state (cookies, media IDs, error messages) to adb logcat.
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
 
         
         applicationScope.launch {

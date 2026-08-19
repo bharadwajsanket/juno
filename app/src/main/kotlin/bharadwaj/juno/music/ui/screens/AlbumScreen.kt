@@ -934,7 +934,7 @@ fun AlbumScreen(
                                     type = "text/plain"
                                     putExtra(
                                         android.content.Intent.EXTRA_TEXT,
-                                        "https://share.junomusic.fun/playlist?list=${albumWithSongs.album.playlistId}"
+                                        "https://juno.music/playlist?list=${albumWithSongs.album.playlistId}"
                                     )
                                 }
                                 context.startActivity(

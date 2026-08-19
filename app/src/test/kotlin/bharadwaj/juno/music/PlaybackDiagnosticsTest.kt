@@ -23,8 +23,8 @@ class PlaybackDiagnosticsTest {
                 println("Failed to fetch visitorData: ${e.message}")
             }
 
-            val videoId = "dQw4w9WgXcQ"
-            val result = YTPlayerUtils.playerResponseForPlayback(
+            val videoId = "ebZj_nrmH-c"
+            val result = YTPlayerUtils.resolvePlaybackData(
                 videoId = videoId,
                 audioQuality = AudioQuality.OPUS,
                 connectivityManager = FakeConnectivityManager()
@@ -42,7 +42,8 @@ class PlaybackDiagnosticsTest {
                         val url = URL(urlString)
                         val connection = url.openConnection() as HttpURLConnection
                         connection.requestMethod = "GET"
-                        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                        connection.setRequestProperty("User-Agent", playbackData.userAgent ?: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                        connection.setRequestProperty("Range", "bytes=0-0")
                         connection.connectTimeout = 5000
                         connection.readTimeout = 5000
                         val responseCode = connection.responseCode

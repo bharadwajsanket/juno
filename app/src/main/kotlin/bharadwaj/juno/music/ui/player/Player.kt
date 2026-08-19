@@ -38,6 +38,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
@@ -53,6 +54,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.add
@@ -69,12 +71,16 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
@@ -246,6 +252,13 @@ import bharadwaj.juno.music.ui.player.normalizeCanvasArtistName
 import bharadwaj.juno.music.ui.player.normalizeCanvasSongTitle
 import bharadwaj.juno.music.junomusiccanvas.junomusicCanvasProvider
 import java.util.Locale
+
+enum class LandscapeTab {
+    CONTROLS,
+    LYRICS,
+    QUEUE
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BottomSheetPlayer(
@@ -255,7 +268,9 @@ fun BottomSheetPlayer(
     pureBlack: Boolean,
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    var landscapeRightTab by rememberSaveable { mutableStateOf(LandscapeTab.CONTROLS) }
     val database = LocalDatabase.current
     val hapticManager = remember { HapticManager.getInstance(context) }
     val lastSeekPercent = remember { mutableFloatStateOf(-1f) }
@@ -361,6 +376,7 @@ fun BottomSheetPlayer(
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
     val automix by playerConnection.service.automixItems.collectAsState()
     val repeatMode by playerConnection.repeatMode.collectAsState()
+    val shuffleModeEnabled by playerConnection.shuffleModeEnabled.collectAsState()
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
     val isMuted by playerConnection.isMuted.collectAsState()
@@ -2335,7 +2351,6 @@ fun BottomSheetPlayer(
 
         when (LocalConfiguration.current.orientation) {
             Configuration.ORIENTATION_LANDSCAPE -> {
-                
                 val density = LocalDensity.current
                 val verticalPadding = max(
                     WindowInsets.systemBars.getTop(density),
@@ -2351,185 +2366,472 @@ fun BottomSheetPlayer(
                         )
                         .padding(bottom = bottomPadding)
                         .fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.lg)
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
+                    // LEFT COLUMN (Artwork Hero & Action Dock)
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
+                        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .nestedScroll(state.preUpPostDownNestedScrollConnection)
+                            .padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
                     ) {
+                        // Artwork Hero
                         Box(
                             contentAlignment = Alignment.Center,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
                         ) {
-                            val currentSliderPosition by rememberUpdatedState(sliderPosition)
-                            val sliderPositionProvider = remember { { currentSliderPosition } }
-                            val isExpandedProvider = remember(state) { { state.isExpanded } }
-                            AnimatedContent(
-                                targetState = showInlineLyrics,
-                                label = "Lyrics",
-                                transitionSpec = { fadeIn() togetherWith fadeOut() }
-                            ) { showLyrics ->
-                                if (showLyrics) {
-                                    InlineLyricsView(
-                                        mediaMetadata = mediaMetadata,
-                                        showLyrics = showLyrics,
-                                        positionProvider = { effectivePosition }
-                                    )
-                                } else {
-                                    Thumbnail(
-                                        sliderPositionProvider = sliderPositionProvider,
-                                        modifier = Modifier.animateContentSize(),
-                                        isPlayerExpanded = isExpandedProvider,
-                                        isLandscape = true,
-                                    )
-                                }
+                            // Blurred shadow / atmosphere glow
+                            AsyncImage(
+                                model = mediaMetadata?.thumbnailUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .aspectRatio(1f)
+                                    .fillMaxHeight(0.85f)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .blur(36.dp)
+                                    .graphicsLayer {
+                                        alpha = 0.6f
+                                    }
+                            )
+
+                            // Glass layer border / card container
+                            Card(
+                                shape = RoundedCornerShape(20.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                                modifier = Modifier
+                                    .aspectRatio(1f)
+                                    .fillMaxHeight(0.85f)
+                                    .border(1.dp, TextBackgroundColor.copy(alpha = 0.15f), RoundedCornerShape(20.dp))
+                            ) {
+                                AsyncImage(
+                                    model = mediaMetadata?.thumbnailUrl,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
                             }
                         }
 
-                        if (!showInlineLyrics) {
-                            Spacer(modifier = Modifier.height(JUNOSpacing.sm))
-                            Row(
+                        // Action Dock below the artwork
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            val actionButtonSize = 36.dp
+                            val actionIconSize = 18.dp
+                            val activeColor = TextBackgroundColor
+                            val inactiveColor = TextBackgroundColor.copy(alpha = 0.6f)
+                            
+                            // 1. Lyrics Button
+                            val isLyricsTab = landscapeRightTab == LandscapeTab.LYRICS
+                            IconButton(
+                                onClick = {
+                                    hapticManager.performHaptic(HapticType.LIGHT)
+                                    landscapeRightTab = if (isLyricsTab) LandscapeTab.CONTROLS else LandscapeTab.LYRICS
+                                },
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = JUNOSpacing.md),
-                                horizontalArrangement = Arrangement.spacedBy(JUNOSpacing.md, Alignment.CenterHorizontally),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .size(actionButtonSize)
+                                    .background(if (isLyricsTab) TextBackgroundColor.copy(alpha = 0.15f) else Color.Transparent, CircleShape)
                             ) {
-                                val buttonSize = 48.dp
-                                val iconSize = 22.dp
-                                val activeColor = textButtonColor
-                                val inactiveColor = textButtonColor.copy(alpha = 0.5f)
-
-                                // Lyrics
-                                Box(
-                                    modifier = Modifier
-                                        .size(buttonSize)
-                                        .clip(CircleShape)
-                                        .background(textButtonColor.copy(alpha = if (showInlineLyrics) 0.2f else 0.05f))
-                                        .clickable { showInlineLyrics = !showInlineLyrics },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.lyrics),
-                                        contentDescription = stringResource(R.string.lyrics),
-                                        tint = if (showInlineLyrics) activeColor else inactiveColor,
-                                        modifier = Modifier.size(iconSize)
-                                    )
-                                }
-
-                                // Sleep
-                                Box(
-                                    modifier = Modifier
-                                        .size(buttonSize)
-                                        .clip(CircleShape)
-                                        .background(textButtonColor.copy(alpha = if (sleepTimerEnabled) 0.2f else 0.05f))
-                                        .clickable {
-                                            if (sleepTimerEnabled) {
-                                                playerConnection.service.sleepTimer.clear()
-                                            } else {
-                                                showSleepTimerDialog = true
-                                            }
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.sleep_timer),
-                                        contentDescription = stringResource(R.string.sleep_timer),
-                                        tint = if (sleepTimerEnabled) activeColor else inactiveColor,
-                                        modifier = Modifier.size(iconSize)
-                                    )
-                                }
-
-                                // Equalizer
-                                Box(
-                                    modifier = Modifier
-                                        .size(buttonSize)
-                                        .clip(CircleShape)
-                                        .background(textButtonColor.copy(alpha = 0.05f))
-                                        .clickable { navController.navigate("settings/equalizer") },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.equalizer),
-                                        contentDescription = stringResource(R.string.equalizer),
-                                        tint = inactiveColor,
-                                        modifier = Modifier.size(iconSize)
-                                    )
-                                }
-
-                                // Fullscreen
-                                Box(
-                                    modifier = Modifier
-                                        .size(buttonSize)
-                                        .clip(CircleShape)
-                                        .background(textButtonColor.copy(alpha = if (isFullScreen) 0.2f else 0.05f))
-                                        .clickable { isFullScreen = !isFullScreen },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.fullscreen),
-                                        contentDescription = stringResource(R.string.fullscreen),
-                                        tint = if (isFullScreen) activeColor else inactiveColor,
-                                        modifier = Modifier.size(iconSize)
-                                    )
-                                }
-
-                                // Repeat
-                                val isRepeatActive = repeatMode != Player.REPEAT_MODE_OFF
-                                Box(
-                                    modifier = Modifier
-                                        .size(buttonSize)
-                                        .clip(CircleShape)
-                                        .background(textButtonColor.copy(alpha = if (isRepeatActive) 0.2f else 0.05f))
-                                        .clickable { playerConnection.player.toggleRepeatMode() },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = painterResource(
-                                            when (repeatMode) {
-                                                Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
-                                                else -> R.drawable.repeat
-                                            }
-                                        ),
-                                        contentDescription = stringResource(R.string.repeat),
-                                        tint = if (isRepeatActive) activeColor else inactiveColor,
-                                        modifier = Modifier.size(iconSize)
-                                    )
-                                }
+                                Icon(
+                                    painter = painterResource(R.drawable.lyrics),
+                                    contentDescription = "Lyrics",
+                                    tint = if (isLyricsTab) activeColor else inactiveColor,
+                                    modifier = Modifier.size(actionIconSize)
+                                )
                             }
-                            Spacer(modifier = Modifier.height(JUNOSpacing.xs))
+
+                            // 2. Sleep Timer Button
+                            IconButton(
+                                onClick = {
+                                    hapticManager.performHaptic(HapticType.LIGHT)
+                                    if (sleepTimerEnabled) {
+                                        playerConnection.service.sleepTimer.clear()
+                                    } else {
+                                        showSleepTimerDialog = true
+                                    }
+                                },
+                                modifier = Modifier
+                                    .size(actionButtonSize)
+                                    .background(if (sleepTimerEnabled) TextBackgroundColor.copy(alpha = 0.15f) else Color.Transparent, CircleShape)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.sleep_timer),
+                                    contentDescription = "Sleep Timer",
+                                    tint = if (sleepTimerEnabled) activeColor else inactiveColor,
+                                    modifier = Modifier.size(actionIconSize)
+                                )
+                            }
+
+                            // 3. Equalizer Button
+                            IconButton(
+                                onClick = {
+                                    hapticManager.performHaptic(HapticType.LIGHT)
+                                    navController.navigate("settings/equalizer")
+                                },
+                                modifier = Modifier.size(actionButtonSize)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.equalizer),
+                                    contentDescription = "Equalizer",
+                                    tint = inactiveColor,
+                                    modifier = Modifier.size(actionIconSize)
+                                )
+                            }
+
+                            // 4. Repeat Button
+                            val isRepeatActive = repeatMode != Player.REPEAT_MODE_OFF
+                            IconButton(
+                                onClick = {
+                                    hapticManager.performHaptic(HapticType.LIGHT)
+                                    playerConnection.player.toggleRepeatMode()
+                                },
+                                modifier = Modifier
+                                    .size(actionButtonSize)
+                                    .background(if (isRepeatActive) TextBackgroundColor.copy(alpha = 0.15f) else Color.Transparent, CircleShape)
+                            ) {
+                                Icon(
+                                    painter = painterResource(
+                                        when (repeatMode) {
+                                            Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
+                                            else -> R.drawable.repeat
+                                        }
+                                    ),
+                                    contentDescription = "Repeat",
+                                    tint = if (isRepeatActive) activeColor else inactiveColor,
+                                    modifier = Modifier.size(actionIconSize)
+                                )
+                            }
+
+                            // 5. Shuffle Button
+                            IconButton(
+                                onClick = {
+                                    hapticManager.performHaptic(HapticType.LIGHT)
+                                    playerConnection.player.shuffleModeEnabled = !shuffleModeEnabled
+                                },
+                                modifier = Modifier
+                                    .size(actionButtonSize)
+                                    .background(if (shuffleModeEnabled) TextBackgroundColor.copy(alpha = 0.15f) else Color.Transparent, CircleShape)
+                            ) {
+                                Icon(
+                                    painter = painterResource(if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle),
+                                    contentDescription = "Shuffle",
+                                    tint = if (shuffleModeEnabled) activeColor else inactiveColor,
+                                    modifier = Modifier.size(actionIconSize)
+                                )
+                            }
+
+                            // 6. More Button
+                            IconButton(
+                                onClick = {
+                                    hapticManager.performHaptic(HapticType.LIGHT)
+                                    menuState.show {
+                                        PlayerMenu(
+                                            mediaMetadata = mediaMetadata,
+                                            navController = navController,
+                                            playerBottomSheetState = state,
+                                            onShowDetailsDialog = {
+                                                mediaMetadata?.id?.let {
+                                                    bottomSheetPageState.show {
+                                                        ShowMediaInfo(it)
+                                                    }
+                                                }
+                                            },
+                                            onDismiss = menuState::dismiss,
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.size(actionButtonSize)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.more_vert),
+                                    contentDescription = "More Options",
+                                    tint = inactiveColor,
+                                    modifier = Modifier.size(actionIconSize)
+                                )
+                            }
                         }
                     }
 
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                    // RIGHT COLUMN (Switchable view based on landscapeRightTab)
+                    Box(
                         modifier = Modifier
-                            .weight(if (showInlineLyrics) 0.65f else 1f, false)
-                            .animateContentSize()
+                            .weight(1.2f)
+                            .fillMaxHeight()
+                            .padding(end = 16.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Spacer(Modifier.weight(1f))
+                        AnimatedContent(
+                            targetState = landscapeRightTab,
+                            transitionSpec = {
+                                fadeIn(animationSpec = JUNOMotion.SlowFloatSpec).togetherWith(
+                                    fadeOut(animationSpec = JUNOMotion.SlowFloatSpec)
+                                )
+                            },
+                            label = "LandscapeRightTab"
+                        ) { tab ->
+                            when (tab) {
+                                LandscapeTab.CONTROLS -> {
+                                    Column(
+                                        horizontalAlignment = Alignment.Start,
+                                        verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(vertical = 16.dp, horizontal = 24.dp)
+                                            .pointerInput(Unit) {
+                                                detectHorizontalDragGestures { change, dragAmount ->
+                                                    change.consume()
+                                                    if (dragAmount < -50) { // Swipe Left to open Queue
+                                                        hapticManager.performHaptic(HapticType.LIGHT)
+                                                        landscapeRightTab = LandscapeTab.QUEUE
+                                                    }
+                                                }
+                                            }
+                                    ) {
+                                        // 1. Song Metadata (Title + Artist)
+                                        Column(
+                                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            // Song Title
+                                            Text(
+                                                text = mediaMetadata?.title.orEmpty(),
+                                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                                color = TextBackgroundColor,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.basicMarquee(iterations = 1, initialDelayMillis = 3000, velocity = 30.dp)
+                                            )
+                                            
+                                            // Artist
+                                            Text(
+                                                text = mediaMetadata?.artists?.joinToString { it.name }.orEmpty(),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = TextBackgroundColor.copy(alpha = 0.7f),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.basicMarquee(iterations = 1, initialDelayMillis = 3000, velocity = 30.dp)
+                                            )
+                                        }
 
-                        mediaMetadata?.let {
-                            Box(
-                                modifier = Modifier
-                                    .widthIn(max = 480.dp)
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    controlsContent(it)
+                                        // 2. Playback Progress Slider
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 8.dp)
+                                        ) {
+                                            val position = sliderPosition ?: effectivePosition
+                                            val durationFloat = duration.toFloat().coerceAtLeast(1f)
+                                            
+                                            Slider(
+                                                value = position.toFloat().coerceIn(0f, durationFloat),
+                                                valueRange = 0f..durationFloat,
+                                                onValueChange = {
+                                                    sliderPosition = it.toLong()
+                                                },
+                                                onValueChangeFinished = {
+                                                    sliderPosition?.let {
+                                                        playerConnection.player.seekTo(it)
+                                                    }
+                                                    sliderPosition = null
+                                                },
+                                                colors = SliderDefaults.colors(
+                                                    activeTrackColor = TextBackgroundColor,
+                                                    inactiveTrackColor = TextBackgroundColor.copy(alpha = 0.2f),
+                                                    thumbColor = TextBackgroundColor
+                                                ),
+                                                thumb = {
+                                                    SliderDefaults.Thumb(
+                                                        interactionSource = remember { MutableInteractionSource() },
+                                                        colors = SliderDefaults.colors(thumbColor = TextBackgroundColor),
+                                                        modifier = Modifier.size(12.dp)
+                                                    )
+                                                },
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                            
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            
+                                            Row(
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+                                            ) {
+                                                Text(
+                                                    text = remember(position) { makeTimeString(position) },
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = TextBackgroundColor.copy(alpha = 0.6f)
+                                                )
+                                                Text(
+                                                    text = remember(duration) { if (duration != C.TIME_UNSET) makeTimeString(duration) else "" },
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = TextBackgroundColor.copy(alpha = 0.6f)
+                                                )
+                                            }
+                                        }
+
+                                        // 3. Playback Controls Row (Prev, Centered Play/Pause, Next)
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(36.dp, Alignment.CenterHorizontally),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            // Previous
+                                            IconButton(
+                                                onClick = {
+                                                    hapticManager.performHaptic(HapticType.LIGHT)
+                                                    playerConnection.seekToPrevious()
+                                                },
+                                                modifier = Modifier.size(56.dp)
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.skip_previous),
+                                                    contentDescription = "Previous",
+                                                    tint = TextBackgroundColor,
+                                                    modifier = Modifier.size(36.dp)
+                                                )
+                                            }
+                                            
+                                            // Centered Large Play/Pause (Animated shape)
+                                            val playPauseRoundness by animateDpAsState(
+                                                targetValue = if (isPlaying) 24.dp else 36.dp,
+                                                animationSpec = JUNOMotion.CrispSpringDp,
+                                                label = "playPauseRoundness"
+                                            )
+                                            Surface(
+                                                shape = RoundedCornerShape(playPauseRoundness),
+                                                color = TextBackgroundColor,
+                                                modifier = Modifier
+                                                    .size(72.dp)
+                                                    .clickable {
+                                                        hapticManager.performHaptic(HapticType.MEDIUM)
+                                                        playerConnection.togglePlayPause()
+                                                    },
+                                                shadowElevation = 6.dp
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        painter = painterResource(
+                                                            if (isPlaying) R.drawable.pause else R.drawable.play
+                                                        ),
+                                                        contentDescription = "Play/Pause",
+                                                        tint = iconButtonColor,
+                                                        modifier = Modifier
+                                                            .size(36.dp)
+                                                            .padding(start = if (isPlaying) 0.dp else 4.dp)
+                                                    )
+                                                }
+                                            }
+                                            
+                                            // Next
+                                            IconButton(
+                                                onClick = {
+                                                    hapticManager.performHaptic(HapticType.LIGHT)
+                                                    playerConnection.seekToNext()
+                                                },
+                                                modifier = Modifier.size(56.dp)
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.skip_next),
+                                                    contentDescription = "Next",
+                                                    tint = TextBackgroundColor,
+                                                    modifier = Modifier.size(36.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                LandscapeTab.LYRICS -> {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        // Header
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.fillMaxWidth().padding(top = JUNOSpacing.xs)
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = mediaMetadata?.title.orEmpty(),
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    color = TextBackgroundColor
+                                                )
+                                                Text(
+                                                    text = mediaMetadata?.artists?.joinToString { it.name }.orEmpty(),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    color = TextBackgroundColor.copy(alpha = 0.7f)
+                                                )
+                                            }
+                                            IconButton(
+                                                onClick = {
+                                                    hapticManager.performHaptic(HapticType.LIGHT)
+                                                    landscapeRightTab = LandscapeTab.CONTROLS
+                                                }
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.close),
+                                                    contentDescription = "Close Lyrics",
+                                                    tint = TextBackgroundColor
+                                                )
+                                            }
+                                        }
+                                        
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            InlineLyricsView(
+                                                mediaMetadata = mediaMetadata,
+                                                showLyrics = true,
+                                                positionProvider = { effectivePosition }
+                                            )
+                                        }
+                                    }
+                                }
+                                LandscapeTab.QUEUE -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .pointerInput(Unit) {
+                                                detectHorizontalDragGestures { change, dragAmount ->
+                                                    change.consume()
+                                                    if (dragAmount > 50) { // Swipe Right to close Queue
+                                                        hapticManager.performHaptic(HapticType.LIGHT)
+                                                        landscapeRightTab = LandscapeTab.CONTROLS
+                                                    }
+                                                }
+                                            }
+                                    ) {
+                                        QueueContent(
+                                            navController = navController,
+                                            background = Color.Transparent,
+                                            onBackgroundColor = onBackgroundColor,
+                                            TextBackgroundColor = TextBackgroundColor,
+                                            textButtonColor = textButtonColor,
+                                            iconButtonColor = iconButtonColor,
+                                            pureBlack = pureBlack,
+                                            playerBottomSheetState = state,
+                                            isPanel = true,
+                                            onCloseClick = {
+                                                hapticManager.performHaptic(HapticType.LIGHT)
+                                                landscapeRightTab = LandscapeTab.CONTROLS
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
-
-                        Spacer(Modifier.weight(1f))
                     }
                 }
             }
@@ -2583,7 +2885,7 @@ fun BottomSheetPlayer(
         }
 
         AnimatedVisibility(
-            visible = !isFullScreen,
+            visible = !isFullScreen && !isLandscape,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
             exit = shrinkVertically(shrinkTowards = Alignment.Top) + slideOutVertically(targetOffsetY = { it }) + fadeOut()
         ) {

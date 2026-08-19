@@ -445,6 +445,7 @@ class MainActivity : ComponentActivity() {
                             val result = imageLoader.execute(
                                 ImageRequest.Builder(this@MainActivity)
                                     .data(song.thumbnailUrl)
+                                    .size(200, 200) // Only need a small bitmap for color sampling
                                     .allowHardware(false)
                                     .memoryCachePolicy(CachePolicy.ENABLED)
                                     .diskCachePolicy(CachePolicy.ENABLED)
@@ -712,6 +713,10 @@ class MainActivity : ComponentActivity() {
                             mediaItem: MediaItem?,
                             reason: Int,
                         ) {
+                            if (mediaItem != null) {
+                                bharadwaj.juno.music.utils.HapticManager.getInstance(applicationContext)
+                                    .performHaptic(bharadwaj.juno.music.utils.HapticType.LIGHT)
+                            }
                             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED &&
                                 mediaItem != null &&
                                 playerBottomSheetState.isDismissed
@@ -818,24 +823,25 @@ class MainActivity : ComponentActivity() {
                     LocalSyncUtils provides syncUtils,
                 ) {
 
+                    val lastClickTimes = remember { mutableMapOf<Screens, Long>() }
+
                     Scaffold(
                         snackbarHost = { SnackbarHost(snackbarHostState) },
                         bottomBar = {
-                            val onNavItemClick: (Screens, Boolean) -> Unit = remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState) {
+                            val onNavItemClick: (Screens, Boolean) -> Unit = remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState, lastClickTimes) {
                                 { screen: Screens, isSelected: Boolean ->
+                                    val now = System.currentTimeMillis()
+                                    val lastTime = lastClickTimes[screen] ?: 0L
+                                    val isDoubleTap = now - lastTime < 350L
+                                    lastClickTimes[screen] = now
+
                                     if (playerBottomSheetState.isExpanded) {
                                         playerBottomSheetState.collapseSoft()
                                     }
 
-                                    if (isSelected) {
-                                        navController.currentBackStackEntry?.savedStateHandle?.set("scrollToTop", true)
-                                        coroutineScope.launch {
-                                            topAppBarScrollBehavior.state.resetHeightOffset()
-                                        }
-                                    } else {
-                                        if (screen == Screens.Home) {
-                                            val popped = navController.popBackStack(Screens.Home.route, false)
-                                            if (!popped) {
+                                    if (isDoubleTap) {
+                                        if (screen == Screens.Search) {
+                                            if (!isSelected) {
                                                 navController.navigate(screen.route) {
                                                     popUpTo(navController.graph.startDestinationId) {
                                                         saveState = true
@@ -844,13 +850,53 @@ class MainActivity : ComponentActivity() {
                                                     restoreState = true
                                                 }
                                             }
-                                        } else {
-                                            navController.navigate(screen.route) {
-                                                popUpTo(navController.graph.startDestinationId) {
-                                                    saveState = true
+                                            val entry = try {
+                                                navController.getBackStackEntry(Screens.Search.route)
+                                            } catch (e: Exception) {
+                                                navController.currentBackStackEntry
+                                            }
+                                            entry?.savedStateHandle?.set("focusSearch", true)
+                                        } else if (screen == Screens.Home) {
+                                            if (!isSelected) {
+                                                val popped = navController.popBackStack(Screens.Home.route, false)
+                                                if (!popped) {
+                                                    navController.navigate(screen.route) {
+                                                        popUpTo(navController.graph.startDestinationId) {
+                                                            saveState = true
+                                                        }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
                                                 }
-                                                launchSingleTop = true
-                                                restoreState = true
+                                            }
+                                            navController.currentBackStackEntry?.savedStateHandle?.set("homeRefresh", true)
+                                        }
+                                    } else {
+                                        if (isSelected) {
+                                            navController.currentBackStackEntry?.savedStateHandle?.set("scrollToTop", true)
+                                            coroutineScope.launch {
+                                                topAppBarScrollBehavior.state.resetHeightOffset()
+                                            }
+                                        } else {
+                                            if (screen == Screens.Home) {
+                                                val popped = navController.popBackStack(Screens.Home.route, false)
+                                                if (!popped) {
+                                                    navController.navigate(screen.route) {
+                                                        popUpTo(navController.graph.startDestinationId) {
+                                                            saveState = true
+                                                        }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
+                                                }
+                                            } else {
+                                                navController.navigate(screen.route) {
+                                                    popUpTo(navController.graph.startDestinationId) {
+                                                        saveState = true
+                                                    }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
                                             }
                                         }
                                     }
@@ -937,21 +983,20 @@ class MainActivity : ComponentActivity() {
                             .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
                     ) {
                         Row(Modifier.fillMaxSize()) {
-                            val onRailItemClick: (Screens, Boolean) -> Unit = remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState) {
+                            val onRailItemClick: (Screens, Boolean) -> Unit = remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState, lastClickTimes) {
                                 { screen: Screens, isSelected: Boolean ->
+                                    val now = System.currentTimeMillis()
+                                    val lastTime = lastClickTimes[screen] ?: 0L
+                                    val isDoubleTap = now - lastTime < 350L
+                                    lastClickTimes[screen] = now
+
                                     if (playerBottomSheetState.isExpanded) {
                                         playerBottomSheetState.collapseSoft()
                                     }
 
-                                    if (isSelected) {
-                                        navController.currentBackStackEntry?.savedStateHandle?.set("scrollToTop", true)
-                                        coroutineScope.launch {
-                                            topAppBarScrollBehavior.state.resetHeightOffset()
-                                        }
-                                    } else {
-                                        if (screen == Screens.Home) {
-                                            val popped = navController.popBackStack(Screens.Home.route, false)
-                                            if (!popped) {
+                                    if (isDoubleTap) {
+                                        if (screen == Screens.Search) {
+                                            if (!isSelected) {
                                                 navController.navigate(screen.route) {
                                                     popUpTo(navController.graph.startDestinationId) {
                                                         saveState = true
@@ -960,13 +1005,53 @@ class MainActivity : ComponentActivity() {
                                                     restoreState = true
                                                 }
                                             }
-                                        } else {
-                                            navController.navigate(screen.route) {
-                                                popUpTo(navController.graph.startDestinationId) {
-                                                    saveState = true
+                                            val entry = try {
+                                                navController.getBackStackEntry(Screens.Search.route)
+                                            } catch (e: Exception) {
+                                                navController.currentBackStackEntry
+                                            }
+                                            entry?.savedStateHandle?.set("focusSearch", true)
+                                        } else if (screen == Screens.Home) {
+                                            if (!isSelected) {
+                                                val popped = navController.popBackStack(Screens.Home.route, false)
+                                                if (!popped) {
+                                                    navController.navigate(screen.route) {
+                                                        popUpTo(navController.graph.startDestinationId) {
+                                                            saveState = true
+                                                        }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
                                                 }
-                                                launchSingleTop = true
-                                                restoreState = true
+                                            }
+                                            navController.currentBackStackEntry?.savedStateHandle?.set("homeRefresh", true)
+                                        }
+                                    } else {
+                                        if (isSelected) {
+                                            navController.currentBackStackEntry?.savedStateHandle?.set("scrollToTop", true)
+                                            coroutineScope.launch {
+                                                topAppBarScrollBehavior.state.resetHeightOffset()
+                                            }
+                                        } else {
+                                            if (screen == Screens.Home) {
+                                                val popped = navController.popBackStack(Screens.Home.route, false)
+                                                if (!popped) {
+                                                    navController.navigate(screen.route) {
+                                                        popUpTo(navController.graph.startDestinationId) {
+                                                            saveState = true
+                                                        }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
+                                                }
+                                            } else {
+                                                navController.navigate(screen.route) {
+                                                    popUpTo(navController.graph.startDestinationId) {
+                                                        saveState = true
+                                                    }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
                                             }
                                         }
                                     }

@@ -3,6 +3,7 @@ package bharadwaj.juno.music.ambient.ui
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -130,6 +131,45 @@ fun AmbientSceneHost(
     val repo = ambientRepository ?: rememberAmbientRepository()
     val state by repo.state.collectAsState()
 
+    val scope = rememberCoroutineScope()
+    var permissionDeclined by rememberSaveable { mutableStateOf(false) }
+    var showPermissionPromptDialog by rememberSaveable { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            scope.launch { repo.refresh() }
+        } else {
+            permissionDeclined = true
+        }
+    }
+
+    LaunchedEffect(state) {
+        if (state is AmbientState.LocationPermissionRequired && !permissionDeclined) {
+            showPermissionPromptDialog = true
+        }
+    }
+
+    if (showPermissionPromptDialog) {
+        ActionPromptDialog(
+            title = "Enable Live Sky?",
+            onDismiss = {
+                showPermissionPromptDialog = false
+                permissionDeclined = true
+            },
+            onConfirm = {
+                showPermissionPromptDialog = false
+                permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+            }
+        ) {
+            Text(
+                text = "JUNO can display real-time weather and daylight visuals based on your approximate location. This is computed locally and never shared.",
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
+    }
+
     // Trigger a subtle haptic only on transition to Active (successful activation)
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var wasActive by remember { mutableStateOf(false) }
@@ -158,7 +198,6 @@ fun AmbientSceneHost(
     val atmosphere by rememberAmbientAtmosphere(state)
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    val scope = rememberCoroutineScope()
 
 
     // ── Lifecycle: refresh on ON_RESUME, stop on ON_PAUSE ──────────────────────

@@ -201,7 +201,7 @@ fun ArtistMenu(
                                         type = "text/plain"
                                         putExtra(
                                             Intent.EXTRA_TEXT,
-                                            "https://share.junomusic.fun/channel/${artist.id}"
+                                             "https://juno.music/channel/${artist.id}"
                                         )
                                     }
                                     context.startActivity(Intent.createChooser(intent, null))

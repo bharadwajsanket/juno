@@ -97,7 +97,7 @@ class PlayerConnection(
             ready && state != STATE_ENDED
         }.stateIn(
             scope,
-            SharingStarted.Lazily,
+            SharingStarted.WhileSubscribed(5000),
             initialState.third
         )
         
@@ -123,7 +123,7 @@ class PlayerConnection(
         if (isCasting) castPlaying else localPlaying
     }.stateIn(
         scope,
-        SharingStarted.Lazily,
+        SharingStarted.WhileSubscribed(5000),
         if (service.isPlayerReady.value) {
             val p = getPlayerSafe()
             p.playbackState != STATE_ENDED && p.playWhenReady

@@ -89,6 +89,7 @@ import bharadwaj.juno.music.utils.rememberEnumPreference
 import bharadwaj.juno.music.utils.rememberPreference
 import bharadwaj.juno.music.viewmodels.MoodAndGenresViewModel
 import bharadwaj.juno.music.viewmodels.ExploreViewModel
+import bharadwaj.juno.music.ui.screens.Screens
 import bharadwaj.juno.music.ui.screens.search.suggestions.SuggestionsTabContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -134,11 +135,29 @@ fun SearchScreen(
         mutableStateOf(TextFieldValue())
     }
     val pauseSearchHistory by rememberPreference(PauseSearchHistoryKey, defaultValue = false)
-    var isFirstLaunch by rememberSaveable { mutableStateOf(true) }
-    
     var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
     var searchActive by rememberSaveable { mutableStateOf(false) }
     var showSearchContent by remember { mutableStateOf(false) }
+    LaunchedEffect(navController) {
+        val entry = try {
+            navController.getBackStackEntry(Screens.Search.route)
+        } catch (e: Exception) {
+            navController.currentBackStackEntry
+        }
+        entry?.savedStateHandle?.getStateFlow("focusSearch", false)?.collect { focus ->
+            if (focus) {
+                searchActive = true
+                entry.savedStateHandle.remove<Boolean>("focusSearch")
+                kotlinx.coroutines.delay(200)
+                try {
+                    focusRequester.requestFocus()
+                    keyboardController?.show()
+                } catch (e: Exception) {
+                    
+                }
+            }
+        }
+    }
 
     LaunchedEffect(searchActive) {
         if (searchActive) {
@@ -309,6 +328,7 @@ fun SearchScreen(
                         containerColor = if (pureBlack) Color.White.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceContainer
                     ),
                     modifier = Modifier
+                        .focusRequester(focusRequester)
                         .fillMaxWidth()
                         .padding(horizontal = searchBarHorizontalPadding)
                         .padding(top = searchBarTopPadding)
@@ -414,22 +434,12 @@ fun SearchScreen(
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_RESUME -> {
-                    
                     if (isPlayerExpanded) {
                         keyboardController?.hide()
                         focusManager.clearFocus()
-                    } else if (isFirstLaunch) {
-                        
-                        try {
-                            focusRequester.requestFocus()
-                        } catch (e: Exception) {
-                            
-                        }
-                        isFirstLaunch = false
                     }
                 }
                 Lifecycle.Event.ON_PAUSE -> {
-                    
                     focusManager.clearFocus()
                     keyboardController?.hide()
                 }
@@ -437,7 +447,6 @@ fun SearchScreen(
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        
         
         if (isPlayerExpanded) {
             keyboardController?.hide()
